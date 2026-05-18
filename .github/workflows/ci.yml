@@ -31,7 +31,7 @@ jobs:
           key: gradle-lint-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-lint-
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
 
       - run: chmod +x gradlew
 
@@ -73,7 +73,7 @@ jobs:
           key: gradle-test-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-test-
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
 
       - run: chmod +x gradlew
 
@@ -108,7 +108,7 @@ jobs:
           key: gradle-build-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-build-
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
 
       - run: chmod +x gradlew
 
