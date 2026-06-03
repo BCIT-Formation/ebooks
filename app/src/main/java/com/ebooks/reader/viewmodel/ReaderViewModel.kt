@@ -39,7 +39,7 @@ data class ReaderSettings(
     val autoScrollSpeed: Int = 0, // 0 = off, 1-10 speed
     val keepScreenOn: Boolean = false,
     val isFullscreen: Boolean = false,
-    val orientationLock: OrientationLock = OrientationLock.AUTO,
+    val orientationLock: OrientationLock = OrientationLock.UNSPECIFIED,
     val tiltScrollEnabled: Boolean = false,
     /** Minutes before auto-scroll is automatically stopped. 0 = disabled. */
     val sleepTimerMinutes: Int = 0,

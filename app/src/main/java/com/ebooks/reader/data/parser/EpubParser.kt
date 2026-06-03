@@ -159,8 +159,6 @@ class EpubParser(private val context: Context) {
             parser.next()
         }
 
-        // Also check for cover in meta tags
-        metadata["cover"] = metadata["cover"] ?: ""
         return OpfData(metadata, manifest, spine)
     }
 
@@ -201,9 +199,6 @@ class EpubParser(private val context: Context) {
                         currentId = parser.getAttributeValue(null, "id") ?: ""
                         currentTitle = ""
                         currentHref = ""
-                    }
-                    "text" -> if (inNavPoint && currentTitle.isEmpty()) {
-                        // handled in TEXT event
                     }
                     "content" -> if (inNavPoint) {
                         val src = parser.getAttributeValue(null, "src") ?: ""

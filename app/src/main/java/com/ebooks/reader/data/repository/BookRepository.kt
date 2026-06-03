@@ -318,8 +318,7 @@ class BookRepository(private val context: Context) {
     private fun getFileName(uri: Uri): String? {
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            cursor.moveToFirst()
-            if (nameIndex >= 0) return cursor.getString(nameIndex)
+            if (nameIndex >= 0 && cursor.moveToFirst()) return cursor.getString(nameIndex)
         }
         return uri.lastPathSegment
     }
@@ -327,8 +326,7 @@ class BookRepository(private val context: Context) {
     private fun getFileSize(uri: Uri): Long {
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-            cursor.moveToFirst()
-            if (sizeIndex >= 0) return cursor.getLong(sizeIndex)
+            if (sizeIndex >= 0 && cursor.moveToFirst()) return cursor.getLong(sizeIndex)
         }
         return 0L
     }
