@@ -53,14 +53,31 @@ fun LibraryScreen(
     var isRebuildingCovers by remember { mutableStateOf(false) }
     var searchActive by remember { mutableStateOf(false) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     val filePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let { viewModel.importBook(it) }
     }
 
+    // Surface import outcomes (success / duplicate / error) and reset the one-shot state.
+    LaunchedEffect(uiState.importProgress) {
+        val message = when (val state = uiState.importProgress) {
+            is ImportState.Success -> "Imported \"${state.book.title}\""
+            is ImportState.AlreadyExists -> "\"${state.book.title}\" is already in your library"
+            is ImportState.Error -> state.message
+            else -> null
+        }
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.resetImportState()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LibraryTopBar(
                 searchActive = searchActive,

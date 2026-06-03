@@ -31,6 +31,8 @@ sealed class ImportState {
     object Idle : ImportState()
     object Loading : ImportState()
     data class Success(val book: Book) : ImportState()
+    /** The book was already in the library — informational, not an error. */
+    data class AlreadyExists(val book: Book) : ImportState()
     data class Error(val message: String) : ImportState()
 }
 
@@ -107,11 +109,20 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun importBook(uri: Uri) {
         viewModelScope.launch {
             _importState.value = ImportState.Loading
-            val book = repository.importBook(uri)
-            _importState.value = if (book != null) {
-                ImportState.Success(book)
-            } else {
-                ImportState.Error("Failed to import book. Check the file format.")
+            _importState.value = when (val result = repository.importBook(uri)) {
+                is BookRepository.ImportResult.Success ->
+                    ImportState.Success(result.book)
+                is BookRepository.ImportResult.AlreadyExists ->
+                    ImportState.AlreadyExists(result.book)
+                is BookRepository.ImportResult.UnsupportedFormat ->
+                    ImportState.Error(
+                        if (result.extension.isBlank()) "Unsupported file (no extension)."
+                        else "Unsupported format: .${result.extension}"
+                    )
+                is BookRepository.ImportResult.Unreadable ->
+                    ImportState.Error("Could not read the file. It may have been moved or deleted.")
+                is BookRepository.ImportResult.ParseFailed ->
+                    ImportState.Error("Could not open \"${result.fileName}\". The file may be corrupted.")
             }
         }
     }
