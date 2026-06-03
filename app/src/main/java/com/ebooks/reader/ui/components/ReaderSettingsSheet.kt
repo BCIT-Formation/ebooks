@@ -198,7 +198,7 @@ fun ReaderSettingsSheet(
                         onClick = { onSettingsChanged(settings.copy(orientationLock = lock)) },
                         label = {
                             Text(when (lock) {
-                                OrientationLock.AUTO      -> "Auto"
+                                OrientationLock.UNSPECIFIED -> "Auto"
                                 OrientationLock.PORTRAIT  -> "Portrait"
                                 OrientationLock.LANDSCAPE -> "Landscape"
                             }, fontSize = 12.sp)
