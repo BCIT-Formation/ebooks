@@ -65,7 +65,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         if: steps.tag.outputs.new_tag != ''
         with:
           path: |
