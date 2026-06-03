@@ -74,7 +74,7 @@ jobs:
           key: gradle-release-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-release-
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         if: steps.tag.outputs.new_tag != ''
 
       - run: chmod +x gradlew
