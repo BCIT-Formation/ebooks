@@ -45,31 +45,57 @@ class BookRepository(private val context: Context) {
 
     // ── Import ────────────────────────────────────────────────────────────────
 
-    suspend fun importBook(uri: Uri): Book? = withContext(Dispatchers.IO) {
+    /**
+     * Outcome of an [importBook] call. Distinguishes the failure modes so callers
+     * can surface a precise message rather than a single generic error.
+     */
+    sealed class ImportResult {
+        data class Success(val book: Book) : ImportResult()
+        /** The file was already in the library; [book] is the existing entry. */
+        data class AlreadyExists(val book: Book) : ImportResult()
+        /** The extension maps to no supported [FileType]. */
+        data class UnsupportedFormat(val extension: String) : ImportResult()
+        /** The file could not be opened/read (moved, deleted, empty, or no permission). */
+        data class Unreadable(val fileName: String?) : ImportResult()
+        /** The file was readable but could not be parsed (e.g. corrupt EPUB). */
+        data class ParseFailed(val fileName: String) : ImportResult()
+    }
+
+    suspend fun importBook(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
         try {
             context.contentResolver.takePersistableUriPermission(
                 uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
         } catch (_: SecurityException) {}
 
-        val fileName = getFileName(uri) ?: return@withContext null
+        val fileName = getFileName(uri) ?: return@withContext ImportResult.Unreadable(null)
         val extension = fileName.substringAfterLast(".", "").lowercase()
-        val fileType = FileType.fromExtension(extension) ?: return@withContext null
+        val fileType = FileType.fromExtension(extension)
+            ?: return@withContext ImportResult.UnsupportedFormat(extension)
 
-        // Check for existing book
-        val existing = dao.getBookByPath(uri.toString())
-        if (existing != null) return@withContext existing
+        // Deduplicate by source URI before doing any work.
+        dao.getBookByPath(uri.toString())?.let { return@withContext ImportResult.AlreadyExists(it) }
+
+        // Fail fast if the file cannot actually be read (avoids inserting a dead row).
+        if (!isReadable(uri)) return@withContext ImportResult.Unreadable(fileName)
 
         val fileSize = getFileSize(uri)
         val bookId = UUID.randomUUID().toString()
 
-        return@withContext when (fileType) {
+        val book = when (fileType) {
             FileType.EPUB -> importEpub(uri, bookId, fileSize)
             FileType.PDF -> importPdf(uri, bookId, fileSize, fileName)
             FileType.TXT, FileType.FB2 -> importTextBook(uri, bookId, fileSize, fileName, fileType)
             FileType.CBZ -> importCbz(uri, bookId, fileSize, fileName)
-        }
+        } ?: return@withContext ImportResult.ParseFailed(fileName)
+
+        ImportResult.Success(book)
     }
+
+    /** True if the URI can be opened and contains at least one byte. */
+    private fun isReadable(uri: Uri): Boolean = runCatching {
+        context.contentResolver.openInputStream(uri)?.use { it.read() != -1 } ?: false
+    }.getOrDefault(false)
 
     private suspend fun importEpub(uri: Uri, bookId: String, fileSize: Long): Book? {
         val epubBook = epubParser.parse(uri) ?: return null
