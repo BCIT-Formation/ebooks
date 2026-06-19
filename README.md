@@ -78,7 +78,7 @@ cd ebooks
 
 ### 2. Quick Start (One-Shot)
 
-Build and install APK automatically — no questions asked:
+Build and install the APK automatically — no questions asked:
 
 ```bash
 ./setup.sh                 # Build v1.0.0, auto-install if device connected
@@ -87,19 +87,35 @@ Build and install APK automatically — no questions asked:
 ```
 
 **What it does:**
-- ✅ Builds APK with Docker automatically
-- ✅ Downloads to `~/.ebooks-apk/` (persistent folder)
-- ✅ Auto-installs on connected Android device
-- ✅ Shows ready-to-install APK path
+- ✅ Builds the APK with **Docker** when the daemon is running, otherwise falls
+  back to a **local Gradle build** automatically (no Docker required)
+- ✅ Copies the APK to `~/.ebooks-apk/` (persistent folder)
+- ✅ Auto-installs on a connected Android device (if `adb` is available)
+- ✅ Shows the ready-to-install APK path
 - ✅ Zero interaction
+
+**Choosing the build method:**
+
+`setup.sh` auto-detects the best method. To force one, set the `BUILD` variable:
+
+```bash
+BUILD=docker ./setup.sh 1.2.3   # Reproducible Docker build (no local SDK needed)
+BUILD=local  ./setup.sh 1.2.3   # Local Gradle build (no Docker needed)
+BUILD=auto   ./setup.sh 1.2.3   # Default: Docker if available, else local
+```
+
+A **local build** needs JDK 17+ and an Android SDK. The script finds the SDK via
+`ANDROID_HOME` / `ANDROID_SDK_ROOT`, `local.properties` (`sdk.dir=…`), or common
+install locations (e.g. `~/Android/Sdk`, `~/Library/Android/sdk`). If none is
+found it prints exactly how to set one. A **Docker build** needs no local SDK.
 
 **Debugging (if APK not found):**
 
 ```bash
-DEBUG=1 ./setup.sh 1.2.3   # Show full Docker build output & timestamps
+DEBUG=1 ./setup.sh 1.2.3   # Show full build output & timestamps
 ```
 
-Shows detailed progress with timestamps, full Docker output, and file listing if build fails.
+Shows detailed progress with timestamps, full build output, and a file listing if the build fails.
 
 ### 3a. Build with Docker (Manual Control)
 
@@ -146,8 +162,11 @@ The APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
 ### 4. Install on Device (Manual)
 
 ```bash
-# From setup.sh
+# From setup.sh (Docker build → release APK)
 adb install ~/.ebooks-apk/EbookReader-v1.0.0.apk
+
+# From setup.sh (local Gradle build → debug APK)
+adb install ~/.ebooks-apk/EbookReader-v1.0.0-debug.apk
 
 # From Docker build
 adb install ./release/EbookReader-v1.0.0.apk

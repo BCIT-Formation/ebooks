@@ -99,11 +99,29 @@ README.md      # User/developer overview
 APK_BUILD.md   # Detailed APK build instructions
 RELEASES.md    # Release process and history
 Dockerfile     # eclipse-temurin:17 + Android SDK 34 build image
+setup.sh       # One-shot build+install. BUILD=auto|docker|local (auto-falls back to local Gradle)
 ```
 
 ---
 
 ## Build commands
+
+### One-shot (`setup.sh`)
+
+```bash
+./setup.sh                     # Build v1.0.0 + auto-install if a device is connected
+./setup.sh 1.2.3               # Build v1.2.3
+./setup.sh 1.2.3 42            # Build v1.2.3, code=42
+BUILD=local  ./setup.sh 1.2.3  # Force a local Gradle build (no Docker)
+BUILD=docker ./setup.sh 1.2.3  # Force a Docker build (no local SDK)
+DEBUG=1      ./setup.sh 1.2.3  # Verbose build output + diagnostics
+```
+
+`setup.sh` picks the build method via `BUILD` (`auto` default): Docker when its
+daemon is running, otherwise a **local Gradle build** (`assembleDebug`). It does
+not silently dead-end when Docker is missing. Local builds locate the Android SDK
+via `ANDROID_HOME`/`ANDROID_SDK_ROOT`, `local.properties` (`sdk.dir`), or common
+install paths, and need JDK 17+. The APK is copied to `~/.ebooks-apk/`.
 
 ### Docker (Recommended)
 
