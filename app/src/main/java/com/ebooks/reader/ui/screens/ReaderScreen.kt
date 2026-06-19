@@ -249,7 +249,8 @@ fun ReaderScreen(
                 }
             }
         }
-    } // end Scaffold
+    } // end Box
+    } // end Scaffold content lambda
 }
 
 @SuppressLint("SetJavaScriptEnabled")
