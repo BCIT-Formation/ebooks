@@ -6,12 +6,13 @@
 # available: Docker is used when its daemon is running, otherwise it falls back
 # to a local Gradle build.
 #
-# Usage:
-#   ./setup.sh                       # Build v1.0.0 (auto: docker or local)
+# Usage (all of these work — including `sh setup.sh`):
+#   sh setup.sh                      # Build v1.0.0 (auto: docker or local)
+#   ./setup.sh                       # Same, if executable
 #   ./setup.sh 1.2.3                 # Build v1.2.3
 #   ./setup.sh 1.2.3 42              # Build v1.2.3, code=42
+#   BUILD=docker ./setup.sh 1.2.3    # Force a Docker build (no local SDK needed)
 #   BUILD=local ./setup.sh 1.2.3     # Force a local Gradle build (no Docker)
-#   BUILD=docker ./setup.sh 1.2.3    # Force a Docker build
 #   DEBUG=1 ./setup.sh 1.2.3         # Verbose (show all build output)
 #
 # Environment:
@@ -25,6 +26,13 @@
 #     cache (see gradle.properties) for the fastest incremental rebuilds; the
 #     debug APK installs alongside release thanks to the '.debug' suffix.
 #
+
+# This script uses bash features (arrays, [[ ]], pipefail). When invoked as
+# `sh setup.sh`, the shell is often dash, not bash — re-exec under bash so the
+# one-liner `sh setup.sh` works the same as `./setup.sh`.
+if [ -z "${BASH_VERSION:-}" ]; then
+    exec bash "$0" "$@"
+fi
 
 set -euo pipefail
 
