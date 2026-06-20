@@ -150,6 +150,7 @@ install paths, and need JDK 17+. The APK is copied to `~/.ebooks-apk/`.
 ./gradlew connectedAndroidTest
 
 # Lint (produces SARIF + HTML in app/build/reports/)
+# Advisory only: abortOnError = false, so lint reports but does not fail the build.
 ./gradlew lint
 
 # All at once

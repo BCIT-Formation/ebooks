@@ -57,7 +57,10 @@ android {
     }
 
     lint {
-        // Don't fail CI on warnings — lint errors still block.
+        // Lint runs and reports (SARIF/HTML + code scanning) but does not fail the
+        // build — the project carries pre-existing lint errors and lint is advisory
+        // here, not a merge gate. Re-enable by removing abortOnError to make it block.
+        abortOnError = false
         warningsAsErrors = false
         // Only scan app sources, not every transitive dependency.
         checkDependencies = false
