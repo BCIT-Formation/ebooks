@@ -15,7 +15,7 @@ import com.ebooks.reader.data.db.entities.ReadingSession
 @Database(
     entities = [Book::class, ReadingProgress::class, Bookmark::class, ReadingSession::class],
     version = 2,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

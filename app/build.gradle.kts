@@ -6,7 +6,7 @@ plugins {
 }
 
 ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
+    // exportSchema is disabled (see AppDatabase) — no schema directory needed.
     arg("room.incremental", "true")
 }
 

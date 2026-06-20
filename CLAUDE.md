@@ -37,7 +37,7 @@ app/src/main/java/com/ebooks/reader/
   MainActivity.kt           # Single activity. Compose NavHost (routes below)
   data/
     db/
-      AppDatabase.kt        # Room singleton, version 2, exportSchema=true, MIGRATION_1_2
+      AppDatabase.kt        # Room singleton, version 2, exportSchema=false, MIGRATION_1_2
       BookDao.kt            # All queries (Flow-returning and suspend)
       Converters.kt         # Room TypeConverters (e.g. enums ↔ String)
       entities/
@@ -261,9 +261,13 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
 - **DB name:** `ebook_reader.db`
 - **Version:** 2
 - **Tables:** `books`, `reading_progress`, `bookmarks`, `reading_sessions`
-- `exportSchema = true` — generated schemas live in `app/schemas/`
+- `exportSchema = false` — schema JSONs are **not** generated. (Was `true`, but no schemas
+  were ever committed and the debug/release KSP passes collided on `$projectDir/schemas`,
+  failing the build with "Empty schema file". Re-enabling export needs per-variant schema
+  dirs or the AndroidX Room Gradle plugin.)
 - **Migrations:** `MIGRATION_1_2` in `AppDatabase` adds the `reading_sessions` table (v1 → v2).
-  When you bump the DB version you MUST add a corresponding `Migration` object and a schema test.
+  When you bump the DB version you MUST add a corresponding `Migration` object (and ideally a
+  migration test).
 - `fallbackToDestructiveMigration()` is configured as a *safety net only* so an un-migrated
   schema bump wipes rather than crashes. **Do not rely on it** — always write a real `Migration`.
   Never remove the explicit migrations in favour of destructive fallback.
@@ -436,7 +440,8 @@ Do not paper over genuine gaps with workarounds — implement or file them in `T
 - **Do not catch and swallow exceptions silently** in business logic — `runCatching` is used
   in the parsers as a deliberate boundary; elsewhere, propagate errors to UI state via the
   typed `ImportResult`/`ImportState`.
-- **Do not bump Room's DB version** without adding a corresponding `Migration` and schema test.
+- **Do not bump Room's DB version** without adding a corresponding `Migration` (exportSchema is
+  currently off, so there is no auto schema test to rely on).
   Do not lean on `fallbackToDestructiveMigration` — it is only a crash safety net.
 - **Do not commit `*.jks` / `*.keystore` files.** The `.gitignore` prevents it, but verify.
 - **Do not bump a GitHub Action in isolation** — update every occurrence across all workflows at once.
