@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalActivity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -56,8 +55,8 @@ fun ReaderScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val activity = LocalActivity.current
     val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
 
     // Auto-scroll: collect ticks from ViewModel and drive WebView scrolling
     LaunchedEffect(Unit) {
@@ -417,6 +416,16 @@ private fun ErrorScreen(message: String, onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onBack) { Text("Go back") }
     }
+}
+
+/** Unwrap the hosting [android.app.Activity] from a (possibly wrapped) Context. */
+private fun android.content.Context.findActivity(): android.app.Activity? {
+    var ctx: android.content.Context? = this
+    while (ctx is android.content.ContextWrapper) {
+        if (ctx is android.app.Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }
 
 class ReaderViewModelFactory(private val context: android.content.Context, private val bookId: String) : androidx.lifecycle.ViewModelProvider.Factory {
