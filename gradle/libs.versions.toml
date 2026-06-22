@@ -14,7 +14,7 @@ navigation = "2.8.0"
 coil = "2.7.0"
 coroutinesTest = "1.8.1"
 iconsExtended = "1.6.8"
-composeUiTest = "1.6.8"
+composeUiTest = "1.11.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
