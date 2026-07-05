@@ -98,7 +98,7 @@ jobs:
             -Pandroid.injected.signing.store.file="${GITHUB_WORKSPACE}/keystore.jks" \
             -Pandroid.injected.signing.store.password="${{ secrets.SIGNING_STORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.SIGNING_KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.SIGNING_KEY_PASSWORD }}"
+            -Pandroid.injected.signing.key.password="${{ secrets.SIGNING_KEY_PASSWORD }}" || { echo "❌ Gradle build failed"; exit 1; }
 
       # ── 5b. Build unsigned APK (fallback when no keystore secrets) ────────────
       - name: Build unsigned release APK
@@ -109,22 +109,43 @@ jobs:
         run: |
           ./gradlew assembleRelease --no-daemon --build-cache \
             -PVERSION_CODE="${VERSION_CODE}" \
-            -PVERSION_NAME="${VERSION_NAME}"
+            -PVERSION_NAME="${VERSION_NAME}" || { echo "❌ Gradle build failed"; exit 1; }
+
+      # ── 5c. Verify APK was built ──────────────────────────────────────────────
+      - name: Verify APK was built
+        if: steps.tag.outputs.new_tag != ''
+        run: |
+          APK_COUNT=$(find app/build/outputs/apk/release -name "*.apk" -type f 2>/dev/null | wc -l)
+          if [ "$APK_COUNT" -eq 0 ]; then
+            echo "❌ ERROR: No APK found in app/build/outputs/apk/release/"
+            echo "Build likely failed. Check Gradle output above."
+            ls -lah app/build/outputs/apk/release/ || echo "Directory does not exist!"
+            exit 1
+          fi
+          echo "✅ Found $APK_COUNT APK(s)"
+          echo "apk_found=true" >> $GITHUB_ENV
 
       # ── 6. Rename APK with version ────────────────────────────────────────────
       - name: Stage APK
-        if: steps.tag.outputs.new_tag != ''
+        if: steps.tag.outputs.new_tag != '' && env.apk_found == 'true'
         run: |
           VER="${{ steps.tag.outputs.new_tag }}"
           VER="${VER#v}"
           mkdir -p release
+          echo "📁 Looking for APK in app/build/outputs/apk/release/"
+          ls -lah app/build/outputs/apk/release/ || echo "Directory does not exist!"
           find app/build/outputs/apk/release -name "*.apk" \
             -exec cp {} "release/EbookReader-${VER}.apk" \;
+          if [ ! -f "release/EbookReader-${VER}.apk" ]; then
+            echo "❌ ERROR: APK staging failed"
+            exit 1
+          fi
+          echo "✅ APK staged successfully"
           ls -lh release/
 
       # ── 7. Upload as workflow artifact (accessible even on dry-run) ───────────
       - name: Upload APK artifact
-        if: steps.tag.outputs.new_tag != ''
+        if: steps.tag.outputs.new_tag != '' && env.apk_found == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: EbookReader-${{ steps.tag.outputs.new_tag }}
@@ -133,7 +154,7 @@ jobs:
 
       # ── 8. Create GitHub Release with APK attached ────────────────────────────
       - name: Create GitHub Release
-        if: steps.tag.outputs.new_tag != '' && github.event.inputs.dry_run != 'true'
+        if: steps.tag.outputs.new_tag != '' && env.apk_found == 'true' && github.event.inputs.dry_run != 'true'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.tag.outputs.new_tag }}
