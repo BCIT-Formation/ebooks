@@ -12,7 +12,7 @@
 ## 🟠 Important
 
 - [x] Add Room database migration strategy (added MIGRATION_1_2, version bumped to 2)
-- [ ] Implement in-book text search (JavaScript-based highlight in WebView)
+- [x] Implement in-book text search (JavaScript-based highlight in WebView)
 - [x] Add PDF rendering screen using `android.graphics.pdf.PdfRenderer` (PdfReaderScreen implemented)
 - [x] Add TXT reader screen (plain text with Compose `LazyColumn`) (TxtReaderScreen implemented)
 - [x] Implement auto-scroll (JavaScript `window.scrollBy` loop via WebView)
