@@ -3,6 +3,7 @@ package com.ebooks.reader.ui.screens
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,25 +23,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.ebooks.reader.data.db.AppDatabase
+import com.ebooks.reader.data.db.entities.ReadingProgress
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
  * A screen that renders PDF files page-by-page using [android.graphics.pdf.PdfRenderer].
  * Each page is rendered as a Bitmap at screen width and displayed in a scrollable column.
+ * Supports reading progress tracking and auto-scroll.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
 
     var title by remember { mutableStateOf("PDF") }
     var filePath by remember { mutableStateOf<String?>(null) }
     var pageCount by remember { mutableIntStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
+    var autoScrollSpeed by remember { mutableStateOf(0) }
+    var showControls by remember { mutableStateOf(true) }
+    val listState = rememberLazyListState()
 
-    // Load book metadata once
+    // Load book metadata and restore scroll position
     LaunchedEffect(bookId) {
         withContext(Dispatchers.IO) {
             val book = AppDatabase.getInstance(context).bookDao().getBookById(bookId)
@@ -56,23 +66,50 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                         pageCount = renderer.pageCount
                     }
                 }
+                // Restore reading progress (scroll position)
+                val progress = AppDatabase.getInstance(context).bookDao().getReadingProgress(bookId)
+                if (progress != null && progress.scrollPosition > 0) {
+                    listState.scrollToItem(progress.scrollPosition.coerceIn(0, pageCount - 1))
+                }
             } catch (e: Exception) {
                 error = "Could not open PDF: ${e.localizedMessage}"
             }
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(title, maxLines = 1) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                }
-            )
+    // Auto-scroll: continuously scroll down at configurable speed
+    LaunchedEffect(autoScrollSpeed) {
+        if (autoScrollSpeed <= 0) return@LaunchedEffect
+        while (autoScrollSpeed > 0) {
+            delay(50L)
+            val currentPage = listState.firstVisibleItemIndex
+            if (currentPage < pageCount - 1) {
+                listState.animateScrollToItem(currentPage + 1)
+                delay((100 * (11 - autoScrollSpeed)).toLong())  // Speed inversely affects delay
+            }
         }
+    }
+
+    // Save scroll position periodically
+    LaunchedEffect(listState.firstVisibleItemIndex) {
+        if (pageCount > 0 && listState.firstVisibleItemIndex < pageCount) {
+            scope.launch {
+                withContext(Dispatchers.IO) {
+                    AppDatabase.getInstance(context).bookDao().saveReadingProgress(
+                        ReadingProgress(
+                            bookId = bookId,
+                            chapterIndex = listState.firstVisibleItemIndex,
+                            chapterHref = "page-${listState.firstVisibleItemIndex}",
+                            scrollPosition = listState.firstVisibleItemIndex
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(remember { SnackbarHostState() }) }
     ) { innerPadding ->
         when {
             error != null -> {
@@ -97,19 +134,51 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                 }
             }
             else -> {
-                val listState = rememberLazyListState()
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .background(Color(0xFF444444)),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    items(pageCount) { pageIndex ->
-                        PdfPageItem(
-                            filePath = filePath ?: "",
-                            pageIndex = pageIndex
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF444444)),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(pageCount) { pageIndex ->
+                            PdfPageItem(
+                                filePath = filePath ?: "",
+                                pageIndex = pageIndex
+                            )
+                        }
+                    }
+
+                    // Top bar
+                    AnimatedVisibility(
+                        visible = showControls,
+                        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                        modifier = Modifier.align(Alignment.TopStart)
+                    ) {
+                        TopAppBar(
+                            title = { Text(title, maxLines = 1) },
+                            navigationIcon = {
+                                IconButton(onClick = onBack) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                                }
+                            }
+                        )
+                    }
+
+                    // Bottom bar with auto-scroll and page info
+                    AnimatedVisibility(
+                        visible = showControls,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        PdfBottomBar(
+                            currentPage = listState.firstVisibleItemIndex + 1,
+                            totalPages = pageCount,
+                            autoScrollSpeed = autoScrollSpeed,
+                            onAutoScrollSpeedChange = { autoScrollSpeed = it }
                         )
                     }
                 }
@@ -170,5 +239,55 @@ private fun renderPdfPage(context: android.content.Context, filePath: String, pa
         }
     } catch (_: Exception) {
         null
+    }
+}
+
+@Composable
+private fun PdfBottomBar(
+    currentPage: Int,
+    totalPages: Int,
+    autoScrollSpeed: Int,
+    onAutoScrollSpeedChange: (Int) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        tonalElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+    ) {
+        Column {
+            if (totalPages > 0) {
+                LinearProgressIndicator(
+                    progress = { currentPage.toFloat() / totalPages },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "$currentPage / $totalPages",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(60.dp)
+                )
+                Icon(Icons.Default.SlowMotionVideo, null, modifier = Modifier.size(20.dp))
+                Slider(
+                    value = autoScrollSpeed.toFloat(),
+                    onValueChange = { onAutoScrollSpeedChange(it.toInt()) },
+                    valueRange = 0f..10f,
+                    steps = 9,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    if (autoScrollSpeed == 0) "Off" else "$autoScrollSpeed",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.width(32.dp)
+                )
+            }
+        }
     }
 }
