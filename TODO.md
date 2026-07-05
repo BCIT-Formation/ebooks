@@ -11,14 +11,14 @@
 
 ## 🟠 Important
 
-- [ ] Add Room database migration strategy (currently version 1 only)
+- [x] Add Room database migration strategy (added MIGRATION_1_2, version bumped to 2)
 - [ ] Implement in-book text search (JavaScript-based highlight in WebView)
-- [ ] Add PDF rendering screen using `android.graphics.pdf.PdfRenderer`
-- [ ] Add TXT reader screen (plain text with Compose `LazyColumn`)
-- [ ] Implement auto-scroll (JavaScript `window.scrollBy` loop via WebView)
-- [ ] Add instrumented tests (Espresso/Compose test) for UI flows
+- [x] Add PDF rendering screen using `android.graphics.pdf.PdfRenderer` (PdfReaderScreen implemented)
+- [x] Add TXT reader screen (plain text with Compose `LazyColumn`) (TxtReaderScreen implemented)
+- [x] Implement auto-scroll (JavaScript `window.scrollBy` loop via WebView)
+- [x] Add instrumented tests (Espresso/Compose test) for UI flows (tests in `app/src/androidTest/`)
 - [ ] Add cover image rebuild functionality (re-import covers from existing books)
-- [ ] Support FB2 format (XML-based Russian ebook format)
+- [x] Support FB2 format (XML-based Russian ebook format — Fb2Parser + Fb2ReaderScreen implemented)
 - [ ] Tilt-to-scroll (using `SensorManager` accelerometer)
 - [x] Screen orientation lock per-book
 

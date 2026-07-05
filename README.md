@@ -238,11 +238,8 @@ chore:    build system, dependency updates
 
 ## Proposed Improvements
 
-See [TODO.md](TODO.md) for the full prioritized list.
+See [TODO.md](TODO.md) for the full prioritized backlog, organized by:
 
-**Top priorities:**
-1. 🔴 Persistent URI permissions for file access across restarts
-2. 🟠 In-book search
-3. 🟠 PDF reader screen
-4. 🟠 Tilt-to-scroll
-5. 🟢 Cloud sync for reading progress
+- 🔴 **Critical** — essential fixes and features
+- 🟠 **Important** — next-tier enhancements (in-book search, cover rebuild, tilt-to-scroll)
+- 🟢 **Nice to Have** — polish and advanced features (TTS, cloud sync, bookshelf 3D view)

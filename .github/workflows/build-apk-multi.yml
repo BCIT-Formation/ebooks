@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -71,7 +71,7 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Gradle cache
-        uses: actions/cache@v6
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -166,7 +166,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8
