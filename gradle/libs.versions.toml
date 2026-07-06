@@ -12,7 +12,7 @@ composeBom = "2026.06.00"
 room = "2.8.4"
 navigation = "2.8.0"
 coil = "2.7.0"
-coroutinesTest = "1.8.1"
+coroutinesTest = "1.11.0"
 iconsExtended = "1.6.8"
 composeUiTest = "1.11.3"
 
