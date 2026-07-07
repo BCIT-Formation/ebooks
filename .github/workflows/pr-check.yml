@@ -35,7 +35,7 @@ jobs:
     name: Required Checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check no secrets in code
         run: |
