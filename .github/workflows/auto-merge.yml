@@ -1,43 +1,44 @@
 name: Auto Merge
 
-# Automatically merges a PR into main once all required CI checks pass.
+# Merges a PR into main only after the CI workflow (lint + test + build-debug)
+# has completed successfully for the PR's current head commit.
 #
-# Flow:
-#   PR opened / updated
-#     → ci.yml runs (lint + test + build-debug in parallel)
-#     → this workflow enables auto-merge (squash) on the PR
-#     → GitHub merges when all checks are green
-#     → auto-release.yml triggers on the main push
-#     → auto-release.yml creates a semver tag from the commit message
-#     → release.yml triggers on the tag → builds + publishes the APK
+# Why workflow_run instead of pull_request: this repo has no branch protection
+# rules requiring status checks, so enabling auto-merge at PR-open time merges
+# the PR immediately — before CI has run. That is how broken dependency bumps
+# previously landed on main. Gating on the finished CI run closes that hole:
+# a PR is only merged for a commit whose CI is green.
 #
-# Requirements:
-#   • "Allow auto-merge" must be enabled in the repo Settings → General.
-#   • Branch protection on main must require status checks
-#     (lint, test, build-debug) before merging.
+# Note: merges pushed with GITHUB_TOKEN do not trigger workflows on main
+# (GitHub recursion guard), so auto-release.yml must be run manually via
+# workflow_dispatch when a release is wanted.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    branches: [main]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  enable-auto-merge:
-    name: Enable auto-merge
+  merge-green-prs:
+    name: Merge PRs with green CI
     runs-on: ubuntu-latest
-    # Skip draft PRs — only auto-merge when the PR is marked ready.
-    if: github.event.pull_request.draft == false
-
+    if: github.event.workflow_run.conclusion == 'success'
     steps:
-      - name: Enable auto-merge (squash)
+      - name: Merge open PRs whose head commit passed CI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Use the GitHub CLI to enable auto-merge with squash strategy.
-        # The merge will only actually happen once all required status checks pass.
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          gh pr merge --auto --squash "${{ github.event.pull_request.number }}" \
-            --repo "${{ github.repository }}"
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --base main \
+            --json number,isDraft,headRefOid \
+            --jq ".[] | select(.isDraft | not) | select(.headRefOid == \"$HEAD_SHA\") | .number" |
+          while read -r pr; do
+            echo "CI is green for PR #$pr ($HEAD_SHA) — merging (squash)"
+            gh pr merge --squash --auto "$pr" --repo "$GITHUB_REPOSITORY" \
+              || gh pr merge --squash "$pr" --repo "$GITHUB_REPOSITORY" \
+              || echo "Could not merge PR #$pr (conflict or new push) — skipping"
+          done

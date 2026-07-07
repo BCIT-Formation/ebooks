@@ -1,20 +1,24 @@
 [versions]
+# ⚠️ This version set is mutually pinned to AGP 8.4.2 / compileSdk 34 / Gradle 8.7.
+# Newer AndroidX releases (core-ktx 1.16+, lifecycle 2.9+, activity 1.11+,
+# navigation 2.9+, compose-ui 1.8+) require AGP 8.6–9.x and compileSdk 35/36 and
+# WILL break the build. Kotlin and KSP must be bumped together (ksp = "<kotlin>-<ksp>").
 agp = "8.4.2"
-kotlin = "2.0.21"
+kotlin = "2.0.0"
 ksp = "2.0.0-1.0.22"
-coreKtx = "1.19.0"
+coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.11.0"
-activityCompose = "1.13.0"
+lifecycleRuntimeKtx = "2.8.4"
+activityCompose = "1.9.1"
 composeBom = "2024.08.00"
 room = "2.6.1"
-navigation = "2.9.8"
+navigation = "2.8.0"
 coil = "2.7.0"
 coroutinesTest = "1.8.1"
 iconsExtended = "1.6.8"
-composeUiTest = "1.11.4"
+composeUiTest = "1.6.8"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

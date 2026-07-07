@@ -24,11 +24,10 @@ TXT, FB2, CBZ. All data stays on-device — no internet permission, no cloud.
   workflows/
     ci.yml                 # Lint + unit tests + debug build (runs on every push/PR)
     pr-check.yml           # PR title validation + required checks before merge
-    auto-merge.yml         # Enables squash auto-merge when all checks pass
-    auto-merge-all-prs.yml # Manual/scheduled: enable auto-merge on every open PR to main
+    auto-merge.yml         # Squash-merges PRs after their CI run finishes green
+    auto-merge-all-prs.yml # Manual: merge every open PR to main whose checks are green
     auto-release.yml       # push to main → semver tag → signed APK → GitHub Release
     release.yml            # Manual one-off release (workflow_dispatch)
-    build-apk-multi.yml    # Manual multi-method APK build with fallbacks
     security.yml           # Weekly dependency audit + secret scan
   dependabot.yml           # Dependency + GitHub Action update PRs
   CODEOWNERS, PULL_REQUEST_TEMPLATE.md
@@ -323,12 +322,22 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
 |----------|---------|------|
 | `ci.yml` | push to `master`/`main`/`develop`/`claude/**`; PR to `master`/`main`/`develop` | `lint`, `test`, `build-debug` (parallel) |
 | `pr-check.yml` | PR to `main` or `develop` | `validate-title`, `required-checks` |
-| `auto-merge.yml` | PR opened/updated/ready for review → `main` | `enable-auto-merge` |
-| `auto-merge-all-prs.yml` | manual `workflow_dispatch` (supports dry-run) | enable auto-merge on all open PRs |
+| `auto-merge.yml` | `workflow_run`: CI completed **successfully** | squash-merge open PRs whose head commit passed CI |
+| `auto-merge-all-prs.yml` | manual `workflow_dispatch` (supports dry-run) | merge all open PRs **with green checks** |
 | `auto-release.yml` | push to `main`; manual | `release` (tag → build → publish) |
 | `release.yml` | manual `workflow_dispatch` | `build-release` |
-| `build-apk-multi.yml` | manual `workflow_dispatch` | multi-method APK build with fallbacks |
 | `security.yml` | every Monday 08:00 UTC; push to `main` | `dependency-audit`, `secret-scan` |
+
+**Auto-merge is gated on CI, not on branch protection.** The repo has no branch protection
+rules requiring status checks, so enabling GitHub auto-merge at PR-open time merges
+immediately — that is how broken Dependabot bumps previously landed on `main`. Therefore
+`auto-merge.yml` triggers only when a CI run finishes green, and merges only PRs whose head
+SHA matches that run. Do not revert it to a `pull_request`-triggered `gh pr merge --auto`.
+
+**Known limitation:** merges pushed with `GITHUB_TOKEN` do not trigger workflows on `main`
+(GitHub recursion guard), so CI and `auto-release.yml` do not run on auto-merged pushes.
+The PR's own CI run is the quality signal; trigger `auto-release.yml` manually
+(`workflow_dispatch`) to cut a release.
 
 ### PR title — conventional commits required
 
@@ -363,13 +372,10 @@ All workflows use these pinned versions — **keep them consistent across every 
 
 | Action | Version |
 |--------|---------|
-| `actions/checkout` | `@v6` |
-| `actions/setup-java` | `@v5` |
-| `actions/cache` | `@v5` |
+| `actions/checkout` | `@v7` |
+| `actions/setup-java` | `@v5` (with `cache: gradle` — no separate `actions/cache` step) |
 | `actions/upload-artifact` | `@v7` |
-| `actions/download-artifact` | `@v8` |
 | `android-actions/setup-android` | `@v4` |
-| `github/codeql-action/upload-sarif` | `@v4` |
 | `softprops/action-gh-release` | `@v3` |
 | `amannn/action-semantic-pull-request` | `@v6` |
 | `mathieudutour/github-tag-action` | `@v6.2` |

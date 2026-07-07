@@ -128,19 +128,13 @@ Use the APK manager to view and clean stored APKs:
 
 ### Manual Trigger
 
-Go to **Actions** > **Multi-Method APK Build** > **Run workflow**
+Go to **Actions** > **Manual Release APK** (`release.yml`) > **Run workflow**
 
 Options:
 - `version_name`: e.g., "1.2.3" (will become v1.2.3)
-- `version_code`: Build number, e.g., "42"
-- `build_method`: auto/gradle/docker/clean
 
-### Automatic Trigger
-
-The workflow runs automatically after successful CI completion on:
-- `main` branch
-- `develop` branch
-- `claude/**` branches
+The debug APK is also built and uploaded as an artifact by the regular CI
+workflow (`ci.yml`) on every push and pull request.
 
 ## Troubleshooting
 
@@ -238,15 +232,14 @@ After building, transfer APK to Android device:
 
 ## CI/CD Integration
 
-The GitHub Actions workflow automatically:
+The GitHub Actions workflows automatically:
 
-1. Runs on push to `main`/`develop`/`claude/**`
-2. Tries all build methods (with fallbacks)
-3. Uploads APK as artifact (90-day retention)
-4. Creates GitHub Release (on successful release)
+1. Build a debug APK on every push/PR (`ci.yml`, 30-day artifact)
+2. Build and publish a signed release APK when `auto-release.yml` or
+   `release.yml` runs (90-day artifact + GitHub Release)
 
 View builds:
-- **Actions tab** > **Multi-Method APK Build**
+- **Actions tab** > **CI** (debug) or **Auto Release** / **Manual Release APK** (release)
 - Download artifact from run details
 - Or download from GitHub Releases
 
@@ -303,4 +296,4 @@ mv apk/*.apk releases/
 
 - [CLAUDE.md](./CLAUDE.md) - Project architecture and conventions
 - [Dockerfile](./Dockerfile) - Docker build configuration
-- [.github/workflows/build-apk-multi.yml](./.github/workflows/build-apk-multi.yml) - GitHub Actions workflow
+- [.github/workflows/release.yml](./.github/workflows/release.yml) - GitHub Actions release workflow

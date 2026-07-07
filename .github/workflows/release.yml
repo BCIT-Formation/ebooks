@@ -31,18 +31,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - uses: actions/cache@v6
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-release-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml', '**/gradle-wrapper.properties') }}
-          restore-keys: gradle-release-
+          cache: gradle
 
       - uses: android-actions/setup-android@v4
-
-      - run: chmod +x gradlew
 
       - name: Decode keystore
         if: env.SIGNING_KEYSTORE_BASE64 != ''

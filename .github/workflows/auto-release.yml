@@ -64,20 +64,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - uses: actions/cache@v6
-        if: steps.tag.outputs.new_tag != ''
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-release-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml', '**/gradle-wrapper.properties') }}
-          restore-keys: gradle-release-
+          cache: gradle
 
       - uses: android-actions/setup-android@v4
-        if: steps.tag.outputs.new_tag != ''
-
-      - run: chmod +x gradlew
         if: steps.tag.outputs.new_tag != ''
 
       # ── 4. Decode keystore (optional — unsigned build if secret not set) ──────
