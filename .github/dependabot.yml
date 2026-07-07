@@ -14,22 +14,19 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    # AGP, Kotlin, KSP, and the Gradle wrapper are mutually pinned to a
-    # verified-compatible set (see CLAUDE.md "Key dependencies"). Bumping any
-    # one alone — without the others — has broken the build twice already
-    # (see commits 94ff606 and 2968f77). Require a manual, coordinated bump
-    # for these instead of letting them drift apart one PR at a time.
+    # The whole toolchain is mutually pinned to AGP 8.4.2 / compileSdk 34 /
+    # Gradle 8.7 (see gradle/libs.versions.toml and CLAUDE.md). Recent AndroidX
+    # minors require AGP 8.6–9.x + compileSdk 35/36, and Kotlin must move in
+    # lockstep with KSP — even "patch" bumps have broken the build (Kotlin
+    # 2.0.0 → 2.0.21 with a stale KSP, core-ktx 1.19, lifecycle 2.11, …).
+    # Only allow patch updates; majors/minors need a manual, coordinated bump.
     ignore:
-      - dependency-name: "com.android.application"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: "org.jetbrains.kotlin.android"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: "org.jetbrains.kotlin.plugin.compose"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "org.jetbrains.kotlin*"
       - dependency-name: "com.google.devtools.ksp"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "com.android.application"
       - dependency-name: "gradle"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"

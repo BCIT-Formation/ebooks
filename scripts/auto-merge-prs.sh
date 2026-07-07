@@ -74,16 +74,24 @@ while read -r PR_LINE; do
 
   echo -n "🔄 PR #$PR_NUMBER: "
 
+  # Never merge a PR whose checks are failing or still running. There is no
+  # branch protection requiring status checks, so `gh pr merge` would
+  # otherwise merge immediately regardless of CI.
+  if ! gh pr checks "$PR_NUMBER" --repo "$REPO" >/dev/null 2>&1; then
+    echo "⏭️  checks failing or pending - skipping"
+    ((SKIPPED++))
+    continue
+  fi
+
   if [[ "$DRY_RUN" == "true" ]]; then
-    echo "would enable auto-merge"
+    echo "would merge (checks green)"
     ((MERGED++))
   else
-    # Enable auto-merge with squash strategy
     if gh pr merge --auto --squash "$PR_NUMBER" --repo "$REPO" 2>/dev/null; then
-      echo "✅ auto-merge enabled"
+      echo "✅ merged"
       ((MERGED++))
     else
-      echo "⚠️  could not enable (checks may not be passing)"
+      echo "⚠️  could not merge"
       ((FAILED++))
     fi
   fi
