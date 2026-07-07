@@ -26,32 +26,19 @@ jobs:
             build
             perf
 
+  # Lint, unit tests, and the debug build already run in ci.yml on this same
+  # PR event — re-running them here would just double CI time for no extra
+  # coverage. This job only checks what ci.yml doesn't: no secrets committed.
+  # Keep the job id/name stable — branch protection required-checks rules
+  # reference it by name.
   required-checks:
     name: Required Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
-
-      - uses: android-actions/setup-android@v4
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
       - name: Check no secrets in code
         run: |
           ! grep -rn --include="*.kt" --include="*.xml" \
             -E "(password|secret|api_key|token)\s*=\s*['\"][^'\"]{8,}['\"]" \
             app/src/ || (echo "Potential secret found in code!" && exit 1)
-
-      - name: Run unit tests
-        run: ./gradlew test
-
-      - name: Build debug
-        run: ./gradlew assembleDebug
