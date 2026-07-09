@@ -13,7 +13,10 @@ import com.ebooks.reader.data.parser.EpubBook
 import com.ebooks.reader.data.parser.EpubChapter
 import com.ebooks.reader.data.parser.ReaderTheme
 import com.ebooks.reader.data.repository.BookRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -396,9 +399,11 @@ class ReaderViewModel(
     override fun onCleared() {
         super.onCleared()
         stopAutoScroll()
-        // Persist the reading session (non-blocking; viewModelScope is still alive briefly)
+        // viewModelScope is already cancelled when onCleared runs, so launching
+        // there would silently drop the write. Use an independent scope that
+        // outlives the ViewModel just long enough to persist the session.
         if (bookId.isNotBlank()) {
-            viewModelScope.launch {
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
                 repository.saveReadingSession(
                     ReadingSession(
                         id = UUID.randomUUID().toString(),

@@ -32,7 +32,8 @@
 }
 
 # ── Jetpack Compose ───────────────────────────────────────────────────────────
+# Compose (like Room and Coil) ships consumer ProGuard rules; nothing to keep
+# manually. A previous catch-all `-keepclassmembers class * { *** *(...); }`
+# rule here kept every method of every class, which defeated R8 shrinking
+# entirely and bloated the release APK.
 -dontwarn androidx.compose.**
--keepclassmembers class * {
-    *** *(...);
-}

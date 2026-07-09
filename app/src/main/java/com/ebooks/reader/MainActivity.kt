@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.ebooks.reader.ui.screens.CbzReaderScreen
 import com.ebooks.reader.ui.screens.LibraryScreen
 import com.ebooks.reader.ui.screens.PdfReaderScreen
 import com.ebooks.reader.ui.screens.ReaderScreen
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity() {
                                         "pdf" -> navController.navigate("pdf_reader/$bookId")
                                         "txt" -> navController.navigate("txt_reader/$bookId")
                                         "fb2" -> navController.navigate("fb2_reader/$bookId")
+                                        "cbz" -> navController.navigate("cbz_reader/$bookId")
                                         else  -> navController.navigate("reader/$bookId")
                                     }
                                 }
@@ -94,6 +96,19 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val bookId = backStackEntry.arguments?.getString("bookId") ?: return@composable
                             Fb2ReaderScreen(
+                                bookId = bookId,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(
+                            route = "cbz_reader/{bookId}",
+                            arguments = listOf(
+                                navArgument("bookId") { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            val bookId = backStackEntry.arguments?.getString("bookId") ?: return@composable
+                            CbzReaderScreen(
                                 bookId = bookId,
                                 onBack = { navController.popBackStack() }
                             )

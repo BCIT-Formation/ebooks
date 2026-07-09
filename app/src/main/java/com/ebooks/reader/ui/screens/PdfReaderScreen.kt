@@ -51,11 +51,11 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
 
     // Load book metadata and restore scroll position
     LaunchedEffect(bookId) {
-        withContext(Dispatchers.IO) {
+        val savedPage = withContext(Dispatchers.IO) {
             val book = AppDatabase.getInstance(context).bookDao().getBookById(bookId)
             if (book == null) {
                 error = "Book not found."
-                return@withContext
+                return@withContext null
             }
             title = book.title
             filePath = book.filePath
@@ -66,14 +66,15 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                         pageCount = renderer.pageCount
                     }
                 }
-                // Restore reading progress (scroll position)
-                val progress = AppDatabase.getInstance(context).bookDao().getReadingProgress(bookId)
-                if (progress != null && progress.scrollPosition > 0) {
-                    listState.scrollToItem(progress.scrollPosition.coerceIn(0, pageCount - 1))
-                }
+                AppDatabase.getInstance(context).bookDao().getReadingProgress(bookId)?.scrollPosition
             } catch (e: Exception) {
                 error = "Could not open PDF: ${e.localizedMessage}"
+                null
             }
+        }
+        // Scroll on the main thread — LazyListState must not be driven from IO.
+        if (savedPage != null && savedPage > 0 && pageCount > 0) {
+            listState.scrollToItem(savedPage.coerceIn(0, pageCount - 1))
         }
     }
 

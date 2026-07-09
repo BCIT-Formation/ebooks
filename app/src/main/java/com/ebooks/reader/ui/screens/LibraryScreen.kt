@@ -103,11 +103,10 @@ fun LibraryScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = {
-                    filePicker.launch(
-                        arrayOf("application/epub+zip", "application/pdf", "text/plain", "application/x-fictionbook+xml")
-                    )
-                },
+                // Open with "*/*": document providers report no reliable MIME type
+                // for .fb2/.cbz, so filtering by MIME greys those files out. The
+                // import path validates the extension and rejects unsupported files.
+                onClick = { filePicker.launch(arrayOf("*/*")) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Add Book") }
             )
@@ -121,9 +120,7 @@ fun LibraryScreen(
                     }
                 }
                 uiState.books.isEmpty() && !uiState.isLoading -> {
-                    EmptyLibrary(onAddBook = {
-                        filePicker.launch(arrayOf("application/epub+zip", "application/pdf", "text/plain"))
-                    })
+                    EmptyLibrary(onAddBook = { filePicker.launch(arrayOf("*/*")) })
                 }
                 else -> {
                     when (uiState.viewMode) {
@@ -223,8 +220,7 @@ fun LibraryScreen(
             isRebuildingCovers = isRebuildingCovers,
             onRebuildCovers = {
                 isRebuildingCovers = true
-                viewModel.rebuildCovers()
-                isRebuildingCovers = false
+                viewModel.rebuildCovers { isRebuildingCovers = false }
             },
             onDismiss = { showSettingsMenu = false }
         )
@@ -336,7 +332,7 @@ private fun FilterSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(selected = currentFileType == null, onClick = { onFileTypeSelected(null) }, label = { Text("All") })
-                listOf("epub", "pdf", "txt", "fb2").forEach { type ->
+                listOf("epub", "pdf", "txt", "fb2", "cbz").forEach { type ->
                     FilterChip(selected = currentFileType == type, onClick = { onFileTypeSelected(type) }, label = { Text(type.uppercase()) })
                 }
             }

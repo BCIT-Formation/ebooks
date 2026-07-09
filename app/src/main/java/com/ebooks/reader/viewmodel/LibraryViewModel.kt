@@ -137,8 +137,12 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { repository.updateReadingStatus(bookId, status) }
     }
 
-    fun rebuildCovers() {
-        viewModelScope.launch { repository.rebuildCovers() }
+    /** [onDone] is invoked on the main thread once the rebuild has finished. */
+    fun rebuildCovers(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.rebuildCovers()
+            onDone()
+        }
     }
 
     /** Returns reading statistics for a book; suitable for one-shot UI display. */
