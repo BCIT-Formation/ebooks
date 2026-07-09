@@ -62,7 +62,7 @@ app/
 
 - Android Studio Hedgehog (2023.1.1) or later
 - JDK 17+
-- Android SDK 35
+- Android SDK 34
 - A device or emulator with API 26+
 
 ---

@@ -211,11 +211,18 @@ base64 -i my-key.jks | tr -d '\n' | pbcopy
 
 ✅ **Signed APKs** can be installed directly on any device.
 
-### Unsigned Fallback
+### Debug-Signed Fallback
 
-If secrets are not configured, the workflow **automatically builds an unsigned APK**.
+If secrets are not configured, the release build **falls back to the debug signing
+config** (`app/build.gradle.kts`), so the published APK is still signed and installable.
+(A truly unsigned APK would be refused by Android with "App not installed".)
 
-⚠️ **Unsigned APKs** require enabling **Install from unknown sources** in Android Settings.
+⚠️ Installing any APK from GitHub Releases requires enabling
+**Install from unknown sources** in Android Settings.
+
+⚠️ Android refuses to **update** an app whose installed version was signed with a
+different key. If you switch between debug-signed and release-signed builds (or
+installed an older release), **uninstall the app first**, then install the new APK.
 
 ---
 
