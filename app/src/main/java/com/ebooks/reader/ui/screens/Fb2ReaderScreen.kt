@@ -42,6 +42,10 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
     var title by remember { mutableStateOf("FB2 Book") }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Parsed HTML is held in state and pushed to the WebView from AndroidView's
+    // update block: the WebView does not exist yet while the loading spinner is
+    // shown, and WebView methods must be called on the main thread anyway.
+    var htmlContent by remember { mutableStateOf<String?>(null) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
     var searchVisible by remember { mutableStateOf(false) }
@@ -70,13 +74,7 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                     return@withContext
                 }
 
-                webViewRef.value?.loadDataWithBaseURL(
-                    null,
-                    fb2Book.htmlContent,
-                    "text/html",
-                    "UTF-8",
-                    null
-                )
+                htmlContent = fb2Book.htmlContent
                 isLoading = false
             } catch (e: Exception) {
                 error = "Error loading book: ${e.localizedMessage}"
@@ -148,6 +146,15 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                                 webViewClient = WebViewClient()
                                 webViewRef.value = this
                             }
+                        },
+                        update = { webView ->
+                            val html = htmlContent
+                            // Guard against reloading (and losing scroll position) on
+                            // every recomposition — only load when the content changes.
+                            if (html != null && webView.tag != html.hashCode()) {
+                                webView.tag = html.hashCode()
+                                webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+                            }
                         }
                     )
 
@@ -192,8 +199,7 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                     ) {
                         Fb2BottomBar(
                             autoScrollSpeed = autoScrollSpeed,
-                            onAutoScrollSpeedChange = { autoScrollSpeed = it },
-                            onToggleControls = { showControls = !showControls }
+                            onAutoScrollSpeedChange = { autoScrollSpeed = it }
                         )
                     }
                 }
@@ -243,8 +249,7 @@ private fun Fb2SearchBar(
 @Composable
 private fun Fb2BottomBar(
     autoScrollSpeed: Int,
-    onAutoScrollSpeedChange: (Int) -> Unit,
-    onToggleControls: () -> Unit
+    onAutoScrollSpeedChange: (Int) -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),

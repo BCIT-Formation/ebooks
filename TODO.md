@@ -32,7 +32,7 @@
 - [ ] Cloud sync (reading progress across devices)
 - [ ] OPDS catalog support (download books from servers)
 - [ ] Custom fonts — user can add TTF/OTF files
-- [ ] Comic book (CBZ/CBR) reader with pinch-to-zoom
+- [x] Comic book (CBZ) reader — basic vertical page reader (`CbzReaderScreen`); CBR and pinch-to-zoom still open
 - [x] Night light / warm color filter overlay
 - [ ] Widget for current reading book
 - [ ] Android 13+ per-app language preferences

@@ -61,6 +61,7 @@ app/src/main/java/com/ebooks/reader/
       PdfReaderScreen.kt     # PDF reader (PdfRenderer)
       TxtReaderScreen.kt     # Plain-text reader (Compose)
       Fb2ReaderScreen.kt     # FB2 reader (WebView, HTML from Fb2Parser)
+      CbzReaderScreen.kt     # CBZ comic reader (ZipInputStream → cached images → Coil)
     theme/
       Color.kt
       Theme.kt
@@ -236,6 +237,7 @@ Routes are plain strings in `MainActivity.kt`:
 - `"pdf_reader/{bookId}"` — `PdfReaderScreen`
 - `"txt_reader/{bookId}"` — `TxtReaderScreen`
 - `"fb2_reader/{bookId}"` — `Fb2ReaderScreen`
+- `"cbz_reader/{bookId}"` — `CbzReaderScreen`
 
 Do not add a navigation graph file. Keep navigation simple and co-located in `MainActivity`.
 
@@ -432,7 +434,7 @@ debugging, IOException-safe typed imports, DB migration). Current notable open i
 | 🟠 | In-book text search (JS highlight in WebView) |
 | 🟠 | Auto-scroll (JS `window.scrollBy` loop) |
 | 🟠 | Cover image rebuild from existing books |
-| 🟢 | Bookshelf 3D view mode, TTS, CBZ/CBR reader, custom fonts, widgets |
+| 🟢 | Bookshelf 3D view mode, TTS, CBR support + pinch-to-zoom for comics, custom fonts, widgets |
 
 Do not paper over genuine gaps with workarounds — implement or file them in `TODO.md`.
 
