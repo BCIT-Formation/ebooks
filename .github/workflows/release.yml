@@ -50,7 +50,9 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.SIGNING_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.SIGNING_KEY_PASSWORD }}"
 
-      - name: Build unsigned release APK
+      # Without keystore secrets the build type falls back to the debug signing
+      # config (see app/build.gradle.kts) — the APK stays installable.
+      - name: Build release APK (debug-signed fallback)
         if: env.SIGNING_KEYSTORE_BASE64 == ''
         run: |
           ./gradlew assembleRelease --no-daemon --build-cache \

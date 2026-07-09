@@ -35,6 +35,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Android refuses to install unsigned APKs, so an "unsigned release"
+            // artifact is dead weight. Default to the auto-generated debug
+            // keystore so assembleRelease always yields an installable APK.
+            // CI passes -Pandroid.injected.signing.* when the real release
+            // keystore secrets are configured; those override this fallback.
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             isMinifyEnabled = false
