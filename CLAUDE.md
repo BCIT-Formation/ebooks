@@ -140,7 +140,7 @@ install paths, and need JDK 17+. The APK is copied to `~/.ebooks-apk/`.
 # Debug APK — app/build/outputs/apk/debug/app-debug.apk
 ./gradlew assembleDebug
 
-# Release APK (unsigned unless signing props are set)
+# Release APK (debug-signed unless real signing props are passed — always installable)
 ./gradlew assembleRelease
 
 # Unit tests (JVM)
@@ -359,7 +359,9 @@ Always set an explicit conventional-commit title when opening a PR.
 ### Auto-release flow (on push to `main`)
 
 1. `mathieudutour/github-tag-action@v6.2` reads commit messages since the last tag and bumps semver.
-2. If a new tag is produced, builds a signed (or unsigned fallback) release APK.
+2. If a new tag is produced, builds a signed release APK. Without keystore secrets the
+   build type falls back to the **debug signing config** (`app/build.gradle.kts`) so the
+   published APK is always installable — never ship a truly unsigned APK.
 3. Publishes a GitHub Release with the APK attached.
 
 Bump rules:

@@ -89,8 +89,10 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.SIGNING_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.SIGNING_KEY_PASSWORD }}" || { echo "❌ Gradle build failed"; exit 1; }
 
-      # ── 5b. Build unsigned APK (fallback when no keystore secrets) ────────────
-      - name: Build unsigned release APK
+      # ── 5b. Fallback when no keystore secrets: the build type falls back to
+      #        the debug signing config (see app/build.gradle.kts), so the APK
+      #        is still signed and installable — just not with a release key.
+      - name: Build release APK (debug-signed fallback)
         if: steps.tag.outputs.new_tag != '' && env.SIGNING_KEYSTORE_BASE64 == ''
         env:
           VERSION_CODE: ${{ github.run_number }}
