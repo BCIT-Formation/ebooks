@@ -156,8 +156,11 @@ private fun DrawScope.drawHighlight(annotation: Annotation) {
     val w = bounds["w"] as? Float ?: return
     val h = bounds["h"] as? Float ?: return
 
+    val baseColor = Color(annotation.color)
+    val highlightAlpha = (annotation.opacity * 0.7f).coerceAtLeast(0.3f)
+
     drawRect(
-        color = Color(annotation.color).copy(alpha = annotation.opacity * 0.5f),
+        color = baseColor.copy(alpha = highlightAlpha),
         topLeft = Offset(x * size.width, y * size.height),
         size = Size(w * size.width, h * size.height)
     )
@@ -172,11 +175,18 @@ private fun DrawScope.drawRectangleShape(annotation: Annotation) {
     val w = bounds["w"] as? Float ?: return
     val h = bounds["h"] as? Float ?: return
 
+    val color = Color(annotation.color).copy(alpha = annotation.opacity)
+    val strokeWidth = annotation.strokeWidth.coerceAtLeast(2f)
+
     drawRect(
-        color = Color(annotation.color),
+        color = color,
         topLeft = Offset(x * size.width, y * size.height),
         size = Size(w * size.width, h * size.height),
-        style = Stroke(width = annotation.strokeWidth)
+        style = Stroke(
+            width = strokeWidth,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
     )
 }
 
@@ -188,11 +198,18 @@ private fun DrawScope.drawCircleShape(annotation: Annotation) {
     val y = bounds["y"] as? Float ?: return
     val r = bounds["r"] as? Float ?: return
 
+    val color = Color(annotation.color).copy(alpha = annotation.opacity)
+    val strokeWidth = annotation.strokeWidth.coerceAtLeast(2f)
+
     drawCircle(
-        color = Color(annotation.color),
+        color = color,
         center = Offset(x * size.width, y * size.height),
         radius = r * size.width,
-        style = Stroke(width = annotation.strokeWidth)
+        style = Stroke(
+            width = strokeWidth,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
     )
 }
 
