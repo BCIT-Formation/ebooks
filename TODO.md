@@ -17,22 +17,31 @@
 - [x] Add TXT reader screen (plain text with Compose `LazyColumn`) (TxtReaderScreen implemented)
 - [x] Implement auto-scroll (JavaScript `window.scrollBy` loop via WebView)
 - [x] Add instrumented tests (Espresso/Compose test) for UI flows (tests in `app/src/androidTest/`)
-- [ ] Add cover image rebuild functionality (re-import covers from existing books)
+- [x] Add cover image rebuild functionality (Library → Settings → Rebuild Covers; `BookRepository.rebuildCovers`)
 - [x] Support FB2 format (XML-based Russian ebook format — Fb2Parser + Fb2ReaderScreen implemented)
-- [ ] Tilt-to-scroll (using `SensorManager` accelerometer)
+- [x] Tilt-to-scroll (accelerometer listener in `ReaderScreen`, toggle in reader settings)
 - [x] Screen orientation lock per-book
 
 ## 🟢 Nice to Have
 
-- [ ] Bookshelf view mode (3D perspective like a real bookshelf)
+- [x] Bookshelf view mode (3D perspective like a real bookshelf — `BookshelfView` with tilted covers on wooden shelf boards)
 - [x] Reading statistics (time read per book, pages per session)
 - [x] Sleep timer for auto-scroll
-- [ ] Text-to-speech integration
-- [ ] Share book excerpt feature
-- [ ] Cloud sync (reading progress across devices)
-- [ ] OPDS catalog support (download books from servers)
-- [ ] Custom fonts — user can add TTF/OTF files
+- [x] Text-to-speech integration (`TtsSpeaker` — EPUB reader + TXT reader, chunked chapter speech)
+- [x] Share book excerpt feature (share WebView selection with title/author attribution)
+- [x] Custom fonts — user can add TTF/OTF files (imported to app storage, embedded as `@font-face` in the reader)
 - [x] Comic book (CBZ) reader — basic vertical page reader (`CbzReaderScreen`); CBR and pinch-to-zoom still open
 - [x] Night light / warm color filter overlay
-- [ ] Widget for current reading book
-- [ ] Android 13+ per-app language preferences
+- [x] Widget for current reading book (Glance app widget showing the most recently read book)
+- [x] Android 13+ per-app language preferences (`localeConfig` + en/fr resources for the main screens; ViewModel error strings and secondary readers still hardcoded English)
+- [ ] Finish string extraction for full localization (ViewModel error messages, PDF/FB2/CBZ reader labels, chapter panel, drawing toolbar)
+- [ ] CBR support + pinch-to-zoom for the comic reader
+
+## ❌ Won't do (conflicts with offline-only design)
+
+These require network access, which the app deliberately does not have
+(no `INTERNET` permission — see SECURITY.md and CLAUDE.md). Do not implement
+without first reversing that architecture decision:
+
+- Cloud sync (reading progress across devices)
+- OPDS catalog support (download books from servers)

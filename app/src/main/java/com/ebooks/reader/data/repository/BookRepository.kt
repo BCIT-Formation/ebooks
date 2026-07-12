@@ -43,6 +43,7 @@ class BookRepository(private val context: Context) {
     fun getBooksByType(fileType: String): Flow<List<Book>> = dao.getBooksByType(fileType)
 
     suspend fun getBookById(id: String): Book? = dao.getBookById(id)
+    suspend fun getMostRecentlyReadBook(): Book? = dao.getMostRecentlyReadBook()
 
     // ── Import ────────────────────────────────────────────────────────────────
 
@@ -193,6 +194,36 @@ class BookRepository(private val context: Context) {
                 // Skip books whose file is no longer accessible
             }
         }
+    }
+
+    // ── Custom Fonts ──────────────────────────────────────────────────────────
+
+    private fun fontsDir(): File = File(context.filesDir, "fonts").also { it.mkdirs() }
+
+    /** User-imported TTF/OTF files, sorted by name. */
+    suspend fun listCustomFonts(): List<File> = withContext(Dispatchers.IO) {
+        fontsDir()
+            .listFiles { file -> file.extension.lowercase() in setOf("ttf", "otf") }
+            ?.sortedBy { it.name }
+            ?: emptyList()
+    }
+
+    /**
+     * Copies a user-picked TTF/OTF file into app storage so the reader can use
+     * it as a custom font. Returns the stored file, or null when the pick is
+     * not a font file or cannot be read.
+     */
+    suspend fun importFont(uri: Uri): File? = withContext(Dispatchers.IO) {
+        val name = getFileName(uri) ?: return@withContext null
+        val extension = name.substringAfterLast(".", "").lowercase()
+        if (extension != "ttf" && extension != "otf") return@withContext null
+        val dest = File(fontsDir(), name.replace(Regex("[^A-Za-z0-9._-]"), "_"))
+        runCatching {
+            val copied = context.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(dest).use { output -> input.copyTo(output) }
+            }
+            if (copied == null) null else dest
+        }.getOrNull()
     }
 
     // ── Book Updates ──────────────────────────────────────────────────────────

@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +22,7 @@ import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingSettings
 import com.ebooks.reader.ui.components.DrawingToolbar
+import com.ebooks.reader.ui.components.rememberTtsSpeaker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -38,6 +41,7 @@ fun TxtReaderScreen(bookId: String, onBack: () -> Unit) {
     var isDrawingMode by remember { mutableStateOf(false) }
     var drawingSettings by remember { mutableStateOf(DrawingSettings()) }
     var annotations by remember { mutableStateOf<List<Annotation>>(emptyList()) }
+    val ttsSpeaker = rememberTtsSpeaker()
 
     LaunchedEffect(bookId) {
         withContext(Dispatchers.IO) {
@@ -78,6 +82,13 @@ fun TxtReaderScreen(bookId: String, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { ttsSpeaker.toggle(paragraphs.joinToString("\n\n")) }) {
+                        Icon(
+                            if (ttsSpeaker.isSpeaking) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                            contentDescription = if (ttsSpeaker.isSpeaking) "Stop reading aloud" else "Read aloud",
+                            tint = if (ttsSpeaker.isSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
                         Icon(
                             Icons.Filled.Edit,

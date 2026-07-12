@@ -39,6 +39,8 @@ data class ReaderSettings(
     val fontSize: Int = 18,
     val lineHeight: Float = 1.6f,
     val fontFamily: FontFamily = FontFamily.SERIF,
+    /** Absolute path of a user-imported TTF/OTF; overrides [fontFamily] when set. */
+    val customFontPath: String? = null,
     val paragraphIndent: Boolean = false,
     val brightness: Float = -1f,  // -1 = system
     val autoScrollSpeed: Int = 0, // 0 = off, 1-10 speed
@@ -71,6 +73,8 @@ data class ReaderUiState(
     val isSearchVisible: Boolean = false,
     val searchQuery: String = "",
     val settings: ReaderSettings = ReaderSettings(),
+    /** Absolute paths of user-imported TTF/OTF font files. */
+    val customFonts: List<String> = emptyList(),
     /** Fatal error shown when the book cannot be loaded at all. */
     val error: String? = null,
     /** Non-fatal error shown as a snackbar when a single chapter fails to load. */
@@ -106,6 +110,10 @@ class ReaderViewModel(
     init {
         if (bookId.isNotBlank()) {
             loadBook()
+        }
+        viewModelScope.launch {
+            val fonts = repository.listCustomFonts().map { it.absolutePath }
+            _uiState.update { it.copy(customFonts = fonts) }
         }
         viewModelScope.launch {
             scrollEvents
@@ -245,6 +253,7 @@ class ReaderViewModel(
             settings.fontSize != old.fontSize ||
             settings.lineHeight != old.lineHeight ||
             settings.fontFamily != old.fontFamily ||
+            settings.customFontPath != old.customFontPath ||
             settings.paragraphIndent != old.paragraphIndent
         val speedChanged = settings.autoScrollSpeed != old.autoScrollSpeed
         val timerChanged = settings.sleepTimerMinutes != old.sleepTimerMinutes
@@ -276,6 +285,19 @@ class ReaderViewModel(
 
     fun setFontFamily(family: FontFamily) {
         updateSettings(_uiState.value.settings.copy(fontFamily = family))
+    }
+
+    /** Imports a TTF/OTF picked by the user and selects it immediately. */
+    fun importFont(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val imported = repository.importFont(uri) ?: run {
+                _uiState.update { it.copy(chapterError = "Could not import font. Pick a .ttf or .otf file.") }
+                return@launch
+            }
+            val fonts = repository.listCustomFonts().map { it.absolutePath }
+            _uiState.update { it.copy(customFonts = fonts) }
+            updateSettings(_uiState.value.settings.copy(customFontPath = imported.absolutePath))
+        }
     }
 
     fun setLineHeight(height: Float) {
@@ -460,8 +482,13 @@ class ReaderViewModel(
         return base.copy(
             fontSize = settings.fontSize,
             lineHeight = settings.lineHeight,
-            fontFamily = settings.fontFamily.css,
-            paragraphIndent = settings.paragraphIndent
+            fontFamily = if (settings.customFontPath != null) {
+                "'CustomReaderFont', ${settings.fontFamily.css}"
+            } else {
+                settings.fontFamily.css
+            },
+            paragraphIndent = settings.paragraphIndent,
+            customFontPath = settings.customFontPath
         )
     }
 

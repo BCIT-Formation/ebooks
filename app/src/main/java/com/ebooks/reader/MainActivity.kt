@@ -7,6 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.glance.appwidget.updateAll
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,8 +22,17 @@ import com.ebooks.reader.ui.screens.ReaderScreen
 import com.ebooks.reader.ui.screens.TxtReaderScreen
 import com.ebooks.reader.ui.screens.Fb2ReaderScreen
 import com.ebooks.reader.ui.theme.EbookReaderTheme
+import com.ebooks.reader.widget.CurrentBookWidget
 
 class MainActivity : ComponentActivity() {
+
+    override fun onStop() {
+        super.onStop()
+        // Keep the "currently reading" home screen widget in sync when leaving the app
+        lifecycleScope.launch {
+            runCatching { CurrentBookWidget().updateAll(applicationContext) }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

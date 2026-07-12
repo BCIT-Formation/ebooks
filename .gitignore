@@ -71,3 +71,6 @@ release/*.aab
 # Build artifacts to exclude (already in .gitignore, but explicit here)
 *.apk
 *.aab
+
+# Kotlin compiler session files
+.kotlin/

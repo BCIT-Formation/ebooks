@@ -53,8 +53,10 @@ app/src/main/java/com/ebooks/reader/
   ui/
     components/
       BookCard.kt
+      BookshelfView.kt      # 3D bookshelf library view (shelf rows, tilted covers)
       ChapterPanel.kt
       ReaderSettingsSheet.kt
+      TtsSpeaker.kt         # TextToSpeech state holder (rememberTtsSpeaker)
     screens/
       LibraryScreen.kt
       ReaderScreen.kt        # EPUB reader (WebView)
@@ -66,12 +68,17 @@ app/src/main/java/com/ebooks/reader/
       Color.kt
       Theme.kt
       Type.kt
+  util/
+    HtmlText.kt             # htmlToPlainText — chapter HTML → plain text (TTS/share)
   viewmodel/
     LibraryViewModel.kt     # SortOrder, ViewMode, LibraryUiState, ImportState sealed class
     ReaderViewModel.kt
+  widget/
+    CurrentBookWidget.kt    # Glance home-screen widget (most recently read book)
 
 app/src/test/java/com/ebooks/reader/        # JVM unit tests (no emulator)
   EpubParserTest.kt         # ReaderTheme presets
+  HtmlTextTest.kt           # htmlToPlainText (TTS text extraction)
   LibraryViewModelTest.kt   # filtering/sorting logic
 
 app/src/androidTest/java/com/ebooks/reader/ # Instrumented tests (emulator/device)
@@ -183,6 +190,7 @@ Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-instal
 | Material Icons Extended | 1.6.8 | Extended icon set |
 | Room | 2.6.1 | Local SQLite database |
 | Coil | 2.7.0 | Compose-native image loading |
+| Glance | 1.1.0 | Home screen app widget (Compose-style RemoteViews) |
 | Navigation Compose | 2.8.0 | In-app navigation |
 | Coroutines Test | 1.8.1 | Unit test utilities |
 | Compose UI Test | 1.6.8 | Instrumented Compose UI tests |
@@ -427,16 +435,16 @@ Scope examples: `epub`, `fb2`, `pdf`, `db`, `ui`, `reader`, `library`, `ci`.
 
 ## Status / active backlog
 
-Most former 🔴 critical items are now resolved (persistable URI permission, debug-only WebView
-debugging, IOException-safe typed imports, DB migration). Current notable open items
+All former 🔴 critical and 🟠 important items are resolved, and the 🟢 backlog is
+essentially done (bookshelf 3D view, TTS, share excerpt, custom fonts, reading widget,
+per-app language). Cloud sync and OPDS are explicitly **won't-do** — they conflict with
+the offline-only design (no `INTERNET` permission). Remaining open items
 (see `TODO.md` for the full prioritised list):
 
 | Priority | Item |
 |----------|------|
-| 🟠 | In-book text search (JS highlight in WebView) |
-| 🟠 | Auto-scroll (JS `window.scrollBy` loop) |
-| 🟠 | Cover image rebuild from existing books |
-| 🟢 | Bookshelf 3D view mode, TTS, CBR support + pinch-to-zoom for comics, custom fonts, widgets |
+| 🟢 | Finish string extraction for full localization (ViewModel errors, secondary readers) |
+| 🟢 | CBR support + pinch-to-zoom for comics |
 
 Do not paper over genuine gaps with workarounds — implement or file them in `TODO.md`.
 

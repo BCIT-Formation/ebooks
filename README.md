@@ -15,14 +15,23 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | EPUB 2 & 3 support | ✅ |
 | PDF reading | ✅ |
 | TXT reading | ✅ |
+| FB2 reading | ✅ |
+| CBZ comics | ✅ |
 | Library with sort & filter | ✅ |
-| Grid / List / Bookshelf view | ✅ |
+| Grid / List / 3D Bookshelf view | ✅ |
 | Day / Dark / Sepia / Night themes | ✅ |
 | Adjustable font size & line spacing | ✅ |
+| Custom fonts (import your own TTF/OTF) | ✅ |
 | Chapter navigation | ✅ |
 | Bookmarks with notes | ✅ |
+| In-book text search | ✅ |
 | Reading progress sync | ✅ |
-| Auto-scroll | ✅ |
+| Reading statistics | ✅ |
+| Auto-scroll (with sleep timer) & tilt-to-scroll | ✅ |
+| Text-to-speech (read aloud) | ✅ |
+| Share book excerpts | ✅ |
+| Home screen widget (currently reading) | ✅ |
+| Per-app language (Android 13+, en/fr) | ✅ |
 | Material You dynamic colors | ✅ |
 | No internet permission required | ✅ |
 
@@ -240,6 +249,7 @@ chore:    build system, dependency updates
 
 See [TODO.md](TODO.md) for the full prioritized backlog, organized by:
 
-- 🔴 **Critical** — essential fixes and features
-- 🟠 **Important** — next-tier enhancements (in-book search, cover rebuild, tilt-to-scroll)
-- 🟢 **Nice to Have** — polish and advanced features (TTS, cloud sync, bookshelf 3D view)
+- 🔴 **Critical** — essential fixes and features (all done)
+- 🟠 **Important** — next-tier enhancements (all done)
+- 🟢 **Nice to Have** — polish and advanced features (remaining: full localization coverage, CBR + pinch-to-zoom)
+- ❌ **Won't do** — cloud sync and OPDS conflict with the offline-only design (no internet permission)
