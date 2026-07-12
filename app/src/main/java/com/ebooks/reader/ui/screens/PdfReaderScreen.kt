@@ -31,6 +31,7 @@ import com.ebooks.reader.ui.components.DrawingSettings
 import com.ebooks.reader.ui.components.DrawingToolbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -76,10 +77,8 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                     }
                 }
                 // Load annotations and group by page
-                val allAnnotations = dao.getAnnotationsForPage(bookId, "")
-                    .filter { !it.isDeleted }
-                    .groupBy { it.pageIndex }
-                annotationsByPage = allAnnotations
+                val allAnnotations = dao.getAnnotationsByBook(bookId).first()
+                annotationsByPage = allAnnotations.groupBy { it.pageIndex }
                 dao.getReadingProgress(bookId)?.scrollPosition
             } catch (e: Exception) {
                 error = "Could not open PDF: ${e.localizedMessage}"

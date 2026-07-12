@@ -32,6 +32,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -74,10 +75,8 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                     pages = extracted
                 }
                 // Load annotations and group by page
-                val allAnnotations = dao.getAnnotationsForPage(bookId, "")
-                    .filter { !it.isDeleted }
-                    .groupBy { it.pageIndex }
-                annotationsByPage = allAnnotations
+                val allAnnotations = dao.getAnnotationsByBook(bookId).first()
+                annotationsByPage = allAnnotations.groupBy { it.pageIndex }
                 isLoading = false
                 dao.getReadingProgress(bookId)?.scrollPosition
             } catch (e: Exception) {
