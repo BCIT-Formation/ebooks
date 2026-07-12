@@ -23,9 +23,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.ebooks.reader.data.db.AppDatabase
+import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.ReadingProgress
+import com.ebooks.reader.ui.components.DrawingCanvas
+import com.ebooks.reader.ui.components.DrawingSettings
+import com.ebooks.reader.ui.components.DrawingToolbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -47,12 +52,16 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var autoScrollSpeed by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(true) }
+    var isDrawingMode by remember { mutableStateOf(false) }
+    var drawingSettings by remember { mutableStateOf(DrawingSettings()) }
+    var annotationsByPage by remember { mutableStateOf<Map<Int, List<Annotation>>>(emptyMap()) }
     val listState = rememberLazyListState()
 
     // Load book metadata and restore scroll position
     LaunchedEffect(bookId) {
         val savedPage = withContext(Dispatchers.IO) {
-            val book = AppDatabase.getInstance(context).bookDao().getBookById(bookId)
+            val dao = AppDatabase.getInstance(context).bookDao()
+            val book = dao.getBookById(bookId)
             if (book == null) {
                 error = "Book not found."
                 return@withContext null
@@ -66,7 +75,10 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                         pageCount = renderer.pageCount
                     }
                 }
-                AppDatabase.getInstance(context).bookDao().getReadingProgress(bookId)?.scrollPosition
+                // Load annotations and group by page
+                val allAnnotations = dao.getAnnotationsByBook(bookId).first()
+                annotationsByPage = allAnnotations.groupBy { it.pageIndex }
+                dao.getReadingProgress(bookId)?.scrollPosition
             } catch (e: Exception) {
                 error = "Could not open PDF: ${e.localizedMessage}"
                 null
@@ -146,7 +158,25 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                         items(pageCount) { pageIndex ->
                             PdfPageItem(
                                 filePath = filePath ?: "",
-                                pageIndex = pageIndex
+                                pageIndex = pageIndex,
+                                annotations = annotationsByPage[pageIndex] ?: emptyList(),
+                                isDrawingEnabled = isDrawingMode && listState.firstVisibleItemIndex == pageIndex,
+                                drawingSettings = drawingSettings,
+                                onStrokeCompleted = { annotation ->
+                                    scope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            val annotationWithPage = annotation.copy(
+                                                bookId = bookId,
+                                                pageIdentifier = "page-$pageIndex",
+                                                pageIndex = pageIndex
+                                            )
+                                            AppDatabase.getInstance(context).bookDao().insertAnnotation(annotationWithPage)
+                                            annotationsByPage = annotationsByPage.toMutableMap().apply {
+                                                put(pageIndex, (this[pageIndex] ?: emptyList()) + annotationWithPage)
+                                            }
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
@@ -164,13 +194,57 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                                 IconButton(onClick = onBack) {
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                                 }
+                            },
+                            actions = {
+                                IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
+                                    Icon(
+                                        Icons.Filled.Edit,
+                                        contentDescription = "Draw",
+                                        tint = if (isDrawingMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         )
                     }
 
-                    // Bottom bar with auto-scroll and page info
+                    // Drawing toolbar (when drawing mode active)
                     AnimatedVisibility(
-                        visible = showControls,
+                        visible = isDrawingMode,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        DrawingToolbar(
+                            settings = drawingSettings,
+                            onSettingsChanged = { drawingSettings = it },
+                            onClearPage = {
+                                val currentPage = listState.firstVisibleItemIndex
+                                annotationsByPage = annotationsByPage.toMutableMap().apply {
+                                    put(currentPage, emptyList())
+                                }
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        AppDatabase.getInstance(context).bookDao()
+                                            .deletePageAnnotations(bookId, "page-$currentPage")
+                                    }
+                                }
+                            },
+                            onClearAll = {
+                                annotationsByPage = emptyMap()
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        AppDatabase.getInstance(context).bookDao()
+                                            .deleteAllAnnotations(bookId)
+                                    }
+                                }
+                            },
+                            isDrawingEnabled = true
+                        )
+                    }
+
+                    // Bottom bar with auto-scroll and page info (when not drawing)
+                    AnimatedVisibility(
+                        visible = showControls && !isDrawingMode,
                         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                         modifier = Modifier.align(Alignment.BottomStart)
@@ -189,7 +263,14 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
 }
 
 @Composable
-private fun PdfPageItem(filePath: String, pageIndex: Int) {
+private fun PdfPageItem(
+    filePath: String,
+    pageIndex: Int,
+    annotations: List<Annotation> = emptyList(),
+    isDrawingEnabled: Boolean = false,
+    drawingSettings: DrawingSettings = DrawingSettings(),
+    onStrokeCompleted: (Annotation) -> Unit = {}
+) {
     val context = LocalContext.current
     var bitmap by remember(filePath, pageIndex) { mutableStateOf<Bitmap?>(null) }
 
@@ -201,12 +282,24 @@ private fun PdfPageItem(filePath: String, pageIndex: Int) {
 
     val bmp = bitmap
     if (bmp != null) {
-        Image(
-            bitmap = bmp.asImageBitmap(),
-            contentDescription = "Page ${pageIndex + 1}",
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Image(
+                bitmap = bmp.asImageBitmap(),
+                contentDescription = "Page ${pageIndex + 1}",
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            if (annotations.isNotEmpty() || isDrawingEnabled) {
+                DrawingCanvas(
+                    modifier = Modifier.fillMaxWidth(),
+                    annotations = annotations,
+                    isEnabled = isDrawingEnabled,
+                    settings = drawingSettings,
+                    onStrokeCompleted = onStrokeCompleted
+                )
+            }
+        }
     } else {
         Box(
             modifier = Modifier

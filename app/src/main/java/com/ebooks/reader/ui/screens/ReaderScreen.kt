@@ -39,6 +39,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ebooks.reader.ui.components.ChapterPanel
+import com.ebooks.reader.ui.components.DrawingCanvas
+import com.ebooks.reader.ui.components.DrawingToolbar
 import com.ebooks.reader.ui.components.ReaderSettingsSheet
 import com.ebooks.reader.viewmodel.OrientationLock
 import com.ebooks.reader.viewmodel.ReaderThemeOption
@@ -163,6 +165,18 @@ fun ReaderScreen(
                         modifier = Modifier.fillMaxSize()
                     )
 
+                    // Drawing canvas overlay
+                    if (uiState.annotations.isNotEmpty() || uiState.isDrawingMode) {
+                        DrawingCanvas(
+                            modifier = Modifier.fillMaxSize(),
+                            annotations = uiState.annotations,
+                            isEnabled = uiState.isDrawingMode,
+                            settings = uiState.drawingSettings,
+                            onStrokeCompleted = { viewModel.saveAnnotation(it) },
+                            onAnnotationDeleted = { viewModel.deleteAnnotation(it.id) }
+                        )
+                    }
+
                     // Night-light warm overlay — above WebView content, below all controls
                     if (uiState.settings.nightLightAlpha > 0f) {
                         Box(
@@ -198,13 +212,14 @@ fun ReaderScreen(
                                 onChapters = { viewModel.toggleChapterPanel() },
                                 onBookmark = { viewModel.addBookmark() },
                                 onSettings = { viewModel.toggleSettingsPanel() },
-                                onSearch = { viewModel.toggleSearch() }
+                                onSearch = { viewModel.toggleSearch() },
+                                onDraw = { viewModel.toggleDrawingMode() }
                             )
                         }
                     }
 
                     AnimatedVisibility(
-                        visible = uiState.showControls,
+                        visible = uiState.showControls && !uiState.isDrawingMode,
                         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                         modifier = Modifier.align(Alignment.BottomStart)
@@ -218,6 +233,21 @@ fun ReaderScreen(
                             onFontIncrease = { viewModel.increaseFontSize() },
                             onAutoScroll = { viewModel.toggleAutoScroll() },
                             isAutoScrolling = uiState.settings.autoScrollSpeed > 0
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = uiState.showControls && uiState.isDrawingMode,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        DrawingToolbar(
+                            settings = uiState.drawingSettings,
+                            onSettingsChanged = { viewModel.updateDrawingSettings(it) },
+                            onClearPage = { viewModel.clearPageAnnotations() },
+                            onClearAll = { viewModel.clearAllAnnotations() },
+                            isDrawingEnabled = uiState.isDrawingMode
                         )
                     }
 
@@ -327,7 +357,16 @@ private fun EpubWebView(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ReaderTopBar(title: String, chapterTitle: String, onBack: () -> Unit, onChapters: () -> Unit, onBookmark: () -> Unit, onSettings: () -> Unit, onSearch: () -> Unit) {
+private fun ReaderTopBar(
+    title: String,
+    chapterTitle: String,
+    onBack: () -> Unit,
+    onChapters: () -> Unit,
+    onBookmark: () -> Unit,
+    onSettings: () -> Unit,
+    onSearch: () -> Unit,
+    onDraw: () -> Unit = {}
+) {
     TopAppBar(
         title = {
             Column {
@@ -340,6 +379,7 @@ private fun ReaderTopBar(title: String, chapterTitle: String, onBack: () -> Unit
         navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
         actions = {
             IconButton(onClick = onSearch) { Icon(Icons.Default.Search, "Search in book") }
+            IconButton(onClick = onDraw) { Icon(Icons.Default.Edit, "Draw annotations") }
             IconButton(onClick = onChapters) { Icon(Icons.Default.List, "Chapters") }
             IconButton(onClick = onBookmark) { Icon(Icons.Default.BookmarkAdd, "Add bookmark") }
             IconButton(onClick = onSettings) { Icon(Icons.Default.TextFormat, "Settings") }

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
 import com.ebooks.reader.data.db.AppDatabase
+import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.Book
 import com.ebooks.reader.data.db.entities.Bookmark
 import com.ebooks.reader.data.db.entities.FileType
@@ -202,6 +203,7 @@ class BookRepository(private val context: Context) {
         dao.deleteBook(book)
         dao.deleteReadingProgress(book.id)
         dao.deleteAllBookmarks(book.id)
+        dao.deleteAllAnnotations(book.id)
         // Delete cover
         book.coverPath?.let { File(it).delete() }
         if (deleteFile) {
@@ -262,6 +264,32 @@ class BookRepository(private val context: Context) {
     suspend fun addBookmark(bookmark: Bookmark) = dao.insertBookmark(bookmark)
 
     suspend fun deleteBookmark(bookmark: Bookmark) = dao.deleteBookmark(bookmark)
+
+    // ── Annotations ───────────────────────────────────────────────────────────
+
+    suspend fun getPageAnnotations(bookId: String, pageIdentifier: String): List<Annotation> =
+        dao.getAnnotationsForPage(bookId, pageIdentifier)
+
+    fun getAnnotationsByBook(bookId: String): Flow<List<Annotation>> =
+        dao.getAnnotationsByBook(bookId)
+
+    suspend fun addAnnotation(annotation: Annotation) =
+        dao.insertAnnotation(annotation)
+
+    suspend fun updateAnnotation(annotation: Annotation) =
+        dao.updateAnnotation(annotation)
+
+    suspend fun deleteAnnotation(id: String) =
+        dao.softDeleteAnnotation(id)
+
+    suspend fun clearPageAnnotations(bookId: String, pageIdentifier: String) =
+        dao.deletePageAnnotations(bookId, pageIdentifier)
+
+    suspend fun clearAllAnnotations(bookId: String) =
+        dao.deleteAllAnnotations(bookId)
+
+    suspend fun hasAnnotations(bookId: String): Boolean =
+        dao.getAnnotationCount(bookId) > 0
 
     // ── EPUB Content ──────────────────────────────────────────────────────────
 

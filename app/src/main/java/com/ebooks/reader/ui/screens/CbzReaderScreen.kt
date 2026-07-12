@@ -2,6 +2,7 @@ package com.ebooks.reader.ui.screens
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,12 +21,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ebooks.reader.data.db.AppDatabase
+import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.ReadingProgress
+import com.ebooks.reader.ui.components.DrawingCanvas
+import com.ebooks.reader.ui.components.DrawingSettings
+import com.ebooks.reader.ui.components.DrawingToolbar
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -37,11 +45,15 @@ import kotlinx.coroutines.withContext
 @Composable
 fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var title by remember { mutableStateOf("Comic") }
     var pages by remember { mutableStateOf<List<File>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var isDrawingMode by remember { mutableStateOf(false) }
+    var drawingSettings by remember { mutableStateOf(DrawingSettings()) }
+    var annotationsByPage by remember { mutableStateOf<Map<Int, List<Annotation>>>(emptyMap()) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(bookId) {
@@ -61,6 +73,9 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                 } else {
                     pages = extracted
                 }
+                // Load annotations and group by page
+                val allAnnotations = dao.getAnnotationsByBook(bookId).first()
+                annotationsByPage = allAnnotations.groupBy { it.pageIndex }
                 isLoading = false
                 dao.getReadingProgress(bookId)?.scrollPosition
             } catch (e: Exception) {
@@ -102,6 +117,13 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = "Draw",
+                            tint = if (isDrawingMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     if (pages.isNotEmpty()) {
                         Text(
                             "${listState.firstVisibleItemIndex + 1} / ${pages.size}",
@@ -136,20 +158,83 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                 }
             }
             else -> {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .background(Color.Black),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    itemsIndexed(pages, key = { _, file -> file.name }) { index, file ->
-                        AsyncImage(
-                            model = file,
-                            contentDescription = "Page ${index + 1}",
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier.fillMaxWidth()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .background(Color.Black),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        itemsIndexed(pages, key = { _, file -> file.name }) { index, file ->
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                AsyncImage(
+                                    model = file,
+                                    contentDescription = "Page ${index + 1}",
+                                    contentScale = ContentScale.FillWidth,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                if (annotationsByPage[index]?.isNotEmpty() == true || isDrawingMode) {
+                                    DrawingCanvas(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        annotations = annotationsByPage[index] ?: emptyList(),
+                                        isEnabled = isDrawingMode && listState.firstVisibleItemIndex == index,
+                                        settings = drawingSettings,
+                                        onStrokeCompleted = { annotation ->
+                                            scope.launch {
+                                                withContext(Dispatchers.IO) {
+                                                    val annotationWithPage = annotation.copy(
+                                                        bookId = bookId,
+                                                        pageIdentifier = "page-$index",
+                                                        pageIndex = index
+                                                    )
+                                                    AppDatabase.getInstance(context).bookDao().insertAnnotation(annotationWithPage)
+                                                    annotationsByPage = annotationsByPage.toMutableMap().apply {
+                                                        put(index, (this[index] ?: emptyList()) + annotationWithPage)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Drawing toolbar (when drawing mode active)
+                    AnimatedVisibility(
+                        visible = isDrawingMode,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        DrawingToolbar(
+                            settings = drawingSettings,
+                            onSettingsChanged = { drawingSettings = it },
+                            onClearPage = {
+                                val currentPage = listState.firstVisibleItemIndex
+                                annotationsByPage = annotationsByPage.toMutableMap().apply {
+                                    put(currentPage, emptyList())
+                                }
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        AppDatabase.getInstance(context).bookDao()
+                                            .deletePageAnnotations(bookId, "page-$currentPage")
+                                    }
+                                }
+                            },
+                            onClearAll = {
+                                annotationsByPage = emptyMap()
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        AppDatabase.getInstance(context).bookDao()
+                                            .deleteAllAnnotations(bookId)
+                                    }
+                                }
+                            },
+                            isDrawingEnabled = true
                         )
                     }
                 }

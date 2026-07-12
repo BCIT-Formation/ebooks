@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.Book
 import com.ebooks.reader.data.db.entities.Bookmark
 import com.ebooks.reader.data.db.entities.ReadingProgress
@@ -13,6 +14,7 @@ import com.ebooks.reader.data.parser.EpubBook
 import com.ebooks.reader.data.parser.EpubChapter
 import com.ebooks.reader.data.parser.ReaderTheme
 import com.ebooks.reader.data.repository.BookRepository
+import com.ebooks.reader.ui.components.DrawingSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,6 +60,10 @@ data class ReaderUiState(
     val currentChapterHtml: String? = null,
     val isChapterLoading: Boolean = false,
     val bookmarks: List<Bookmark> = emptyList(),
+    val annotations: List<Annotation> = emptyList(),
+    val isDrawingMode: Boolean = false,
+    val drawingSettings: DrawingSettings = DrawingSettings(),
+    val annotationSaveInProgress: Boolean = false,
     val showControls: Boolean = true,
     val showChapterPanel: Boolean = false,
     val showSettingsPanel: Boolean = false,
@@ -160,7 +166,7 @@ class ReaderViewModel(
 
         viewModelScope.launch {
             visitedChapters.add(index)
-            _uiState.update { it.copy(isChapterLoading = true, currentChapterIndex = index, chapterError = null) }
+            _uiState.update { it.copy(isChapterLoading = true, currentChapterIndex = index, chapterError = null, isDrawingMode = false) }
             val chapter = chapters[index]
             val theme = buildReaderTheme()
             val html = repository.getChapterHtml(bookId, chapter.href, theme)
@@ -176,6 +182,8 @@ class ReaderViewModel(
                     showChapterPanel = false,
                     chapterError = null
                 )}
+                // Load annotations for this chapter
+                loadPageAnnotations()
             }
         }
     }
@@ -355,6 +363,67 @@ class ReaderViewModel(
             loadChapter(bookmark.chapterIndex)
         }
         // Scroll position handled by WebView
+    }
+
+    // ── Annotations ───────────────────────────────────────────────────────────
+
+    fun toggleDrawingMode() {
+        _uiState.update { it.copy(isDrawingMode = !it.isDrawingMode) }
+    }
+
+    fun updateDrawingSettings(settings: DrawingSettings) {
+        _uiState.update { it.copy(drawingSettings = settings) }
+    }
+
+    fun saveAnnotation(annotation: Annotation) {
+        val state = _uiState.value
+        val chapter = state.chapters.getOrNull(state.currentChapterIndex) ?: return
+        val pageId = "chapter-${state.currentChapterIndex}"
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(annotationSaveInProgress = true) }
+            val toSave = annotation.copy(
+                bookId = bookId,
+                pageIdentifier = pageId,
+                pageIndex = state.currentChapterIndex
+            )
+            repository.addAnnotation(toSave)
+            loadPageAnnotations()
+            _uiState.update { it.copy(annotationSaveInProgress = false) }
+        }
+    }
+
+    private fun loadPageAnnotations() {
+        val state = _uiState.value
+        val pageId = "chapter-${state.currentChapterIndex}"
+
+        viewModelScope.launch {
+            val annots = repository.getPageAnnotations(bookId, pageId)
+            _uiState.update { it.copy(annotations = annots) }
+        }
+    }
+
+    fun deleteAnnotation(annotationId: String) {
+        viewModelScope.launch {
+            repository.deleteAnnotation(annotationId)
+            loadPageAnnotations()
+        }
+    }
+
+    fun clearPageAnnotations() {
+        val state = _uiState.value
+        val pageId = "chapter-${state.currentChapterIndex}"
+        viewModelScope.launch {
+            repository.clearPageAnnotations(bookId, pageId)
+            _uiState.update { it.copy(annotations = emptyList()) }
+        }
+    }
+
+    fun clearAllAnnotations() {
+        viewModelScope.launch {
+            repository.clearAllAnnotations(bookId)
+            _uiState.update { it.copy(annotations = emptyList()) }
+        }
     }
 
     // ── Progress Saving ───────────────────────────────────────────────────────
