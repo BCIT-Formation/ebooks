@@ -1,6 +1,7 @@
 package com.ebooks.reader.ui.screens
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -29,6 +30,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,13 +40,17 @@ import androidx.core.content.getSystemService
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ebooks.reader.R
 import com.ebooks.reader.ui.components.ChapterPanel
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingToolbar
 import com.ebooks.reader.ui.components.ReaderSettingsSheet
+import com.ebooks.reader.ui.components.rememberTtsSpeaker
+import com.ebooks.reader.util.htmlToPlainText
 import com.ebooks.reader.viewmodel.OrientationLock
 import com.ebooks.reader.viewmodel.ReaderThemeOption
 import com.ebooks.reader.viewmodel.ReaderViewModel
+import org.json.JSONTokener
 
 @Composable
 fun ReaderScreen(
@@ -59,6 +65,25 @@ fun ReaderScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
+    val ttsSpeaker = rememberTtsSpeaker()
+
+    // The queued speech text is stale once the chapter changes
+    LaunchedEffect(uiState.currentChapterIndex) { ttsSpeaker.stop() }
+
+    // Share the given selection (or just the book reference when empty) via the system sheet
+    val shareExcerpt: (String) -> Unit = shareExcerpt@{ selection ->
+        val book = uiState.book ?: return@shareExcerpt
+        val shareText = if (selection.isBlank()) {
+            context.getString(R.string.share_book_format, book.title, book.author)
+        } else {
+            context.getString(R.string.share_excerpt_format, selection, book.title, book.author)
+        }
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+        }
+        context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.share_excerpt)))
+    }
 
     // Auto-scroll: collect ticks from ViewModel and drive WebView scrolling
     LaunchedEffect(Unit) {
@@ -213,7 +238,20 @@ fun ReaderScreen(
                                 onBookmark = { viewModel.addBookmark() },
                                 onSettings = { viewModel.toggleSettingsPanel() },
                                 onSearch = { viewModel.toggleSearch() },
-                                onDraw = { viewModel.toggleDrawingMode() }
+                                onDraw = { viewModel.toggleDrawingMode() },
+                                onShare = {
+                                    val webView = webViewRef.value
+                                    if (webView == null) {
+                                        shareExcerpt("")
+                                    } else {
+                                        webView.evaluateJavascript("window.getSelection().toString()") { value ->
+                                            val selection = runCatching {
+                                                JSONTokener(value).nextValue() as? String
+                                            }.getOrNull().orEmpty()
+                                            shareExcerpt(selection)
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
@@ -232,7 +270,14 @@ fun ReaderScreen(
                             onFontDecrease = { viewModel.decreaseFontSize() },
                             onFontIncrease = { viewModel.increaseFontSize() },
                             onAutoScroll = { viewModel.toggleAutoScroll() },
-                            isAutoScrolling = uiState.settings.autoScrollSpeed > 0
+                            isAutoScrolling = uiState.settings.autoScrollSpeed > 0,
+                            onTts = {
+                                ttsSpeaker.toggle(
+                                    htmlToPlainText(uiState.currentChapterHtml.orEmpty()),
+                                    uiState.book?.language
+                                )
+                            },
+                            isTtsSpeaking = ttsSpeaker.isSpeaking
                         )
                     }
 
@@ -273,7 +318,9 @@ fun ReaderScreen(
                     ReaderSettingsSheet(
                         settings = uiState.settings,
                         onSettingsChanged = { viewModel.updateSettings(it) },
-                        onDismiss = { viewModel.closeAllPanels() }
+                        onDismiss = { viewModel.closeAllPanels() },
+                        customFonts = uiState.customFonts,
+                        onImportFont = { viewModel.importFont(it) }
                     )
                 }
             }
@@ -365,7 +412,8 @@ private fun ReaderTopBar(
     onBookmark: () -> Unit,
     onSettings: () -> Unit,
     onSearch: () -> Unit,
-    onDraw: () -> Unit = {}
+    onDraw: () -> Unit = {},
+    onShare: () -> Unit = {}
 ) {
     TopAppBar(
         title = {
@@ -376,13 +424,14 @@ private fun ReaderTopBar(
                 }
             }
         },
-        navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+        navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
         actions = {
-            IconButton(onClick = onSearch) { Icon(Icons.Default.Search, "Search in book") }
-            IconButton(onClick = onDraw) { Icon(Icons.Default.Edit, "Draw annotations") }
-            IconButton(onClick = onChapters) { Icon(Icons.Default.List, "Chapters") }
-            IconButton(onClick = onBookmark) { Icon(Icons.Default.BookmarkAdd, "Add bookmark") }
-            IconButton(onClick = onSettings) { Icon(Icons.Default.TextFormat, "Settings") }
+            IconButton(onClick = onSearch) { Icon(Icons.Default.Search, stringResource(R.string.search_in_book)) }
+            IconButton(onClick = onShare) { Icon(Icons.Default.Share, stringResource(R.string.share_excerpt)) }
+            IconButton(onClick = onDraw) { Icon(Icons.Default.Edit, stringResource(R.string.draw_annotations)) }
+            IconButton(onClick = onChapters) { Icon(Icons.Default.List, stringResource(R.string.chapters)) }
+            IconButton(onClick = onBookmark) { Icon(Icons.Default.BookmarkAdd, stringResource(R.string.add_bookmark)) }
+            IconButton(onClick = onSettings) { Icon(Icons.Default.TextFormat, stringResource(R.string.settings)) }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
     )
@@ -398,7 +447,7 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onSearc
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = { Text("Search in book…") },
+                placeholder = { Text(stringResource(R.string.search_in_book_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearchNext() }),
@@ -410,36 +459,43 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onSearc
             )
         },
         navigationIcon = {
-            IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close search") }
+            IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.close_search)) }
         },
         actions = {
-            IconButton(onClick = onSearchPrev) { Icon(Icons.Default.KeyboardArrowUp, "Previous match") }
-            IconButton(onClick = onSearchNext) { Icon(Icons.Default.KeyboardArrowDown, "Next match") }
+            IconButton(onClick = onSearchPrev) { Icon(Icons.Default.KeyboardArrowUp, stringResource(R.string.previous_match)) }
+            IconButton(onClick = onSearchNext) { Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.next_match)) }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
     )
 }
 
 @Composable
-private fun ReaderBottomBar(currentChapter: Int, totalChapters: Int, onPrevChapter: () -> Unit, onNextChapter: () -> Unit, onFontDecrease: () -> Unit, onFontIncrease: () -> Unit, onAutoScroll: () -> Unit, isAutoScrolling: Boolean) {
+private fun ReaderBottomBar(currentChapter: Int, totalChapters: Int, onPrevChapter: () -> Unit, onNextChapter: () -> Unit, onFontDecrease: () -> Unit, onFontIncrease: () -> Unit, onAutoScroll: () -> Unit, isAutoScrolling: Boolean, onTts: () -> Unit = {}, isTtsSpeaking: Boolean = false) {
     Surface(modifier = Modifier.fillMaxWidth(), tonalElevation = 8.dp, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)) {
         Column {
             if (totalChapters > 0) {
                 LinearProgressIndicator(progress = { (currentChapter + 1).toFloat() / totalChapters }, modifier = Modifier.fillMaxWidth())
             }
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPrevChapter, enabled = currentChapter > 0) { Icon(Icons.Default.NavigateBefore, "Previous") }
+                IconButton(onClick = onPrevChapter, enabled = currentChapter > 0) { Icon(Icons.Default.NavigateBefore, stringResource(R.string.previous_chapter)) }
                 Text(if (totalChapters > 0) "${currentChapter + 1} / $totalChapters" else "", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                IconButton(onClick = onFontDecrease) { Icon(Icons.Default.Remove, "Smaller font") }
+                IconButton(onClick = onFontDecrease) { Icon(Icons.Default.Remove, stringResource(R.string.smaller_font)) }
                 IconButton(onClick = onAutoScroll) {
                     Icon(
                         if (isAutoScrolling) Icons.Default.PauseCircleOutline else Icons.Default.PlayCircleOutline,
-                        if (isAutoScrolling) "Stop auto-scroll" else "Auto-scroll",
+                        stringResource(if (isAutoScrolling) R.string.stop_auto_scroll else R.string.auto_scroll),
                         tint = if (isAutoScrolling) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                 }
-                IconButton(onClick = onFontIncrease) { Icon(Icons.Default.Add, "Larger font") }
-                IconButton(onClick = onNextChapter, enabled = totalChapters == 0 || currentChapter < totalChapters - 1) { Icon(Icons.Default.NavigateNext, "Next") }
+                IconButton(onClick = onFontIncrease) { Icon(Icons.Default.Add, stringResource(R.string.larger_font)) }
+                IconButton(onClick = onTts) {
+                    Icon(
+                        if (isTtsSpeaking) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                        stringResource(if (isTtsSpeaking) R.string.stop_read_aloud else R.string.read_aloud),
+                        tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                IconButton(onClick = onNextChapter, enabled = totalChapters == 0 || currentChapter < totalChapters - 1) { Icon(Icons.Default.NavigateNext, stringResource(R.string.next_chapter)) }
             }
         }
     }
@@ -450,11 +506,11 @@ private fun ErrorScreen(message: String, onBack: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Icon(Icons.Default.ErrorOutline, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error)
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Cannot open book", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.cannot_open_book), style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(8.dp))
         Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onBack) { Text("Go back") }
+        Button(onClick = onBack) { Text(stringResource(R.string.go_back)) }
     }
 }
 

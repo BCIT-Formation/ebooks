@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ebook Reader</string>
+
+    <!-- Library -->
+    <string name="library">Bibliothèque</string>
+    <string name="my_library">Ma bibliothèque</string>
+    <string name="search_books_hint">Rechercher des livres…</string>
+    <string name="close_search">Fermer la recherche</string>
+    <string name="sort_by">Trier par</string>
+    <string name="sort">Trier</string>
+    <string name="filter">Filtrer</string>
+    <string name="change_view">Changer de vue</string>
+    <string name="add_book">Ajouter un livre</string>
+    <string name="importing_book">Importation du livre…</string>
+    <string name="imported_book">« %1$s » importé</string>
+    <string name="already_in_library">« %1$s » est déjà dans votre bibliothèque</string>
+    <string name="sort_book_name">Titre du livre</string>
+    <string name="sort_author">Auteur</string>
+    <string name="sort_import_date">Date d\'import</string>
+    <string name="sort_recent">Récents</string>
+    <string name="library_filter">Filtre de bibliothèque</string>
+    <string name="reading_status">Statut de lecture</string>
+    <string name="file_type">Type de fichier</string>
+    <string name="all">Tous</string>
+    <string name="unread">Non lu</string>
+    <string name="reading">En cours</string>
+    <string name="read">Lu</string>
+    <string name="open_book">Ouvrir</string>
+    <string name="reading_stats">Statistiques de lecture</string>
+    <string name="mark_as">Marquer comme :</string>
+    <string name="delete_book">Supprimer</string>
+    <string name="delete_book_title">Supprimer le livre ?</string>
+    <string name="delete_book_message">Retirer « %1$s » de votre bibliothèque ?</string>
+    <string name="cancel">Annuler</string>
+    <string name="close">Fermer</string>
+    <string name="done">Terminé</string>
+    <string name="library_settings">Paramètres de la bibliothèque</string>
+    <string name="rebuild_covers_title">Reconstruire les couvertures</string>
+    <string name="rebuild_covers_description">Réimporter les images de couverture de tous les livres EPUB de votre bibliothèque.</string>
+    <string name="rebuild_covers">Reconstruire les couvertures</string>
+    <string name="rebuilding">Reconstruction…</string>
+    <string name="empty_library_title">Votre bibliothèque est vide</string>
+    <string name="empty_library_message">Ajoutez votre premier livre en appuyant sur le bouton +</string>
+    <string name="total_reading_time">Temps de lecture total</string>
+    <string name="sessions">Sessions</string>
+    <string name="avg_session_length">Durée moyenne des sessions</string>
+    <string name="last_session">Dernière session</string>
+    <string name="no_sessions_yet">Aucune session de lecture enregistrée.\nOuvrez le livre pour commencer le suivi !</string>
+
+    <!-- Reader -->
+    <string name="back">Retour</string>
+    <string name="chapters">Chapitres</string>
+    <string name="bookmarks">Signets</string>
+    <string name="settings">Paramètres</string>
+    <string name="search">Rechercher</string>
+    <string name="search_in_book">Rechercher dans le livre</string>
+    <string name="search_in_book_hint">Rechercher dans le livre…</string>
+    <string name="previous_match">Résultat précédent</string>
+    <string name="next_match">Résultat suivant</string>
+    <string name="share_excerpt">Partager un extrait</string>
+    <string name="share_excerpt_format">« %1$s »\n\n— %2$s, %3$s</string>
+    <string name="share_book_format">« %1$s » de %2$s</string>
+    <string name="draw_annotations">Annoter</string>
+    <string name="add_bookmark">Ajouter un signet</string>
+    <string name="previous_chapter">Précédent</string>
+    <string name="next_chapter">Suivant</string>
+    <string name="smaller_font">Police plus petite</string>
+    <string name="larger_font">Police plus grande</string>
+    <string name="auto_scroll">Défilement automatique</string>
+    <string name="stop_auto_scroll">Arrêter le défilement automatique</string>
+    <string name="read_aloud">Lecture à voix haute</string>
+    <string name="stop_read_aloud">Arrêter la lecture à voix haute</string>
+    <string name="cannot_open_book">Impossible d\'ouvrir le livre</string>
+    <string name="go_back">Revenir</string>
+
+    <!-- Reader settings sheet -->
+    <string name="reading_settings">Paramètres de lecture</string>
+    <string name="theme">Thème</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="theme_sepia">Sépia</string>
+    <string name="theme_night">Nuit</string>
+    <string name="font_size">Taille de police</string>
+    <string name="decrease_font_size">Réduire la taille de police</string>
+    <string name="increase_font_size">Augmenter la taille de police</string>
+    <string name="line_spacing">Interligne</string>
+    <string name="font">Police</string>
+    <string name="add_font">Ajouter une police…</string>
+    <string name="paragraph_indent">Alinéa de paragraphe</string>
+    <string name="keep_screen_on">Garder l\'écran allumé</string>
+    <string name="screen_orientation">Orientation de l\'écran</string>
+    <string name="orientation_auto">Auto</string>
+    <string name="orientation_portrait">Portrait</string>
+    <string name="orientation_landscape">Paysage</string>
+    <string name="auto_scroll_speed">Vitesse de défilement</string>
+    <string name="tilt_to_scroll">Inclinaison pour défiler</string>
+    <string name="sleep_timer_auto_scroll">Minuterie de veille (défilement)</string>
+    <string name="night_light">Lumière nocturne</string>
+    <string name="off">Désactivé</string>
+
+    <!-- Widget -->
+    <string name="widget_label">Lecture en cours</string>
+    <string name="widget_description">Affiche le livre que vous êtes en train de lire</string>
+    <string name="widget_no_book">Aucun livre ouvert</string>
+    <string name="widget_browse_library">Appuyez pour parcourir votre bibliothèque</string>
+    <string name="widget_continue_reading">Appuyez pour reprendre la lecture</string>
+    <string name="widget_chapter_progress">Chapitre %1$d sur %2$d</string>
+</resources>

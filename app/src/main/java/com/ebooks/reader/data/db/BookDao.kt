@@ -42,6 +42,10 @@ interface BookDao {
     @Query("SELECT * FROM books")
     suspend fun getAllBooksSnapshot(): List<Book>
 
+    /** The book most recently opened for reading — shown in the home screen widget. */
+    @Query("SELECT * FROM books WHERE lastReadAt IS NOT NULL ORDER BY lastReadAt DESC LIMIT 1")
+    suspend fun getMostRecentlyReadBook(): Book?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBook(book: Book)
 

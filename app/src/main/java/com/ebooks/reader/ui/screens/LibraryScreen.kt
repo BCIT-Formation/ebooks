@@ -25,16 +25,19 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.entities.Book
 import com.ebooks.reader.data.db.entities.ReadingStatus
 import com.ebooks.reader.ui.components.BookGridCard
 import com.ebooks.reader.ui.components.BookListItem
+import com.ebooks.reader.ui.components.BookshelfView
 import com.ebooks.reader.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +47,7 @@ fun LibraryScreen(
     viewModel: LibraryViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     var showSortSheet by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -64,8 +68,8 @@ fun LibraryScreen(
     // Surface import outcomes (success / duplicate / error) and reset the one-shot state.
     LaunchedEffect(uiState.importProgress) {
         val message = when (val state = uiState.importProgress) {
-            is ImportState.Success -> "Imported \"${state.book.title}\""
-            is ImportState.AlreadyExists -> "\"${state.book.title}\" is already in your library"
+            is ImportState.Success -> context.getString(R.string.imported_book, state.book.title)
+            is ImportState.AlreadyExists -> context.getString(R.string.already_in_library, state.book.title)
             is ImportState.Error -> state.message
             else -> null
         }
@@ -108,7 +112,7 @@ fun LibraryScreen(
                 // import path validates the extension and rejects unsupported files.
                 onClick = { filePicker.launch(arrayOf("*/*")) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Add Book") }
+                text = { Text(stringResource(R.string.add_book)) }
             )
         }
     ) { innerPadding ->
@@ -124,10 +128,16 @@ fun LibraryScreen(
                 }
                 else -> {
                     when (uiState.viewMode) {
-                        ViewMode.GRID, ViewMode.BOOKSHELF -> {
-                            val columns = if (uiState.viewMode == ViewMode.BOOKSHELF) 3 else 2
+                        ViewMode.BOOKSHELF -> {
+                            BookshelfView(
+                                books = uiState.books,
+                                onBookClick = { book -> onOpenBook(book.id, book.fileType) },
+                                onBookLongClick = { book -> showMenuFor = book }
+                            )
+                        }
+                        ViewMode.GRID -> {
                             LazyVerticalGrid(
-                                columns = GridCells.Fixed(columns),
+                                columns = GridCells.Fixed(2),
                                 contentPadding = PaddingValues(12.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -170,7 +180,7 @@ fun LibraryScreen(
                         ) {
                             CircularProgressIndicator()
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Importing book…")
+                            Text(stringResource(R.string.importing_book))
                         }
                     }
                 }
@@ -250,7 +260,7 @@ private fun LibraryTopBar(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchQuery,
-                    placeholder = { Text("Search books…") },
+                    placeholder = { Text(stringResource(R.string.search_books_hint)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {}),
@@ -263,27 +273,27 @@ private fun LibraryTopBar(
             },
             navigationIcon = {
                 IconButton(onClick = onSearchClose) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.close_search))
                 }
             }
         )
     } else {
         TopAppBar(
-            title = { Text("My Library", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.my_library), fontWeight = FontWeight.Bold) },
             actions = {
-                IconButton(onClick = onSearchToggle) { Icon(Icons.Default.Search, "Search") }
-                IconButton(onClick = onSort) { Icon(Icons.Default.Sort, "Sort") }
-                IconButton(onClick = onFilter) { Icon(Icons.Default.FilterList, "Filter") }
+                IconButton(onClick = onSearchToggle) { Icon(Icons.Default.Search, stringResource(R.string.search)) }
+                IconButton(onClick = onSort) { Icon(Icons.Default.Sort, stringResource(R.string.sort)) }
+                IconButton(onClick = onFilter) { Icon(Icons.Default.FilterList, stringResource(R.string.filter)) }
                 IconButton(onClick = onViewModeToggle) {
                     Icon(
                         when (viewMode) {
                             ViewMode.LIST -> Icons.Default.GridView
                             ViewMode.GRID -> Icons.Default.ViewModule
                             ViewMode.BOOKSHELF -> Icons.Default.ViewList
-                        }, "Change view"
+                        }, stringResource(R.string.change_view)
                     )
                 }
-                IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") }
+                IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, stringResource(R.string.settings)) }
             },
             scrollBehavior = scrollBehavior
         )
@@ -294,8 +304,13 @@ private fun LibraryTopBar(
 @Composable
 private fun SortSheet(currentSort: SortOrder, onSortSelected: (SortOrder) -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text("Sort by", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
-        listOf(SortOrder.TITLE to "Book name", SortOrder.AUTHOR to "Author", SortOrder.DATE to "Import date", SortOrder.RECENT to "Recent").forEach { (sort, label) ->
+        Text(stringResource(R.string.sort_by), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+        listOf(
+            SortOrder.TITLE to stringResource(R.string.sort_book_name),
+            SortOrder.AUTHOR to stringResource(R.string.sort_author),
+            SortOrder.DATE to stringResource(R.string.sort_import_date),
+            SortOrder.RECENT to stringResource(R.string.sort_recent)
+        ).forEach { (sort, label) ->
             ListItem(
                 headlineContent = { Text(label) },
                 trailingContent = { if (sort == currentSort) Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) },
@@ -317,21 +332,21 @@ private fun FilterSheet(
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.padding(bottom = 32.dp)) {
-            Text("Library filter", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
-            Text("Reading status", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Text(stringResource(R.string.library_filter), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+            Text(stringResource(R.string.reading_status), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             Row(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = currentStatus == null, onClick = { onStatusSelected(null) }, label = { Text("All") })
+                FilterChip(selected = currentStatus == null, onClick = { onStatusSelected(null) }, label = { Text(stringResource(R.string.all)) })
                 ReadingStatus.entries.forEach { status ->
-                    FilterChip(selected = currentStatus == status, onClick = { onStatusSelected(status) }, label = { Text(status.name.lowercase().replaceFirstChar { it.uppercase() }) })
+                    FilterChip(selected = currentStatus == status, onClick = { onStatusSelected(status) }, label = { Text(statusLabel(status)) })
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text("File type", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            Text(stringResource(R.string.file_type), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp).horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(selected = currentFileType == null, onClick = { onFileTypeSelected(null) }, label = { Text("All") })
+                FilterChip(selected = currentFileType == null, onClick = { onFileTypeSelected(null) }, label = { Text(stringResource(R.string.all)) })
                 listOf("epub", "pdf", "txt", "fb2", "cbz").forEach { type ->
                     FilterChip(selected = currentFileType == type, onClick = { onFileTypeSelected(type) }, label = { Text(type.uppercase()) })
                 }
@@ -355,28 +370,28 @@ private fun BookContextMenu(
         title = { Text(book.title, maxLines = 1) },
         text = {
             Column {
-                ListItem(headlineContent = { Text("Open") }, leadingContent = { Icon(Icons.Default.MenuBook, null) }, modifier = Modifier.clickable(onClick = onOpen))
-                ListItem(headlineContent = { Text("Reading Stats") }, leadingContent = { Icon(Icons.Default.Timer, null) }, modifier = Modifier.clickable(onClick = onStats))
+                ListItem(headlineContent = { Text(stringResource(R.string.open_book)) }, leadingContent = { Icon(Icons.Default.MenuBook, null) }, modifier = Modifier.clickable(onClick = onOpen))
+                ListItem(headlineContent = { Text(stringResource(R.string.reading_stats)) }, leadingContent = { Icon(Icons.Default.Timer, null) }, modifier = Modifier.clickable(onClick = onStats))
                 HorizontalDivider()
-                Text("Mark as:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 8.dp))
+                Text(stringResource(R.string.mark_as), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReadingStatus.entries.forEach { status ->
-                        FilterChip(selected = book.readingStatus == status, onClick = { onMarkStatus(status) }, label = { Text(status.name.lowercase().replaceFirstChar { it.uppercase() }) })
+                        FilterChip(selected = book.readingStatus == status, onClick = { onMarkStatus(status) }, label = { Text(statusLabel(status)) })
                     }
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                ListItem(headlineContent = { Text("Delete", color = MaterialTheme.colorScheme.error) }, leadingContent = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }, modifier = Modifier.clickable { showDeleteDialog = true })
+                ListItem(headlineContent = { Text(stringResource(R.string.delete_book), color = MaterialTheme.colorScheme.error) }, leadingContent = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }, modifier = Modifier.clickable { showDeleteDialog = true })
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
     )
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete book?") },
-            text = { Text("Remove \"${book.title}\" from your library?") },
-            confirmButton = { TextButton(onClick = onDelete) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
+            title = { Text(stringResource(R.string.delete_book_title)) },
+            text = { Text(stringResource(R.string.delete_book_message, book.title)) },
+            confirmButton = { TextButton(onClick = onDelete) { Text(stringResource(R.string.delete_book), color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.cancel)) } }
         )
     }
 }
@@ -405,15 +420,15 @@ private fun ReadingStatsDialog(
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatsRow("Total reading time", formatDuration(s.totalReadingTimeMs))
-                    StatsRow("Sessions", s.sessionCount.toString())
+                    StatsRow(stringResource(R.string.total_reading_time), formatDuration(s.totalReadingTimeMs))
+                    StatsRow(stringResource(R.string.sessions), s.sessionCount.toString())
                     if (s.sessionCount > 0) {
-                        StatsRow("Avg. session length", formatDuration(s.averageSessionMs))
-                        s.lastSessionMs?.let { StatsRow("Last session", formatDuration(it)) }
+                        StatsRow(stringResource(R.string.avg_session_length), formatDuration(s.averageSessionMs))
+                        s.lastSessionMs?.let { StatsRow(stringResource(R.string.last_session), formatDuration(it)) }
                     }
                     if (s.sessionCount == 0) {
                         Text(
-                            "No reading sessions recorded yet.\nOpen the book to start tracking!",
+                            stringResource(R.string.no_sessions_yet),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -421,9 +436,18 @@ private fun ReadingStatsDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
     )
 }
+
+@Composable
+private fun statusLabel(status: ReadingStatus): String = stringResource(
+    when (status) {
+        ReadingStatus.UNREAD -> R.string.unread
+        ReadingStatus.READING -> R.string.reading
+        ReadingStatus.READ -> R.string.read
+    }
+)
 
 @Composable
 private fun StatsRow(label: String, value: String) {
@@ -459,12 +483,12 @@ private fun SettingsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Library Settings") },
+        title = { Text(stringResource(R.string.library_settings)) },
         text = {
             Column {
-                Text("Rebuild Cover Images", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.rebuild_covers_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Re-import cover images from all EPUB books in your library.", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.rebuild_covers_description), style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onRebuildCovers,
@@ -474,16 +498,16 @@ private fun SettingsDialog(
                     if (isRebuildingCovers) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Rebuilding...")
+                        Text(stringResource(R.string.rebuilding))
                     } else {
-                        Text("Rebuild Covers")
+                        Text(stringResource(R.string.rebuild_covers))
                     }
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Done")
+                Text(stringResource(R.string.done))
             }
         }
     )
@@ -494,14 +518,14 @@ private fun EmptyLibrary(onAddBook: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Icon(Icons.Default.LibraryBooks, null, modifier = Modifier.size(80.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Your library is empty", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium)
+        Text(stringResource(R.string.empty_library_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("Add your first book by tapping the + button", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 32.dp))
+        Text(stringResource(R.string.empty_library_message), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 32.dp))
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onAddBook) {
             Icon(Icons.Default.Add, null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Book")
+            Text(stringResource(R.string.add_book))
         }
     }
 }

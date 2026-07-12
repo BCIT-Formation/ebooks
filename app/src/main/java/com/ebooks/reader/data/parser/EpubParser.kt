@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Base64
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
+import java.io.File
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
@@ -338,8 +339,25 @@ class EpubParser(private val context: Context) {
         }
     }
 
+    /**
+     * Embeds a user-imported TTF/OTF as a base64 @font-face so the WebView can
+     * use it without file access. Empty string when no custom font is active.
+     */
+    private fun buildFontFaceCss(theme: ReaderTheme): String {
+        val path = theme.customFontPath ?: return ""
+        return runCatching {
+            val bytes = File(path).readBytes()
+            val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+            val isOtf = path.endsWith(".otf", ignoreCase = true)
+            val mime = if (isOtf) "font/otf" else "font/ttf"
+            val format = if (isOtf) "opentype" else "truetype"
+            "@font-face { font-family: 'CustomReaderFont'; src: url(data:$mime;base64,$b64) format('$format'); }"
+        }.getOrDefault("")
+    }
+
     private fun buildReaderCss(theme: ReaderTheme): String = """
         <style>
+        ${buildFontFaceCss(theme)}
         * { box-sizing: border-box; }
         html {
             -webkit-text-size-adjust: none;
@@ -448,7 +466,9 @@ data class ReaderTheme(
     val fontFamily: String = "Georgia, serif",
     val fontSize: Int = 18,
     val lineHeight: Float = 1.6f,
-    val paragraphIndent: Boolean = false
+    val paragraphIndent: Boolean = false,
+    /** Absolute path of a user-imported TTF/OTF to embed as 'CustomReaderFont'. */
+    val customFontPath: String? = null
 ) {
     companion object {
         val LIGHT = ReaderTheme()
