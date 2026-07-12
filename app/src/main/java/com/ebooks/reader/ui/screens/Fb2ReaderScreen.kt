@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,9 +24,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.ebooks.reader.data.db.AppDatabase
+import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.parser.Fb2Parser
+import com.ebooks.reader.ui.components.DrawingCanvas
+import com.ebooks.reader.ui.components.DrawingSettings
+import com.ebooks.reader.ui.components.DrawingToolbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -52,11 +58,15 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
     var autoScrollSpeed by remember { mutableStateOf(0) }
     var showControls by remember { mutableStateOf(true) }
+    var isDrawingMode by remember { mutableStateOf(false) }
+    var drawingSettings by remember { mutableStateOf(DrawingSettings()) }
+    var annotations by remember { mutableStateOf<List<Annotation>>(emptyList()) }
 
     LaunchedEffect(bookId) {
         withContext(Dispatchers.IO) {
             try {
-                val book = AppDatabase.getInstance(context).bookDao().getBookById(bookId)
+                val dao = AppDatabase.getInstance(context).bookDao()
+                val book = dao.getBookById(bookId)
                 if (book == null) {
                     error = "Book not found."
                     isLoading = false
@@ -75,6 +85,9 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                 }
 
                 htmlContent = fb2Book.htmlContent
+                // Load annotations for this page
+                annotations = dao.getAnnotationsByBook(bookId).first()
+                    .filter { it.pageIdentifier == "chapter-0" && !it.isDeleted }
                 isLoading = false
             } catch (e: Exception) {
                 error = "Error loading book: ${e.localizedMessage}"
@@ -158,6 +171,29 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                         }
                     )
 
+                    // Drawing canvas overlay
+                    if (annotations.isNotEmpty() || isDrawingMode) {
+                        DrawingCanvas(
+                            modifier = Modifier.fillMaxSize(),
+                            annotations = annotations,
+                            isEnabled = isDrawingMode,
+                            settings = drawingSettings,
+                            onStrokeCompleted = { annotation ->
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        val annotationWithPage = annotation.copy(
+                                            bookId = bookId,
+                                            pageIdentifier = "chapter-0",
+                                            pageIndex = 0
+                                        )
+                                        AppDatabase.getInstance(context).bookDao().insertAnnotation(annotationWithPage)
+                                        annotations = annotations + annotationWithPage
+                                    }
+                                }
+                            }
+                        )
+                    }
+
                     // Top bar with search or title
                     AnimatedVisibility(
                         visible = showControls,
@@ -182,6 +218,13 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                                     }
                                 },
                                 actions = {
+                                    IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
+                                        Icon(
+                                            Icons.Filled.Edit,
+                                            contentDescription = "Draw",
+                                            tint = if (isDrawingMode) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                                        )
+                                    }
                                     IconButton(onClick = { searchVisible = true }) {
                                         Icon(Icons.Default.Search, "Search in book")
                                     }
@@ -190,9 +233,41 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                         }
                     }
 
-                    // Bottom bar with auto-scroll and other controls
+                    // Drawing toolbar (when drawing mode active)
                     AnimatedVisibility(
-                        visible = showControls,
+                        visible = isDrawingMode,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        DrawingToolbar(
+                            settings = drawingSettings,
+                            onSettingsChanged = { drawingSettings = it },
+                            onClearPage = {
+                                annotations = emptyList()
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        AppDatabase.getInstance(context).bookDao()
+                                            .deletePageAnnotations(bookId, "chapter-0")
+                                    }
+                                }
+                            },
+                            onClearAll = {
+                                annotations = emptyList()
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        AppDatabase.getInstance(context).bookDao()
+                                            .deleteAllAnnotations(bookId)
+                                    }
+                                }
+                            },
+                            isDrawingEnabled = true
+                        )
+                    }
+
+                    // Bottom bar with auto-scroll and other controls (when not drawing)
+                    AnimatedVisibility(
+                        visible = showControls && !isDrawingMode,
                         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                         modifier = Modifier.align(Alignment.BottomStart)
