@@ -23,7 +23,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.ebooks.reader.data.db.AppDatabase
+import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.ReadingProgress
+import com.ebooks.reader.ui.components.DrawingCanvas
+import com.ebooks.reader.ui.components.DrawingSettings
+import com.ebooks.reader.ui.components.DrawingToolbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
