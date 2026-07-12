@@ -35,9 +35,11 @@ private val DarkColorScheme = darkColorScheme(
 fun EbookReaderTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    displayMode: DisplayMode = DisplayMode.NORMAL,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
+        displayMode != DisplayMode.NORMAL -> DisplayMode.getColorScheme(displayMode, darkTheme)
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

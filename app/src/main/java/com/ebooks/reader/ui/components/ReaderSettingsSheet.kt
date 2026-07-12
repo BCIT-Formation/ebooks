@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ebooks.reader.ui.theme.DisplayMode
 import com.ebooks.reader.viewmodel.FontFamily
 import com.ebooks.reader.viewmodel.OrientationLock
 import com.ebooks.reader.viewmodel.ReaderSettings
@@ -43,6 +44,20 @@ fun ReaderSettingsSheet(
                 ThemeOption("Dark", Color(0xFF1a1a2e), Color(0xFFe0e0e0), settings.themeOption == ReaderThemeOption.DARK) { onSettingsChanged(settings.copy(themeOption = ReaderThemeOption.DARK)) }
                 ThemeOption("Sepia", Color(0xFFF3EAD3), Color(0xFF3b2f1e), settings.themeOption == ReaderThemeOption.SEPIA) { onSettingsChanged(settings.copy(themeOption = ReaderThemeOption.SEPIA)) }
                 ThemeOption("Night", Color(0xFF0d0d0d), Color(0xFFaaaaaa), settings.themeOption == ReaderThemeOption.NIGHT) { onSettingsChanged(settings.copy(themeOption = ReaderThemeOption.NIGHT)) }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Display Mode
+            SectionLabel("Display Mode")
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DisplayMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = settings.displayMode == mode,
+                        onClick = { onSettingsChanged(settings.copy(displayMode = mode)) },
+                        label = { Text(mode.label, fontSize = 12.sp) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

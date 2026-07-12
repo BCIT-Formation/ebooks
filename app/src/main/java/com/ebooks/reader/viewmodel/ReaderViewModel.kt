@@ -15,6 +15,7 @@ import com.ebooks.reader.data.parser.EpubChapter
 import com.ebooks.reader.data.parser.ReaderTheme
 import com.ebooks.reader.data.repository.BookRepository
 import com.ebooks.reader.ui.components.DrawingSettings
+import com.ebooks.reader.ui.theme.DisplayMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -49,7 +50,8 @@ data class ReaderSettings(
     /** Minutes before auto-scroll is automatically stopped. 0 = disabled. */
     val sleepTimerMinutes: Int = 0,
     /** Warm amber overlay intensity [0f = off … 0.5f = full]. */
-    val nightLightAlpha: Float = 0f
+    val nightLightAlpha: Float = 0f,
+    val displayMode: DisplayMode = DisplayMode.NORMAL
 )
 
 data class ReaderUiState(
