@@ -44,6 +44,8 @@ import com.ebooks.reader.viewmodel.*
 @Composable
 fun LibraryScreen(
     onOpenBook: (bookId: String, fileType: String) -> Unit,
+    onOpenOpds: () -> Unit = {},
+    onOpenSync: () -> Unit = {},
     viewModel: LibraryViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -232,6 +234,8 @@ fun LibraryScreen(
                 isRebuildingCovers = true
                 viewModel.rebuildCovers { isRebuildingCovers = false }
             },
+            onOpenOpds = { showSettingsMenu = false; onOpenOpds() },
+            onOpenSync = { showSettingsMenu = false; onOpenSync() },
             onDismiss = { showSettingsMenu = false }
         )
     }
@@ -479,6 +483,8 @@ private fun formatDuration(ms: Long): String {
 private fun SettingsDialog(
     isRebuildingCovers: Boolean,
     onRebuildCovers: () -> Unit,
+    onOpenOpds: () -> Unit,
+    onOpenSync: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -486,6 +492,19 @@ private fun SettingsDialog(
         title = { Text(stringResource(R.string.library_settings)) },
         text = {
             Column {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.opds_title)) },
+                    supportingContent = { Text(stringResource(R.string.opds_settings_hint), style = MaterialTheme.typography.bodySmall) },
+                    leadingContent = { Icon(Icons.Default.TravelExplore, null) },
+                    modifier = Modifier.clickable(onClick = onOpenOpds)
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.sync_title)) },
+                    supportingContent = { Text(stringResource(R.string.sync_settings_hint), style = MaterialTheme.typography.bodySmall) },
+                    leadingContent = { Icon(Icons.Default.CloudSync, null) },
+                    modifier = Modifier.clickable(onClick = onOpenSync)
+                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(stringResource(R.string.rebuild_covers_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(stringResource(R.string.rebuild_covers_description), style = MaterialTheme.typography.bodySmall)

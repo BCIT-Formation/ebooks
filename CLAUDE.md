@@ -7,7 +7,8 @@ Guidance for AI assistants working on this repository.
 ## Project overview
 
 Android ebook reader app. Kotlin + Jetpack Compose + Material Design 3. Supports EPUB, PDF,
-TXT, FB2, CBZ. All data stays on-device — no internet permission, no cloud.
+TXT, FB2, CBZ. Local-first: all data lives on-device; network access exists only for
+user-initiated OPDS catalogs, WebDAV, and cloud-folder progress sync (ADR-006).
 
 - **Min SDK:** 26 (Android 8.0)
 - **Compile SDK:** 34 / **Target SDK:** 34
@@ -44,12 +45,21 @@ app/src/main/java/com/ebooks/reader/
         Bookmark.kt         # @Entity "bookmarks"
         ReadingProgress.kt  # @Entity "reading_progress" (chapterIndex, scrollPosition, …)
         ReadingSession.kt   # @Entity "reading_sessions" (reading-time stats, FK → books)
+    opds/
+      OpdsModels.kt         # OpdsFeed / OpdsEntry
+      OpdsParser.kt         # Pure-Kotlin OPDS 1.x Atom feed parser
+      OpdsClient.kt         # HTTPS-only catalog fetch + book download (ADR-006)
     parser/
       EpubBook.kt           # EpubBook, EpubChapter, TocItem, ManifestItem, SpineItem
       EpubParser.kt         # Pure-Kotlin EPUB parser + ReaderTheme data class
       Fb2Parser.kt          # Pure-Kotlin FB2 (FictionBook 2.0) parser → HTML
     repository/
       BookRepository.kt     # Single source of truth. Wraps DAO + parsers. ImportResult sealed class
+    sync/
+      ProgressSnapshot.kt   # Device-independent progress model + newer-wins merge (pure Kotlin)
+      ProgressSnapshotJson.kt # org.json (de)serialization of the snapshot
+      WebDavClient.kt       # HTTPS WebDAV: PROPFIND list, GET download, PUT upload
+      SyncCredentialStore.kt # Keystore-encrypted WebDAV credentials + cloud folder pref
   ui/
     components/
       BookCard.kt
@@ -59,6 +69,8 @@ app/src/main/java/com/ebooks/reader/
       TtsSpeaker.kt         # TextToSpeech state holder (rememberTtsSpeaker)
     screens/
       LibraryScreen.kt
+      OpdsScreen.kt          # OPDS catalog browser (browse feeds, download books)
+      SyncScreen.kt          # Sync & backup (cloud folder via SAF + WebDAV)
       ReaderScreen.kt        # EPUB reader (WebView)
       PdfReaderScreen.kt     # PDF reader (PdfRenderer)
       TxtReaderScreen.kt     # Plain-text reader (Compose)
@@ -73,6 +85,8 @@ app/src/main/java/com/ebooks/reader/
   viewmodel/
     LibraryViewModel.kt     # SortOrder, ViewMode, LibraryUiState, ImportState sealed class
     ReaderViewModel.kt
+    OpdsViewModel.kt        # catalog navigation stack + download/import
+    SyncViewModel.kt        # cloud folder + WebDAV sync state
   widget/
     CurrentBookWidget.kt    # Glance home-screen widget (most recently read book)
 
@@ -80,6 +94,7 @@ app/src/test/java/com/ebooks/reader/        # JVM unit tests (no emulator)
   EpubParserTest.kt         # ReaderTheme presets
   HtmlTextTest.kt           # htmlToPlainText (TTS text extraction)
   LibraryViewModelTest.kt   # filtering/sorting logic
+  ProgressSyncMergeTest.kt  # newer-wins sync merge (selectNewerEntries)
 
 app/src/androidTest/java/com/ebooks/reader/ # Instrumented tests (emulator/device)
   data/db/AppDatabaseTest.kt          # Room + MIGRATION_1_2
@@ -191,6 +206,7 @@ Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-instal
 | Room | 2.6.1 | Local SQLite database |
 | Coil | 2.7.0 | Compose-native image loading |
 | Glance | 1.1.0 | Home screen app widget (Compose-style RemoteViews) |
+| DocumentFile | 1.0.1 | SAF tree access for cloud-folder sync |
 | Navigation Compose | 2.8.0 | In-app navigation |
 | Coroutines Test | 1.8.1 | Unit test utilities |
 | Compose UI Test | 1.6.8 | Instrumented Compose UI tests |
@@ -420,8 +436,14 @@ Scope examples: `epub`, `fb2`, `pdf`, `db`, `ui`, `reader`, `library`, `ci`.
 
 ## Security
 
-- **No internet permission.** The app declares only read-storage/media permissions
-  (`READ_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`). Do not add `INTERNET`.
+- **Network access is user-initiated only (ADR-006).** `INTERNET` is declared solely for
+  OPDS catalogs, WebDAV, and cloud-folder sync, all triggered by explicit user actions.
+  No telemetry, analytics, background polling, or update checks — ever. Cleartext traffic
+  stays disabled (`usesCleartextTraffic` platform default), so all endpoints must be HTTPS.
+  New networking uses `HttpURLConnection` + `XmlPullParser` (no OkHttp/Retrofit) and no
+  vendor cloud SDKs (Drive/OneDrive go through the SAF document picker).
+- WebDAV credentials are encrypted at rest with an Android Keystore AES-GCM key
+  (`SyncCredentialStore`) — never store sync passwords in plaintext.
 - No secrets in source code. CI scans for patterns like `password = "..."` in `*.kt` / `*.xml`.
 - Signing secrets (`SIGNING_KEYSTORE_BASE64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`,
   `SIGNING_KEY_PASSWORD`) live in GitHub repository secrets only.
@@ -437,12 +459,14 @@ Scope examples: `epub`, `fb2`, `pdf`, `db`, `ui`, `reader`, `library`, `ci`.
 
 All former 🔴 critical and 🟠 important items are resolved, and the 🟢 backlog is
 essentially done (bookshelf 3D view, TTS, share excerpt, custom fonts, reading widget,
-per-app language). Cloud sync and OPDS are explicitly **won't-do** — they conflict with
-the offline-only design (no `INTERNET` permission). Remaining open items
-(see `TODO.md` for the full prioritised list):
+per-app language). ADR-006 reversed the old "no INTERNET" rule: OPDS catalogs, WebDAV
+browse/sync, and cloud-folder (Drive/OneDrive via SAF) progress sync are now implemented.
+Remaining open items (see `TODO.md` for the full prioritised list):
 
 | Priority | Item |
 |----------|------|
+| 🟢 | FTPS / SFTP / SMB network shares (need third-party library decisions) |
+| 🟢 | Native Google Drive / OneDrive API sync (needs owner-registered OAuth client IDs) |
 | 🟢 | Finish string extraction for full localization (ViewModel errors, secondary readers) |
 | 🟢 | CBR support + pinch-to-zoom for comics |
 
@@ -453,7 +477,8 @@ Do not paper over genuine gaps with workarounds — implement or file them in `T
 ## Common mistakes to avoid
 
 - **Do not add dependencies outside `libs.versions.toml`.**
-- **Do not add the `INTERNET` permission** or any network/cloud code — the app is fully offline.
+- **Do not add passive network use.** Network calls are allowed only for the user-initiated
+  sync/catalog features covered by ADR-006 (HTTPS-only, no telemetry, no vendor cloud SDKs).
 - **Do not use XML layouts.** All UI is Compose.
 - **Do not call DAO directly from a ViewModel.** Always go through `BookRepository`.
 - **Do not catch and swallow exceptions silently** in business logic — `runCatching` is used

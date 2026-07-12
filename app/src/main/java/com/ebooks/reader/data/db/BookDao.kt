@@ -71,6 +71,10 @@ interface BookDao {
     @Query("SELECT * FROM reading_progress WHERE bookId = :bookId")
     suspend fun getReadingProgress(bookId: String): ReadingProgress?
 
+    /** One-shot snapshot of all reading progress — for progress sync export. */
+    @Query("SELECT * FROM reading_progress")
+    suspend fun getAllReadingProgress(): List<ReadingProgress>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveReadingProgress(progress: ReadingProgress)
 

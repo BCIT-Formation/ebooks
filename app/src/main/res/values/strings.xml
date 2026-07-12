@@ -99,6 +99,44 @@
     <string name="night_light">Night Light</string>
     <string name="off">Off</string>
 
+    <!-- OPDS catalogs -->
+    <string name="opds_title">OPDS Catalogs</string>
+    <string name="opds_settings_hint">Browse and download books from online catalogs</string>
+    <string name="opds_url_hint">https://catalog-url…</string>
+    <string name="opds_open">Open</string>
+    <string name="opds_empty_hint">Enter the address of an OPDS catalog to browse its books.</string>
+    <string name="opds_download">Download</string>
+    <string name="opds_download_success">Added “%1$s” to your library</string>
+    <string name="opds_download_failed">Download failed: %1$s</string>
+    <string name="opds_import_failed">Could not import “%1$s”</string>
+    <string name="opds_load_failed">Could not load catalog: %1$s</string>
+
+    <!-- Sync & backup -->
+    <string name="sync_title">Sync &amp; Backup</string>
+    <string name="sync_settings_hint">Sync reading progress via a cloud folder or WebDAV</string>
+    <string name="sync_cloud_folder_title">Cloud folder (Google Drive / OneDrive)</string>
+    <string name="sync_cloud_folder_description">Pick a folder from your cloud storage app (Google Drive, OneDrive, …). Your reading progress is saved there as a small file and can be imported on another device.</string>
+    <string name="sync_folder_selected">Sync folder is set</string>
+    <string name="sync_choose_folder">Choose sync folder</string>
+    <string name="sync_export">Export progress</string>
+    <string name="sync_import">Import progress</string>
+    <string name="sync_webdav_title">WebDAV server</string>
+    <string name="sync_webdav_description">Connect to a WebDAV server (Nextcloud, ownCloud, …) over HTTPS to download books and sync reading progress.</string>
+    <string name="sync_webdav_url">Server URL</string>
+    <string name="sync_webdav_user">Username</string>
+    <string name="sync_webdav_password">Password</string>
+    <string name="sync_connect">Save &amp; connect</string>
+    <string name="sync_connected">Connected — %1$s book file(s) found</string>
+    <string name="sync_books_on_server">Books on server</string>
+    <string name="sync_export_done">Progress exported</string>
+    <string name="sync_import_done">Progress imported — %1$s book(s) updated</string>
+    <string name="sync_no_folder">Choose a sync folder first</string>
+    <string name="sync_folder_unavailable">The sync folder is not accessible</string>
+    <string name="sync_no_snapshot">No progress file found yet — export from the other device first</string>
+    <string name="sync_invalid_snapshot">The progress file is not valid</string>
+    <string name="sync_https_required">The server URL must start with https://</string>
+    <string name="sync_failed">Sync failed: %1$s</string>
+
     <!-- Widget -->
     <string name="widget_label">Currently reading</string>
     <string name="widget_description">Shows the book you are currently reading</string>
