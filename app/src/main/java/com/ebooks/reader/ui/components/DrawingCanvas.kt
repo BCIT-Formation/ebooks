@@ -1,7 +1,5 @@
 package com.ebooks.reader.ui.components
 
-import android.graphics.Paint
-import android.graphics.PorterDuff
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -13,10 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.dp
 import com.ebooks.reader.data.db.entities.Annotation
 import kotlin.math.sqrt
 
@@ -125,27 +121,23 @@ private fun DrawScope.drawFreehandStroke(annotation: Annotation) {
     val points = deserializePoints(annotation.points)
     if (points.size < 2) return
 
-    val paint = Paint().apply {
-        color = annotation.color
-        strokeWidth = annotation.strokeWidth
-        isAntiAlias = true
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-        alpha = (annotation.opacity * 255).toInt()
-    }
+    val color = Color(annotation.color)
+    val stroke = Stroke(
+        width = annotation.strokeWidth,
+        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+        join = androidx.compose.ui.graphics.StrokeJoin.Round
+    )
 
-    drawContext.canvas.nativeCanvas.apply {
-        for (i in 0 until points.size - 1) {
-            val p1 = points[i]
-            val p2 = points[i + 1]
-            drawLine(
-                p1.x * size.width,
-                p1.y * size.height,
-                p2.x * size.width,
-                p2.y * size.height,
-                paint
-            )
-        }
+    for (i in 0 until points.size - 1) {
+        val p1 = points[i]
+        val p2 = points[i + 1]
+        drawLine(
+            color = color.copy(alpha = annotation.opacity),
+            start = androidx.compose.ui.geometry.Offset(p1.x * size.width, p1.y * size.height),
+            end = androidx.compose.ui.geometry.Offset(p2.x * size.width, p2.y * size.height),
+            strokeWidth = annotation.strokeWidth,
+            cap = androidx.compose.ui.graphics.StrokeCap.Round
+        )
     }
 }
 
@@ -158,20 +150,11 @@ private fun DrawScope.drawHighlight(annotation: Annotation) {
     val w = bounds["w"] as? Float ?: return
     val h = bounds["h"] as? Float ?: return
 
-    val paint = Paint().apply {
-        color = annotation.color
-        alpha = (annotation.opacity * 127).toInt()
-    }
-
-    drawContext.canvas.nativeCanvas.apply {
-        drawRect(
-            x * size.width,
-            y * size.height,
-            (x + w) * size.width,
-            (y + h) * size.height,
-            paint
-        )
-    }
+    drawRect(
+        color = Color(annotation.color).copy(alpha = annotation.opacity * 0.5f),
+        topLeft = androidx.compose.ui.geometry.Offset(x * size.width, y * size.height),
+        size = androidx.compose.ui.geometry.Size(w * size.width, h * size.height)
+    )
 }
 
 private fun DrawScope.drawRectangleShape(annotation: Annotation) {
@@ -183,23 +166,12 @@ private fun DrawScope.drawRectangleShape(annotation: Annotation) {
     val w = bounds["w"] as? Float ?: return
     val h = bounds["h"] as? Float ?: return
 
-    val paint = Paint().apply {
-        color = annotation.color
-        strokeWidth = annotation.strokeWidth
-        style = Paint.Style.STROKE
-        isAntiAlias = true
-        alpha = (annotation.opacity * 255).toInt()
-    }
-
-    drawContext.canvas.nativeCanvas.apply {
-        drawRect(
-            x * size.width,
-            y * size.height,
-            (x + w) * size.width,
-            (y + h) * size.height,
-            paint
-        )
-    }
+    drawRect(
+        color = Color(annotation.color),
+        topLeft = androidx.compose.ui.geometry.Offset(x * size.width, y * size.height),
+        size = androidx.compose.ui.geometry.Size(w * size.width, h * size.height),
+        style = Stroke(width = annotation.strokeWidth)
+    )
 }
 
 private fun DrawScope.drawCircleShape(annotation: Annotation) {
@@ -210,48 +182,29 @@ private fun DrawScope.drawCircleShape(annotation: Annotation) {
     val y = bounds["y"] as? Float ?: return
     val r = bounds["r"] as? Float ?: return
 
-    val paint = Paint().apply {
-        color = annotation.color
-        strokeWidth = annotation.strokeWidth
-        style = Paint.Style.STROKE
-        isAntiAlias = true
-        alpha = (annotation.opacity * 255).toInt()
-    }
-
-    drawContext.canvas.nativeCanvas.apply {
-        drawCircle(
-            x * size.width,
-            y * size.height,
-            r * size.width,
-            paint
-        )
-    }
+    drawCircle(
+        color = Color(annotation.color),
+        center = androidx.compose.ui.geometry.Offset(x * size.width, y * size.height),
+        radius = r * size.width,
+        style = Stroke(width = annotation.strokeWidth)
+    )
 }
 
 private fun DrawScope.drawPendingStroke(points: List<StrokePoint>, settings: DrawingSettings) {
     if (points.size < 2) return
 
-    val paint = Paint().apply {
-        color = settings.color
-        strokeWidth = settings.strokeWidth
-        isAntiAlias = true
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-        alpha = (settings.opacity * 255).toInt()
-    }
+    val color = Color(settings.color)
 
-    drawContext.canvas.nativeCanvas.apply {
-        for (i in 0 until points.size - 1) {
-            val p1 = points[i]
-            val p2 = points[i + 1]
-            drawLine(
-                p1.x * size.width,
-                p1.y * size.height,
-                p2.x * size.width,
-                p2.y * size.height,
-                paint
-            )
-        }
+    for (i in 0 until points.size - 1) {
+        val p1 = points[i]
+        val p2 = points[i + 1]
+        drawLine(
+            color = color.copy(alpha = settings.opacity),
+            start = androidx.compose.ui.geometry.Offset(p1.x * size.width, p1.y * size.height),
+            end = androidx.compose.ui.geometry.Offset(p2.x * size.width, p2.y * size.height),
+            strokeWidth = settings.strokeWidth,
+            cap = androidx.compose.ui.graphics.StrokeCap.Round
+        )
     }
 }
 
