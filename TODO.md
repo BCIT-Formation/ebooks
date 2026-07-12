@@ -21,6 +21,17 @@
 - [x] Support FB2 format (XML-based Russian ebook format — Fb2Parser + Fb2ReaderScreen implemented)
 - [ ] Tilt-to-scroll (using `SensorManager` accelerometer)
 - [x] Screen orientation lock per-book
+- [x] Drawing & annotation support (all 5 formats - EPUB, PDF, TXT, FB2, CBZ)
+- [ ] Fix drawing forms/shapes (improve form rendering, fix highlight visibility)
+- [ ] Display mode selection (e-paper, AMOLED, night reading)
+- [ ] Performance optimizations:
+  - [ ] Implement debounced rendering for pending strokes
+  - [ ] Add Canvas drawing optimizations (batch rendering, layer caching)
+  - [ ] Optimize database queries with better indexing
+  - [ ] Profile and fix bottlenecks in coordinate normalization
+  - [ ] Reduce reader screen load time
+  - [ ] Improve scrolling smoothness
+  - [ ] Optimize Build/CI speed (faster compilation, quicker tests)
 
 ## 🟢 Nice to Have
 
@@ -30,9 +41,13 @@
 - [ ] Text-to-speech integration
 - [ ] Share book excerpt feature
 - [ ] Cloud sync (reading progress across devices)
-- [ ] OPDS catalog support (download books from servers)
+- [ ] OPDS catalog support (download books from servers) — Atramenta, Project Gutenberg, Standard Ebooks, etc.
 - [ ] Custom fonts — user can add TTF/OTF files
 - [x] Comic book (CBZ) reader — basic vertical page reader (`CbzReaderScreen`); CBR and pinch-to-zoom still open
 - [x] Night light / warm color filter overlay
 - [ ] Widget for current reading book
 - [ ] Android 13+ per-app language preferences
+- [ ] Annotation export (PDF overlay, EPUB injection, markdown)
+- [ ] Undo/Redo for drawing strokes
+- [ ] Advanced annotation shapes (text boxes, underline, strikethrough)
+- [ ] Annotation search by color, date, or text content
