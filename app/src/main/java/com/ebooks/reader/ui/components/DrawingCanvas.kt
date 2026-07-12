@@ -8,7 +8,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import Offset
+import Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -124,8 +128,8 @@ private fun DrawScope.drawFreehandStroke(annotation: Annotation) {
     val color = Color(annotation.color)
     val stroke = Stroke(
         width = annotation.strokeWidth,
-        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-        join = androidx.compose.ui.graphics.StrokeJoin.Round
+        cap = StrokeCap.Round,
+        join = StrokeJoin.Round
     )
 
     for (i in 0 until points.size - 1) {
@@ -133,10 +137,10 @@ private fun DrawScope.drawFreehandStroke(annotation: Annotation) {
         val p2 = points[i + 1]
         drawLine(
             color = color.copy(alpha = annotation.opacity),
-            start = androidx.compose.ui.geometry.Offset(p1.x * size.width, p1.y * size.height),
-            end = androidx.compose.ui.geometry.Offset(p2.x * size.width, p2.y * size.height),
+            start = Offset(p1.x * size.width, p1.y * size.height),
+            end = Offset(p2.x * size.width, p2.y * size.height),
             strokeWidth = annotation.strokeWidth,
-            cap = androidx.compose.ui.graphics.StrokeCap.Round
+            cap = StrokeCap.Round
         )
     }
 }
@@ -152,8 +156,8 @@ private fun DrawScope.drawHighlight(annotation: Annotation) {
 
     drawRect(
         color = Color(annotation.color).copy(alpha = annotation.opacity * 0.5f),
-        topLeft = androidx.compose.ui.geometry.Offset(x * size.width, y * size.height),
-        size = androidx.compose.ui.geometry.Size(w * size.width, h * size.height)
+        topLeft = Offset(x * size.width, y * size.height),
+        size = Size(w * size.width, h * size.height)
     )
 }
 
@@ -168,8 +172,8 @@ private fun DrawScope.drawRectangleShape(annotation: Annotation) {
 
     drawRect(
         color = Color(annotation.color),
-        topLeft = androidx.compose.ui.geometry.Offset(x * size.width, y * size.height),
-        size = androidx.compose.ui.geometry.Size(w * size.width, h * size.height),
+        topLeft = Offset(x * size.width, y * size.height),
+        size = Size(w * size.width, h * size.height),
         style = Stroke(width = annotation.strokeWidth)
     )
 }
@@ -184,7 +188,7 @@ private fun DrawScope.drawCircleShape(annotation: Annotation) {
 
     drawCircle(
         color = Color(annotation.color),
-        center = androidx.compose.ui.geometry.Offset(x * size.width, y * size.height),
+        center = Offset(x * size.width, y * size.height),
         radius = r * size.width,
         style = Stroke(width = annotation.strokeWidth)
     )
@@ -200,10 +204,10 @@ private fun DrawScope.drawPendingStroke(points: List<StrokePoint>, settings: Dra
         val p2 = points[i + 1]
         drawLine(
             color = color.copy(alpha = settings.opacity),
-            start = androidx.compose.ui.geometry.Offset(p1.x * size.width, p1.y * size.height),
-            end = androidx.compose.ui.geometry.Offset(p2.x * size.width, p2.y * size.height),
+            start = Offset(p1.x * size.width, p1.y * size.height),
+            end = Offset(p2.x * size.width, p2.y * size.height),
             strokeWidth = settings.strokeWidth,
-            cap = androidx.compose.ui.graphics.StrokeCap.Round
+            cap = StrokeCap.Round
         )
     }
 }
