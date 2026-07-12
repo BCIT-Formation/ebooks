@@ -35,6 +35,7 @@ fun DrawingCanvas(
     var pendingStroke by remember { mutableStateOf<List<StrokePoint>>(emptyList()) }
     var canvasWidth by remember { mutableStateOf(1f) }
     var canvasHeight by remember { mutableStateOf(1f) }
+    var batchPoints by remember { mutableStateOf<List<StrokePoint>>(emptyList()) }
 
     Canvas(
         modifier = modifier
@@ -51,6 +52,7 @@ fun DrawingCanvas(
                     val pressure = down.pressure
 
                     pendingStroke = listOf(StrokePoint(startX, startY, pressure))
+                    batchPoints = emptyList()
 
                     var lastPoint = StrokePoint(startX, startY, pressure)
 
@@ -70,12 +72,20 @@ fun DrawingCanvas(
                         }
 
                         if (allPoints.isNotEmpty()) {
-                            pendingStroke = pendingStroke + allPoints
+                            batchPoints = batchPoints + allPoints
+                            if (batchPoints.size >= 5) {
+                                pendingStroke = pendingStroke + batchPoints
+                                batchPoints = emptyList()
+                            }
                         }
 
                         event.changes.forEach { it.consume() }
 
                         if (event.changes.any { !it.pressed }) {
+                            if (batchPoints.isNotEmpty()) {
+                                pendingStroke = pendingStroke + batchPoints
+                                batchPoints = emptyList()
+                            }
                             break
                         }
                     }
