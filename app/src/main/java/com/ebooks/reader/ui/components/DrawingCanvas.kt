@@ -1,6 +1,8 @@
 package com.ebooks.reader.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,7 +55,7 @@ fun DrawingCanvas(
                     var lastPoint = StrokePoint(startX, startY, pressure)
 
                     while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Main)
+                        val event = awaitPointerEvent()
                         val allPoints = event.changes.flatMap { change ->
                             val normalizedX = change.position.x / canvasWidth
                             val normalizedY = change.position.y / canvasHeight
@@ -73,7 +75,7 @@ fun DrawingCanvas(
 
                         event.changes.forEach { it.consume() }
 
-                        if (event.changes.any { it.pressed.not() }) {
+                        if (event.changes.any { !it.pressed }) {
                             break
                         }
                     }

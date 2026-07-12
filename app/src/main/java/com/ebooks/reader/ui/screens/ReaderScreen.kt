@@ -20,7 +20,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.CreateNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -380,7 +379,7 @@ private fun ReaderTopBar(
         navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
         actions = {
             IconButton(onClick = onSearch) { Icon(Icons.Default.Search, "Search in book") }
-            IconButton(onClick = onDraw) { Icon(Icons.Outlined.CreateNote, "Draw annotations") }
+            IconButton(onClick = onDraw) { Icon(Icons.Default.Edit, "Draw annotations") }
             IconButton(onClick = onChapters) { Icon(Icons.Default.List, "Chapters") }
             IconButton(onClick = onBookmark) { Icon(Icons.Default.BookmarkAdd, "Add bookmark") }
             IconButton(onClick = onSettings) { Icon(Icons.Default.TextFormat, "Settings") }
