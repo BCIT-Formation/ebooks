@@ -1,6 +1,7 @@
 package com.ebooks.reader.data.db
 
 import androidx.room.*
+import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.Book
 import com.ebooks.reader.data.db.entities.Bookmark
 import com.ebooks.reader.data.db.entities.ReadingProgress
@@ -108,4 +109,39 @@ interface BookDao {
 
     @Query("DELETE FROM reading_sessions WHERE bookId = :bookId")
     suspend fun deleteReadingSessions(bookId: String)
+
+    // ── Annotations ───────────────────────────────────────────────────────────
+
+    @Query("""
+        SELECT * FROM annotations
+        WHERE bookId = :bookId AND pageIdentifier = :pageIdentifier
+        AND isDeleted = 0
+        ORDER BY createdAt ASC
+    """)
+    suspend fun getAnnotationsForPage(bookId: String, pageIdentifier: String): List<Annotation>
+
+    @Query("""
+        SELECT * FROM annotations
+        WHERE bookId = :bookId AND isDeleted = 0
+        ORDER BY pageIdentifier ASC, createdAt ASC
+    """)
+    fun getAnnotationsByBook(bookId: String): Flow<List<Annotation>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAnnotation(annotation: Annotation)
+
+    @Update
+    suspend fun updateAnnotation(annotation: Annotation)
+
+    @Query("UPDATE annotations SET isDeleted = 1 WHERE id = :id")
+    suspend fun softDeleteAnnotation(id: String)
+
+    @Query("DELETE FROM annotations WHERE bookId = :bookId AND pageIdentifier = :pageIdentifier")
+    suspend fun deletePageAnnotations(bookId: String, pageIdentifier: String)
+
+    @Query("DELETE FROM annotations WHERE bookId = :bookId")
+    suspend fun deleteAllAnnotations(bookId: String)
+
+    @Query("SELECT COUNT(*) FROM annotations WHERE bookId = :bookId AND isDeleted = 0")
+    suspend fun getAnnotationCount(bookId: String): Int
 }
