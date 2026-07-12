@@ -17,8 +17,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ebooks.reader.ui.screens.CbzReaderScreen
 import com.ebooks.reader.ui.screens.LibraryScreen
+import com.ebooks.reader.ui.screens.OpdsScreen
 import com.ebooks.reader.ui.screens.PdfReaderScreen
 import com.ebooks.reader.ui.screens.ReaderScreen
+import com.ebooks.reader.ui.screens.SyncScreen
 import com.ebooks.reader.ui.screens.TxtReaderScreen
 import com.ebooks.reader.ui.screens.Fb2ReaderScreen
 import com.ebooks.reader.ui.theme.EbookReaderTheme
@@ -57,8 +59,18 @@ class MainActivity : ComponentActivity() {
                                         "cbz" -> navController.navigate("cbz_reader/$bookId")
                                         else  -> navController.navigate("reader/$bookId")
                                     }
-                                }
+                                },
+                                onOpenOpds = { navController.navigate("opds") },
+                                onOpenSync = { navController.navigate("sync") }
                             )
+                        }
+
+                        composable("opds") {
+                            OpdsScreen(onBack = { navController.popBackStack() })
+                        }
+
+                        composable("sync") {
+                            SyncScreen(onBack = { navController.popBackStack() })
                         }
 
                         composable(

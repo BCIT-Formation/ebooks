@@ -36,12 +36,20 @@
 - [x] Android 13+ per-app language preferences (`localeConfig` + en/fr resources for the main screens; ViewModel error strings and secondary readers still hardcoded English)
 - [ ] Finish string extraction for full localization (ViewModel error messages, PDF/FB2/CBZ reader labels, chapter panel, drawing toolbar)
 - [ ] CBR support + pinch-to-zoom for the comic reader
+- [x] Cloud sync (reading progress across devices) — via a user-picked cloud folder
+      (Google Drive / OneDrive document providers through SAF) and via WebDAV;
+      newer-wins merge keyed by title+author (`data/sync/`, ADR-006)
+- [x] OPDS catalog support (browse catalogs, download books into the library —
+      `data/opds/` + `OpdsScreen`, ADR-006)
 
-## ❌ Won't do (conflicts with offline-only design)
+## 🌐 Network follow-ups (ADR-006)
 
-These require network access, which the app deliberately does not have
-(no `INTERNET` permission — see SECURITY.md and CLAUDE.md). Do not implement
-without first reversing that architecture decision:
+Approved by the repository owner; each needs a library or credential decision first:
 
-- Cloud sync (reading progress across devices)
-- OPDS catalog support (download books from servers)
+- [ ] FTPS support (e.g. Apache `commons-net`) — plain FTP stays banned (cleartext)
+- [ ] SFTP support (e.g. `sshj`) — SSH key or password auth
+- [ ] SMB/Windows network shares (e.g. `jcifs-ng`); AFP has no maintained Java client —
+      macOS shares are reachable over SMB
+- [ ] Native Google Drive / OneDrive API sync — requires the owner to register OAuth
+      client IDs (Google Cloud Console / Azure AD); the SAF cloud-folder sync already
+      covers both providers without credentials

@@ -17,6 +17,9 @@ import com.ebooks.reader.data.parser.EpubBook
 import com.ebooks.reader.data.parser.EpubChapter
 import com.ebooks.reader.data.parser.EpubParser
 import com.ebooks.reader.data.parser.ReaderTheme
+import com.ebooks.reader.data.sync.ProgressEntry
+import com.ebooks.reader.data.sync.ProgressSnapshot
+import com.ebooks.reader.data.sync.selectNewerEntries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -286,6 +289,57 @@ class BookRepository(private val context: Context) {
         val recentSess = dao.getRecentSessions(bookId)
         val lastMs     = recentSess.firstOrNull()?.let { it.endTime - it.startTime }
         ReadingStats(totalMs, count, avgMs, lastMs)
+    }
+
+    // ── Progress Sync (ADR-006) ───────────────────────────────────────────────
+
+    /** Builds the device-independent progress snapshot exchanged during sync. */
+    suspend fun buildProgressSnapshot(): ProgressSnapshot = withContext(Dispatchers.IO) {
+        val progressByBook = dao.getAllReadingProgress().associateBy { it.bookId }
+        val entries = dao.getAllBooksSnapshot().mapNotNull { book ->
+            val lastRead = book.lastReadAt ?: return@mapNotNull null
+            val progress = progressByBook[book.id]
+            ProgressEntry(
+                title = book.title,
+                author = book.author,
+                chapterIndex = progress?.chapterIndex ?: 0,
+                scrollPosition = progress?.scrollPosition ?: 0,
+                lastReadAt = lastRead,
+                readingStatus = book.readingStatus.name
+            )
+        }
+        ProgressSnapshot(exportedAt = System.currentTimeMillis(), entries = entries)
+    }
+
+    /**
+     * Applies a remote snapshot with newer-wins semantics (books matched by
+     * title + author). Returns the number of books whose progress advanced.
+     */
+    suspend fun applyProgressSnapshot(remote: ProgressSnapshot): Int = withContext(Dispatchers.IO) {
+        val local = buildProgressSnapshot()
+        val toApply = selectNewerEntries(local.entries, remote.entries)
+        val books = dao.getAllBooksSnapshot()
+        var applied = 0
+        for (entry in toApply) {
+            val book = books.find {
+                it.title.equals(entry.title, ignoreCase = true) &&
+                    it.author.equals(entry.author, ignoreCase = true)
+            } ?: continue
+            val existing = dao.getReadingProgress(book.id)
+            dao.saveReadingProgress(
+                ReadingProgress(
+                    bookId = book.id,
+                    chapterIndex = entry.chapterIndex,
+                    chapterHref = existing?.chapterHref ?: "",
+                    scrollPosition = entry.scrollPosition
+                )
+            )
+            val status = runCatching { ReadingStatus.valueOf(entry.readingStatus) }
+                .getOrDefault(book.readingStatus)
+            dao.updateBook(book.copy(lastReadAt = entry.lastReadAt, readingStatus = status))
+            applied++
+        }
+        applied
     }
 
     // ── Bookmarks ─────────────────────────────────────────────────────────────

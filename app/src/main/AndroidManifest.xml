@@ -5,6 +5,10 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- ADR-006: network access is user-initiated only (OPDS catalogs, WebDAV,
+         cloud-folder sync). Cleartext traffic stays disabled (API 28+ default),
+         so all connections are HTTPS-only. No telemetry or background use. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

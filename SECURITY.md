@@ -30,11 +30,18 @@ responsible disclosure.
 
 This application is designed with a privacy-first, minimal-attack-surface approach:
 
-- **Local storage only** — books and reading progress are stored on-device; no data is sent to external servers.
-- **No network access** — the app does not connect to any remote endpoints.
+- **Local storage first** — books and reading progress are stored on-device.
+- **User-initiated network access only (ADR-006)** — the `INTERNET` permission exists solely
+  for features the user explicitly triggers: OPDS catalog browsing/downloads, WebDAV
+  browsing/sync, and progress sync to a user-chosen cloud folder. There is no background
+  network activity, no update checks, and no third-party cloud SDKs.
+- **Encrypted transports only** — cleartext traffic is disabled (platform default,
+  `usesCleartextTraffic=false`), so `http://` endpoints are rejected; WebDAV/OPDS require HTTPS.
 - **Scoped file access** — files are opened exclusively via Android's Storage Access Framework (SAF); no broad storage permissions are requested.
 - **No analytics or telemetry** — no usage data, crash reports, or identifiers are collected or transmitted.
-- **No accounts or authentication** — no credentials or personal data are handled.
+- **Credentials encrypted at rest** — the WebDAV password is encrypted with an AES-GCM key
+  held in the Android Keystore before being stored; it never leaves the device except in the
+  `Authorization` header of HTTPS requests to the server the user configured.
 
 ## Threat Model
 
@@ -45,6 +52,9 @@ This application is designed with a privacy-first, minimal-attack-surface approa
 | Exfiltration via WebView (chapter HTML) | WebView has no JavaScript enabled; images are inlined as base64 data URIs |
 | Persistent URI access beyond user intent | `takePersistableUriPermission` is guarded; only read permission is requested |
 | SQL injection via book metadata | Room uses parameterized queries exclusively |
+| Malicious OPDS feed / WebDAV response | Same hardened XmlPullParser boundary as book parsers; downloads go through the normal import validation (extension + parser) |
+| Man-in-the-middle on sync/catalog traffic | HTTPS enforced at both the app layer (URL check) and platform layer (no cleartext) |
+| WebDAV credential theft from device storage | Password encrypted with an Android Keystore AES-GCM key (non-exportable) |
 
 ## Out of Scope
 

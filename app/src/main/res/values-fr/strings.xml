@@ -99,6 +99,44 @@
     <string name="night_light">Lumière nocturne</string>
     <string name="off">Désactivé</string>
 
+    <!-- OPDS catalogs -->
+    <string name="opds_title">Catalogues OPDS</string>
+    <string name="opds_settings_hint">Parcourir et télécharger des livres depuis des catalogues en ligne</string>
+    <string name="opds_url_hint">https://adresse-du-catalogue…</string>
+    <string name="opds_open">Ouvrir</string>
+    <string name="opds_empty_hint">Saisissez l\'adresse d\'un catalogue OPDS pour parcourir ses livres.</string>
+    <string name="opds_download">Télécharger</string>
+    <string name="opds_download_success">« %1$s » ajouté à votre bibliothèque</string>
+    <string name="opds_download_failed">Échec du téléchargement : %1$s</string>
+    <string name="opds_import_failed">Impossible d\'importer « %1$s »</string>
+    <string name="opds_load_failed">Impossible de charger le catalogue : %1$s</string>
+
+    <!-- Sync & backup -->
+    <string name="sync_title">Synchronisation et sauvegarde</string>
+    <string name="sync_settings_hint">Synchroniser la progression de lecture via un dossier cloud ou WebDAV</string>
+    <string name="sync_cloud_folder_title">Dossier cloud (Google Drive / OneDrive)</string>
+    <string name="sync_cloud_folder_description">Choisissez un dossier dans votre application de stockage cloud (Google Drive, OneDrive, …). Votre progression de lecture y est enregistrée dans un petit fichier et peut être importée sur un autre appareil.</string>
+    <string name="sync_folder_selected">Dossier de synchronisation défini</string>
+    <string name="sync_choose_folder">Choisir le dossier</string>
+    <string name="sync_export">Exporter la progression</string>
+    <string name="sync_import">Importer la progression</string>
+    <string name="sync_webdav_title">Serveur WebDAV</string>
+    <string name="sync_webdav_description">Connectez-vous à un serveur WebDAV (Nextcloud, ownCloud, …) en HTTPS pour télécharger des livres et synchroniser la progression de lecture.</string>
+    <string name="sync_webdav_url">URL du serveur</string>
+    <string name="sync_webdav_user">Nom d\'utilisateur</string>
+    <string name="sync_webdav_password">Mot de passe</string>
+    <string name="sync_connect">Enregistrer et connecter</string>
+    <string name="sync_connected">Connecté — %1$s fichier(s) de livre trouvé(s)</string>
+    <string name="sync_books_on_server">Livres sur le serveur</string>
+    <string name="sync_export_done">Progression exportée</string>
+    <string name="sync_import_done">Progression importée — %1$s livre(s) mis à jour</string>
+    <string name="sync_no_folder">Choisissez d\'abord un dossier de synchronisation</string>
+    <string name="sync_folder_unavailable">Le dossier de synchronisation n\'est pas accessible</string>
+    <string name="sync_no_snapshot">Aucun fichier de progression trouvé — exportez d\'abord depuis l\'autre appareil</string>
+    <string name="sync_invalid_snapshot">Le fichier de progression n\'est pas valide</string>
+    <string name="sync_https_required">L\'URL du serveur doit commencer par https://</string>
+    <string name="sync_failed">Échec de la synchronisation : %1$s</string>
+
     <!-- Widget -->
     <string name="widget_label">Lecture en cours</string>
     <string name="widget_description">Affiche le livre que vous êtes en train de lire</string>

@@ -4,7 +4,7 @@
 [![Security](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml/badge.svg)](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A clean, fast, and fully-featured Android ebook reader built with **Jetpack Compose** and **Material Design 3**. Supports EPUB, PDF, and TXT files with zero cloud dependency — all your data stays on your device.
+A clean, fast, and fully-featured Android ebook reader built with **Jetpack Compose** and **Material Design 3**. Supports EPUB, PDF, TXT, FB2 and CBZ files. Local-first: your data stays on your device, with optional user-initiated sync (cloud folder / WebDAV) and OPDS catalog downloads — no accounts, no telemetry.
 
 ---
 
@@ -32,8 +32,11 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | Share book excerpts | ✅ |
 | Home screen widget (currently reading) | ✅ |
 | Per-app language (Android 13+, en/fr) | ✅ |
+| OPDS catalogs (browse & download books) | ✅ |
+| Progress sync via cloud folder (Google Drive / OneDrive) | ✅ |
+| WebDAV (browse books + progress sync) | ✅ |
 | Material You dynamic colors | ✅ |
-| No internet permission required | ✅ |
+| Offline-first — network only for opt-in sync/catalogs, HTTPS-only, no telemetry | ✅ |
 
 ---
 
@@ -252,4 +255,4 @@ See [TODO.md](TODO.md) for the full prioritized backlog, organized by:
 - 🔴 **Critical** — essential fixes and features (all done)
 - 🟠 **Important** — next-tier enhancements (all done)
 - 🟢 **Nice to Have** — polish and advanced features (remaining: full localization coverage, CBR + pinch-to-zoom)
-- ❌ **Won't do** — cloud sync and OPDS conflict with the offline-only design (no internet permission)
+- 🌐 **Network follow-ups** — FTPS / SFTP / SMB shares and native Drive/OneDrive API sync (see ADR-006)
