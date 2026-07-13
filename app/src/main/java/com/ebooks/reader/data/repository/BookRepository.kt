@@ -94,6 +94,9 @@ class BookRepository(private val context: Context) {
             FileType.CBZ -> importCbz(uri, bookId, fileSize, fileName)
         } ?: return@withContext ImportResult.ParseFailed(fileName)
 
+        // The freshly-imported book's ZIP is cached by the parser but won't be
+        // read again here — release it so the library doesn't retain a book.
+        epubParser.clearCache()
         ImportResult.Success(book)
     }
 
@@ -197,7 +200,12 @@ class BookRepository(private val context: Context) {
                 // Skip books whose file is no longer accessible
             }
         }
+        // Don't retain the last book parsed during the rebuild loop.
+        epubParser.clearCache()
     }
+
+    /** Releases the parser's in-memory ZIP cache — call when a book is closed. */
+    fun releaseParserCache() = epubParser.clearCache()
 
     // ── Custom Fonts ──────────────────────────────────────────────────────────
 

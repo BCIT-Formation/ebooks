@@ -11,6 +11,9 @@
     <string name="sort">Trier</string>
     <string name="filter">Filtrer</string>
     <string name="change_view">Changer de vue</string>
+    <string name="view_list">Liste</string>
+    <string name="view_grid">Grille</string>
+    <string name="view_bookshelf">Étagère 3D</string>
     <string name="add_book">Ajouter un livre</string>
     <string name="importing_book">Importation du livre…</string>
     <string name="imported_book">« %1$s » importé</string>
@@ -73,6 +76,11 @@
     <string name="stop_read_aloud">Arrêter la lecture à voix haute</string>
     <string name="cannot_open_book">Impossible d\'ouvrir le livre</string>
     <string name="go_back">Revenir</string>
+    <string name="reader_hint_title">Comment lire</string>
+    <string name="reader_hint_prev">Touchez le bord gauche\nPage précédente</string>
+    <string name="reader_hint_next">Touchez le bord droit\nPage suivante</string>
+    <string name="reader_hint_menu">Touchez le centre\nAfficher / masquer le menu</string>
+    <string name="reader_hint_got_it">Compris</string>
 
     <!-- Reader settings sheet -->
     <string name="reading_settings">Paramètres de lecture</string>
@@ -104,7 +112,8 @@
     <string name="opds_settings_hint">Parcourir et télécharger des livres depuis des catalogues en ligne</string>
     <string name="opds_url_hint">https://adresse-du-catalogue…</string>
     <string name="opds_open">Ouvrir</string>
-    <string name="opds_empty_hint">Saisissez l\'adresse d\'un catalogue OPDS pour parcourir ses livres.</string>
+    <string name="opds_empty_hint">Saisissez l\'adresse d\'un catalogue OPDS ci-dessus, ou touchez-en un ci-dessous pour commencer.</string>
+    <string name="opds_presets_label">Catalogues suggérés</string>
     <string name="opds_download">Télécharger</string>
     <string name="opds_download_success">« %1$s » ajouté à votre bibliothèque</string>
     <string name="opds_download_failed">Échec du téléchargement : %1$s</string>
@@ -116,12 +125,18 @@
     <string name="sync_settings_hint">Synchroniser la progression de lecture via un dossier cloud ou WebDAV</string>
     <string name="sync_cloud_folder_title">Dossier cloud (Google Drive / OneDrive)</string>
     <string name="sync_cloud_folder_description">Choisissez un dossier dans votre application de stockage cloud (Google Drive, OneDrive, …). Votre progression de lecture y est enregistrée dans un petit fichier et peut être importée sur un autre appareil.</string>
+    <string name="sync_cloud_step1">1. Touchez « Choisir le dossier » et sélectionnez un dossier dans Google Drive ou OneDrive.</string>
+    <string name="sync_cloud_step2">2. Touchez « Exporter la progression » pour y enregistrer vos positions de lecture.</string>
+    <string name="sync_cloud_step3">3. Sur un autre appareil, choisissez le même dossier et touchez « Importer la progression ».</string>
     <string name="sync_folder_selected">Dossier de synchronisation défini</string>
     <string name="sync_choose_folder">Choisir le dossier</string>
     <string name="sync_export">Exporter la progression</string>
     <string name="sync_import">Importer la progression</string>
     <string name="sync_webdav_title">Serveur WebDAV</string>
     <string name="sync_webdav_description">Connectez-vous à un serveur WebDAV (Nextcloud, ownCloud, …) en HTTPS pour télécharger des livres et synchroniser la progression de lecture.</string>
+    <string name="sync_webdav_step1">1. Saisissez l\'adresse du serveur (https://…), le nom d\'utilisateur et le mot de passe.</string>
+    <string name="sync_webdav_step2">2. Touchez « Enregistrer et connecter » pour lister les livres de votre serveur.</string>
+    <string name="sync_webdav_step3">3. Téléchargez un livre, ou utilisez Exporter / Importer pour synchroniser la progression.</string>
     <string name="sync_webdav_url">URL du serveur</string>
     <string name="sync_webdav_user">Nom d\'utilisateur</string>
     <string name="sync_webdav_password">Mot de passe</string>

@@ -25,6 +25,15 @@ import com.ebooks.reader.R
 import com.ebooks.reader.data.opds.OpdsEntry
 import com.ebooks.reader.viewmodel.OpdsViewModel
 
+private data class PresetCatalog(val name: String, val description: String, val url: String)
+
+/** Well-known free HTTPS OPDS catalogs offered as one-tap starting points. */
+private val PRESET_CATALOGS = listOf(
+    PresetCatalog("Project Gutenberg", "70,000+ free public-domain books", "https://m.gutenberg.org/ebooks.opds/"),
+    PresetCatalog("Standard Ebooks", "Carefully produced public-domain classics", "https://standardebooks.org/feeds/opds"),
+    PresetCatalog("Feedbooks — Public Domain", "Free classic literature", "https://catalog.feedbooks.com/catalog/public_domain.atom"),
+)
+
 /**
  * OPDS catalog browser: enter a catalog URL, drill into navigation feeds,
  * download publications straight into the library (ADR-006).
@@ -94,19 +103,40 @@ fun OpdsScreen(
                         modifier = Modifier.padding(24.dp)
                     )
                 }
-                uiState.feed == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
-                        Icon(
-                            Icons.Default.TravelExplore, null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                uiState.feed == null -> Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Icon(
+                        Icons.Default.TravelExplore, null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        stringResource(R.string.opds_empty_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        stringResource(R.string.opds_presets_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PRESET_CATALOGS.forEach { preset ->
+                        ListItem(
+                            headlineContent = { Text(preset.name, fontWeight = FontWeight.Medium) },
+                            supportingContent = { Text(preset.description, style = MaterialTheme.typography.bodySmall) },
+                            leadingContent = { Icon(Icons.Default.MenuBook, null, tint = MaterialTheme.colorScheme.primary) },
+                            trailingContent = { Icon(Icons.AutoMirrored.Filled.NavigateNext, null) },
+                            modifier = Modifier.clickable { viewModel.openUrl(preset.url) }
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            stringResource(R.string.opds_empty_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        HorizontalDivider()
                     }
                 }
                 else -> {

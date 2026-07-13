@@ -15,6 +15,27 @@ import java.util.zip.ZipInputStream
  */
 class EpubParser(private val context: Context) {
 
+    // In-memory cache of the most recently unpacked EPUB so chapter turns and
+    // theme/font changes don't re-read and re-inflate the whole ZIP each time.
+    // Scoped to a single book (the reader reuses one parser instance), so peak
+    // memory matches what a single openZip() call already required.
+    private val cacheLock = Any()
+    private var cachedZipUri: String? = null
+    private var cachedEntries: Map<String, ByteArray>? = null
+
+    // Cache of the encoded @font-face block, keyed by font path — avoids
+    // re-reading and base64-encoding the font file on every chapter load.
+    private var cachedFontPath: String? = null
+    private var cachedFontCss: String? = null
+
+    /** Drops cached ZIP entries. Call when the current book is no longer open. */
+    fun clearCache() {
+        synchronized(cacheLock) {
+            cachedZipUri = null
+            cachedEntries = null
+        }
+    }
+
     // ── Public API ─────────────────────────────────────────────────────────────
 
     fun parse(uri: Uri): EpubBook? = runCatching {
@@ -77,6 +98,11 @@ class EpubParser(private val context: Context) {
     // ── ZIP Handling ───────────────────────────────────────────────────────────
 
     private fun <T> openZip(uri: Uri, block: (Map<String, ByteArray>) -> T): T? {
+        val key = uri.toString()
+        synchronized(cacheLock) {
+            if (cachedZipUri == key) cachedEntries?.let { return block(it) }
+        }
+
         val entries = mutableMapOf<String, ByteArray>()
         context.contentResolver.openInputStream(uri)?.use { stream ->
             ZipInputStream(stream).use { zip ->
@@ -90,6 +116,11 @@ class EpubParser(private val context: Context) {
                 }
             }
         } ?: return null
+
+        synchronized(cacheLock) {
+            cachedZipUri = key
+            cachedEntries = entries
+        }
         return block(entries)
     }
 
@@ -345,7 +376,8 @@ class EpubParser(private val context: Context) {
      */
     private fun buildFontFaceCss(theme: ReaderTheme): String {
         val path = theme.customFontPath ?: return ""
-        return runCatching {
+        if (path == cachedFontPath) return cachedFontCss.orEmpty()
+        val css = runCatching {
             val bytes = File(path).readBytes()
             val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
             val isOtf = path.endsWith(".otf", ignoreCase = true)
@@ -353,6 +385,9 @@ class EpubParser(private val context: Context) {
             val format = if (isOtf) "opentype" else "truetype"
             "@font-face { font-family: 'CustomReaderFont'; src: url(data:$mime;base64,$b64) format('$format'); }"
         }.getOrDefault("")
+        cachedFontPath = path
+        cachedFontCss = css
+        return css
     }
 
     private fun buildReaderCss(theme: ReaderTheme): String = """

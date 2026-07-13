@@ -495,6 +495,8 @@ class ReaderViewModel(
     override fun onCleared() {
         super.onCleared()
         stopAutoScroll()
+        // Free the cached EPUB ZIP now that this book is closed.
+        repository.releaseParserCache()
         // viewModelScope is already cancelled when onCleared runs, so launching
         // there would silently drop the write. Use an independent scope that
         // outlives the ViewModel just long enough to persist the session.

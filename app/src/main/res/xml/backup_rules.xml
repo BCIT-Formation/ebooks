@@ -3,4 +3,8 @@
     <include domain="file" path="covers/" />
     <exclude domain="database" path="ebook_reader.db-wal" />
     <exclude domain="database" path="ebook_reader.db-shm" />
+    <!-- WebDAV credentials: the AES-GCM key lives in the Android Keystore and is
+         never backed up, so backing up the ciphertext is both useless and an
+         unnecessary exposure. Keep sync secrets on-device only. -->
+    <exclude domain="sharedpref" path="sync_prefs.xml" />
 </full-backup-content>

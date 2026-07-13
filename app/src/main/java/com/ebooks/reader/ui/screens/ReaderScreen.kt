@@ -45,6 +45,7 @@ import com.ebooks.reader.ui.components.ChapterPanel
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingToolbar
 import com.ebooks.reader.ui.components.ReaderSettingsSheet
+import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.ui.components.rememberTtsSpeaker
 import com.ebooks.reader.util.htmlToPlainText
 import com.ebooks.reader.viewmodel.OrientationLock
@@ -66,6 +67,12 @@ fun ReaderScreen(
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val ttsSpeaker = rememberTtsSpeaker()
+
+    // One-time overlay teaching the reader's tap zones (shown on first book open).
+    val readerPrefs = remember(context) {
+        context.getSharedPreferences("reader_prefs", android.content.Context.MODE_PRIVATE)
+    }
+    var showGestureHint by remember { mutableStateOf(!readerPrefs.getBoolean("gesture_hint_shown", false)) }
 
     // The queued speech text is stale once the chapter changes
     LaunchedEffect(uiState.currentChapterIndex) { ttsSpeaker.stop() }
@@ -312,6 +319,12 @@ fun ReaderScreen(
                             onClose = { viewModel.closeAllPanels() }
                         )
                     }
+
+                    // First-run tap-zone guide, above everything else
+                    GestureHintOverlay(visible = showGestureHint) {
+                        readerPrefs.edit().putBoolean("gesture_hint_shown", true).apply()
+                        showGestureHint = false
+                    }
                 }
 
                 if (uiState.showSettingsPanel) {
@@ -352,12 +365,29 @@ private fun EpubWebView(
                     displayZoomControls = false
                     textZoom = 100
                     mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                    // Book content is fully self-contained (images inlined as data
+                    // URIs, external CSS stripped). Deny the WebView every avenue a
+                    // malicious book could use to reach the filesystem or the network.
+                    allowFileAccess = false
+                    allowContentAccess = false
+                    @Suppress("DEPRECATION")
+                    allowFileAccessFromFileURLs = false
+                    @Suppress("DEPRECATION")
+                    allowUniversalAccessFromFileURLs = false
+                    blockNetworkLoads = true
                 }
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
                 scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
                 isVerticalScrollBarEnabled = false
 
                 webViewClient = object : WebViewClient() {
+                    // Block the book from navigating the reader to any external page;
+                    // in-page anchors (footnotes) don't trigger this callback.
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView,
+                        request: android.webkit.WebResourceRequest
+                    ): Boolean = true
+
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
                         view.evaluateJavascript("""
@@ -426,12 +456,12 @@ private fun ReaderTopBar(
         },
         navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
         actions = {
-            IconButton(onClick = onSearch) { Icon(Icons.Default.Search, stringResource(R.string.search_in_book)) }
-            IconButton(onClick = onShare) { Icon(Icons.Default.Share, stringResource(R.string.share_excerpt)) }
-            IconButton(onClick = onDraw) { Icon(Icons.Default.Edit, stringResource(R.string.draw_annotations)) }
-            IconButton(onClick = onChapters) { Icon(Icons.Default.List, stringResource(R.string.chapters)) }
-            IconButton(onClick = onBookmark) { Icon(Icons.Default.BookmarkAdd, stringResource(R.string.add_bookmark)) }
-            IconButton(onClick = onSettings) { Icon(Icons.Default.TextFormat, stringResource(R.string.settings)) }
+            TooltipIconButton(Icons.Default.Search, stringResource(R.string.search_in_book), onSearch)
+            TooltipIconButton(Icons.Default.Share, stringResource(R.string.share_excerpt), onShare)
+            TooltipIconButton(Icons.Default.Edit, stringResource(R.string.draw_annotations), onDraw)
+            TooltipIconButton(Icons.Default.List, stringResource(R.string.chapters), onChapters)
+            TooltipIconButton(Icons.Default.BookmarkAdd, stringResource(R.string.add_bookmark), onBookmark)
+            TooltipIconButton(Icons.Default.TextFormat, stringResource(R.string.settings), onSettings)
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
     )
@@ -477,27 +507,77 @@ private fun ReaderBottomBar(currentChapter: Int, totalChapters: Int, onPrevChapt
                 LinearProgressIndicator(progress = { (currentChapter + 1).toFloat() / totalChapters }, modifier = Modifier.fillMaxWidth())
             }
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPrevChapter, enabled = currentChapter > 0) { Icon(Icons.Default.NavigateBefore, stringResource(R.string.previous_chapter)) }
+                TooltipIconButton(Icons.Default.NavigateBefore, stringResource(R.string.previous_chapter), onPrevChapter, enabled = currentChapter > 0)
                 Text(if (totalChapters > 0) "${currentChapter + 1} / $totalChapters" else "", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                IconButton(onClick = onFontDecrease) { Icon(Icons.Default.Remove, stringResource(R.string.smaller_font)) }
-                IconButton(onClick = onAutoScroll) {
-                    Icon(
-                        if (isAutoScrolling) Icons.Default.PauseCircleOutline else Icons.Default.PlayCircleOutline,
-                        stringResource(if (isAutoScrolling) R.string.stop_auto_scroll else R.string.auto_scroll),
-                        tint = if (isAutoScrolling) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                IconButton(onClick = onFontIncrease) { Icon(Icons.Default.Add, stringResource(R.string.larger_font)) }
-                IconButton(onClick = onTts) {
-                    Icon(
-                        if (isTtsSpeaking) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                        stringResource(if (isTtsSpeaking) R.string.stop_read_aloud else R.string.read_aloud),
-                        tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                IconButton(onClick = onNextChapter, enabled = totalChapters == 0 || currentChapter < totalChapters - 1) { Icon(Icons.Default.NavigateNext, stringResource(R.string.next_chapter)) }
+                TooltipIconButton(Icons.Default.Remove, stringResource(R.string.smaller_font), onFontDecrease)
+                TooltipIconButton(
+                    icon = if (isAutoScrolling) Icons.Default.PauseCircleOutline else Icons.Default.PlayCircleOutline,
+                    label = stringResource(if (isAutoScrolling) R.string.stop_auto_scroll else R.string.auto_scroll),
+                    onClick = onAutoScroll,
+                    tint = if (isAutoScrolling) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                TooltipIconButton(Icons.Default.Add, stringResource(R.string.larger_font), onFontIncrease)
+                TooltipIconButton(
+                    icon = if (isTtsSpeaking) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                    label = stringResource(if (isTtsSpeaking) R.string.stop_read_aloud else R.string.read_aloud),
+                    onClick = onTts,
+                    tint = if (isTtsSpeaking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                TooltipIconButton(Icons.Default.NavigateNext, stringResource(R.string.next_chapter), onNextChapter, enabled = totalChapters == 0 || currentChapter < totalChapters - 1)
             }
         }
+    }
+}
+
+/** First-run overlay that explains the reader's three tap zones. */
+@Composable
+private fun GestureHintOverlay(visible: Boolean, onDismiss: () -> Unit) {
+    AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.82f))
+                .pointerInput(Unit) { detectTapGestures(onTap = { onDismiss() }) },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+                Text(
+                    stringResource(R.string.reader_hint_title),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    GestureZone(Icons.Default.ChevronLeft, stringResource(R.string.reader_hint_prev))
+                    GestureZone(Icons.Default.TouchApp, stringResource(R.string.reader_hint_menu))
+                    GestureZone(Icons.Default.ChevronRight, stringResource(R.string.reader_hint_next))
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+                Button(onClick = onDismiss) { Text(stringResource(R.string.reader_hint_got_it)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GestureZone(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(96.dp)
+    ) {
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(40.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            label,
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
 

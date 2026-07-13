@@ -1,6 +1,10 @@
 package com.ebooks.reader.data.sync
 
 import android.util.Base64
+import com.ebooks.reader.data.net.MAX_BOOK_BYTES
+import com.ebooks.reader.data.net.MAX_SNAPSHOT_BYTES
+import com.ebooks.reader.data.net.copyWithLimit
+import com.ebooks.reader.data.net.readTextLimited
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
@@ -76,8 +80,13 @@ class WebDavClient(
             if (code !in 200..299) throw IOException("HTTP $code")
             val name = decodedName(href)
             val dest = File(destDir.also { it.mkdirs() }, name)
-            connection.inputStream.use { input ->
-                FileOutputStream(dest).use { output -> input.copyTo(output) }
+            try {
+                connection.inputStream.use { input ->
+                    FileOutputStream(dest).use { output -> copyWithLimit(input, output, MAX_BOOK_BYTES) }
+                }
+            } catch (e: IOException) {
+                dest.delete()
+                throw e
             }
             return dest
         } finally {
@@ -91,7 +100,7 @@ class WebDavClient(
         try {
             return when (val code = connection.responseCode) {
                 HttpURLConnection.HTTP_NOT_FOUND -> null
-                in 200..299 -> connection.inputStream.use { it.bufferedReader().readText() }
+                in 200..299 -> connection.inputStream.use { it.readTextLimited(MAX_SNAPSHOT_BYTES) }
                 else -> throw IOException("HTTP $code")
             }
         } catch (_: FileNotFoundException) {

@@ -154,8 +154,24 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                                     builtInZoomControls = true
                                     displayZoomControls = false
                                     javaScriptEnabled = true
+                                    // FB2 HTML is self-contained (cover inlined as a
+                                    // data URI). Deny filesystem and network access so a
+                                    // crafted book can't reach out.
+                                    mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                                    allowFileAccess = false
+                                    allowContentAccess = false
+                                    @Suppress("DEPRECATION")
+                                    allowFileAccessFromFileURLs = false
+                                    @Suppress("DEPRECATION")
+                                    allowUniversalAccessFromFileURLs = false
+                                    blockNetworkLoads = true
                                 }
-                                webViewClient = WebViewClient()
+                                webViewClient = object : WebViewClient() {
+                                    override fun shouldOverrideUrlLoading(
+                                        view: WebView,
+                                        request: android.webkit.WebResourceRequest
+                                    ): Boolean = true
+                                }
                                 webViewRef.value = this
                             }
                         },

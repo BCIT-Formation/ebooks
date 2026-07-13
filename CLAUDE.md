@@ -53,6 +53,8 @@ app/src/main/java/com/ebooks/reader/
       EpubBook.kt           # EpubBook, EpubChapter, TocItem, ManifestItem, SpineItem
       EpubParser.kt         # Pure-Kotlin EPUB parser + ReaderTheme data class
       Fb2Parser.kt          # Pure-Kotlin FB2 (FictionBook 2.0) parser → HTML
+    net/
+      DownloadLimits.kt     # Size-capped download helpers (guards against disk-fill)
     repository/
       BookRepository.kt     # Single source of truth. Wraps DAO + parsers. ImportResult sealed class
     sync/
@@ -66,6 +68,7 @@ app/src/main/java/com/ebooks/reader/
       BookshelfView.kt      # 3D bookshelf library view (shelf rows, tilted covers)
       ChapterPanel.kt
       ReaderSettingsSheet.kt
+      TooltipIconButton.kt  # IconButton with a long-press label tooltip (used across toolbars)
       TtsSpeaker.kt         # TextToSpeech state holder (rememberTtsSpeaker)
     screens/
       LibraryScreen.kt
@@ -313,6 +316,11 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
   without updating tests in `EpubParserTest`.
 - The parser returns `null` on any error (uses `runCatching`). Callers must handle null
   (the repository maps null to `ImportResult.ParseFailed`).
+- **Caching:** the most recently unpacked ZIP is cached in-memory (keyed by URI) so chapter
+  turns and theme/font changes don't re-inflate the whole archive; the `@font-face` base64
+  is cached by path. Call `clearCache()` / `BookRepository.releaseParserCache()` when a book
+  is closed (the reader does this in `onCleared`). The cache holds one book at a time, so
+  peak memory matches a single `openZip()` call.
 
 ### FB2 (`Fb2Parser.kt`)
 
@@ -438,12 +446,20 @@ Scope examples: `epub`, `fb2`, `pdf`, `db`, `ui`, `reader`, `library`, `ci`.
 
 - **Network access is user-initiated only (ADR-006).** `INTERNET` is declared solely for
   OPDS catalogs, WebDAV, and cloud-folder sync, all triggered by explicit user actions.
-  No telemetry, analytics, background polling, or update checks — ever. Cleartext traffic
-  stays disabled (`usesCleartextTraffic` platform default), so all endpoints must be HTTPS.
+  No telemetry, analytics, background polling, or update checks — ever. Cleartext is
+  forbidden explicitly (`usesCleartextTraffic="false"` + `res/xml/network_security_config.xml`),
+  so all endpoints must be HTTPS at both the app and platform layers.
   New networking uses `HttpURLConnection` + `XmlPullParser` (no OkHttp/Retrofit) and no
   vendor cloud SDKs (Drive/OneDrive go through the SAF document picker).
+- Downloads are size-capped (`data/net/DownloadLimits.kt`) so a hostile/misconfigured
+  server can't fill the disk; partial files are deleted on overrun.
 - WebDAV credentials are encrypted at rest with an Android Keystore AES-GCM key
-  (`SyncCredentialStore`) — never store sync passwords in plaintext.
+  (`SyncCredentialStore`) and excluded from cloud/device backups (`sync_prefs.xml`) —
+  never store sync passwords in plaintext.
+- Reader WebViews are locked down: JS limited to the app's own scroll hook, and
+  `allowFileAccess`/`allowContentAccess`/file-URL access all disabled with
+  `blockNetworkLoads = true` (book content is fully inlined, so nothing needs the network).
+  `shouldOverrideUrlLoading` blocks the book from navigating the reader to external pages.
 - No secrets in source code. CI scans for patterns like `password = "..."` in `*.kt` / `*.xml`.
 - Signing secrets (`SIGNING_KEYSTORE_BASE64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`,
   `SIGNING_KEY_PASSWORD`) live in GitHub repository secrets only.
