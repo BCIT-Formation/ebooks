@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ADR-006: all app network traffic (OPDS catalogs, WebDAV, cloud-folder sync)
+    must use HTTPS. Cleartext is forbidden app-wide as an explicit, auditable
+    policy rather than relying only on the platform default — so http:// URLs
+    fail at the platform layer even if an app-level check is ever missed.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

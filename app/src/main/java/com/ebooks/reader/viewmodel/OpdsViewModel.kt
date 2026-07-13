@@ -52,6 +52,13 @@ class OpdsViewModel(application: Application) : AndroidViewModel(application) {
         loadFeed(url)
     }
 
+    /** Opens a specific catalog URL (e.g. a preset), filling the address field too. */
+    fun openUrl(url: String) {
+        _uiState.update { it.copy(catalogUrl = url) }
+        backStack.clear()
+        loadFeed(url)
+    }
+
     fun openEntry(entry: OpdsEntry) {
         val base = _uiState.value.currentFeedUrl ?: return
         val href = entry.navigationHref ?: return

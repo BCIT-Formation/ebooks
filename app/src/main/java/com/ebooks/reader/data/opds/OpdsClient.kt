@@ -1,5 +1,7 @@
 package com.ebooks.reader.data.opds
 
+import com.ebooks.reader.data.net.MAX_BOOK_BYTES
+import com.ebooks.reader.data.net.copyWithLimit
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -39,8 +41,13 @@ class OpdsClient {
         try {
             val name = fileNameFrom(connection, url, fallbackName)
             val dest = File(destDir.also { it.mkdirs() }, name)
-            connection.inputStream.use { input ->
-                FileOutputStream(dest).use { output -> input.copyTo(output) }
+            try {
+                connection.inputStream.use { input ->
+                    FileOutputStream(dest).use { output -> copyWithLimit(input, output, MAX_BOOK_BYTES) }
+                }
+            } catch (e: IOException) {
+                dest.delete() // don't leave a partial/oversized file behind
+                throw e
             }
             return dest
         } finally {

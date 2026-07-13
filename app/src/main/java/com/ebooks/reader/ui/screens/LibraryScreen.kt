@@ -38,6 +38,7 @@ import com.ebooks.reader.data.db.entities.ReadingStatus
 import com.ebooks.reader.ui.components.BookGridCard
 import com.ebooks.reader.ui.components.BookListItem
 import com.ebooks.reader.ui.components.BookshelfView
+import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,15 +96,7 @@ fun LibraryScreen(
                 onSort = { showSortSheet = true },
                 onFilter = { showFilterSheet = true },
                 onSettings = { showSettingsMenu = true },
-                onViewModeToggle = {
-                    viewModel.setViewMode(
-                        when (uiState.viewMode) {
-                            ViewMode.LIST -> ViewMode.GRID
-                            ViewMode.GRID -> ViewMode.BOOKSHELF
-                            ViewMode.BOOKSHELF -> ViewMode.LIST
-                        }
-                    )
-                },
+                onViewModeSelected = { viewModel.setViewMode(it) },
                 scrollBehavior = scrollBehavior
             )
         },
@@ -253,7 +246,7 @@ private fun LibraryTopBar(
     onSort: () -> Unit,
     onFilter: () -> Unit,
     onSettings: () -> Unit,
-    onViewModeToggle: () -> Unit,
+    onViewModeSelected: (ViewMode) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior
 ) {
     if (searchActive) {
@@ -282,26 +275,55 @@ private fun LibraryTopBar(
             }
         )
     } else {
+        var showViewMenu by remember { mutableStateOf(false) }
         TopAppBar(
             title = { Text(stringResource(R.string.my_library), fontWeight = FontWeight.Bold) },
             actions = {
-                IconButton(onClick = onSearchToggle) { Icon(Icons.Default.Search, stringResource(R.string.search)) }
-                IconButton(onClick = onSort) { Icon(Icons.Default.Sort, stringResource(R.string.sort)) }
-                IconButton(onClick = onFilter) { Icon(Icons.Default.FilterList, stringResource(R.string.filter)) }
-                IconButton(onClick = onViewModeToggle) {
-                    Icon(
-                        when (viewMode) {
-                            ViewMode.LIST -> Icons.Default.GridView
-                            ViewMode.GRID -> Icons.Default.ViewModule
-                            ViewMode.BOOKSHELF -> Icons.Default.ViewList
-                        }, stringResource(R.string.change_view)
+                TooltipIconButton(Icons.Default.Search, stringResource(R.string.search), onSearchToggle)
+                TooltipIconButton(Icons.Default.Sort, stringResource(R.string.sort), onSort)
+                TooltipIconButton(Icons.Default.FilterList, stringResource(R.string.filter), onFilter)
+                Box {
+                    TooltipIconButton(
+                        icon = when (viewMode) {
+                            ViewMode.LIST -> Icons.Default.ViewList
+                            ViewMode.GRID -> Icons.Default.GridView
+                            ViewMode.BOOKSHELF -> Icons.Default.ViewModule
+                        },
+                        label = stringResource(R.string.change_view),
+                        onClick = { showViewMenu = true }
                     )
+                    DropdownMenu(expanded = showViewMenu, onDismissRequest = { showViewMenu = false }) {
+                        ViewModeItem(Icons.Default.ViewList, stringResource(R.string.view_list), viewMode == ViewMode.LIST) {
+                            onViewModeSelected(ViewMode.LIST); showViewMenu = false
+                        }
+                        ViewModeItem(Icons.Default.GridView, stringResource(R.string.view_grid), viewMode == ViewMode.GRID) {
+                            onViewModeSelected(ViewMode.GRID); showViewMenu = false
+                        }
+                        ViewModeItem(Icons.Default.ViewModule, stringResource(R.string.view_bookshelf), viewMode == ViewMode.BOOKSHELF) {
+                            onViewModeSelected(ViewMode.BOOKSHELF); showViewMenu = false
+                        }
+                    }
                 }
-                IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, stringResource(R.string.settings)) }
+                TooltipIconButton(Icons.Default.Settings, stringResource(R.string.settings), onSettings)
             },
             scrollBehavior = scrollBehavior
         )
     }
+}
+
+@Composable
+private fun ViewModeItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = { Text(label) },
+        onClick = onClick,
+        leadingIcon = { Icon(icon, null) },
+        trailingIcon = { if (selected) Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

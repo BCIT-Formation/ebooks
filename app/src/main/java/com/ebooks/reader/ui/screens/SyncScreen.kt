@@ -35,6 +35,20 @@ import com.ebooks.reader.viewmodel.SyncViewModel
  *  - WebDAV — browse and download books from a server, and exchange the same
  *    progress snapshot over HTTPS with Basic auth.
  */
+/** Renders a short, pre-numbered list of instructions under a card title. */
+@Composable
+private fun NumberedSteps(steps: List<String>) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        steps.forEach { step ->
+            Text(
+                step,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SyncScreen(
@@ -85,10 +99,12 @@ fun SyncScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        stringResource(R.string.sync_cloud_folder_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    NumberedSteps(
+                        listOf(
+                            stringResource(R.string.sync_cloud_step1),
+                            stringResource(R.string.sync_cloud_step2),
+                            stringResource(R.string.sync_cloud_step3)
+                        )
                     )
                     if (uiState.cloudFolderUri != null) {
                         Text(
@@ -133,10 +149,12 @@ fun SyncScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        stringResource(R.string.sync_webdav_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    NumberedSteps(
+                        listOf(
+                            stringResource(R.string.sync_webdav_step1),
+                            stringResource(R.string.sync_webdav_step2),
+                            stringResource(R.string.sync_webdav_step3)
+                        )
                     )
                     OutlinedTextField(
                         value = uiState.webdavUrl,
