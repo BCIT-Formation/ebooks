@@ -1,20 +1,17 @@
 package com.ebooks.reader.data.db.entities
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+/**
+ * A freehand/shape/text annotation. [bookId] holds the id of the annotated
+ * source — a book, or an RSS article id (prefixed `rss:`). There is deliberately
+ * no foreign key, so the same table serves both; owners clean up their own
+ * annotations on delete (see `BookRepository.deleteBook` / RSS article removal).
+ */
 @Entity(
     tableName = "annotations",
-    foreignKeys = [
-        ForeignKey(
-            entity = Book::class,
-            parentColumns = ["id"],
-            childColumns = ["bookId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
     indices = [
         Index("bookId"),
         Index("bookId", "pageIdentifier"),

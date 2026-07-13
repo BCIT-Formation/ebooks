@@ -36,6 +36,8 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | OPDS catalogs (browse & download books) | ✅ |
 | Progress sync via cloud folder (Google Drive / OneDrive) | ✅ |
 | WebDAV (browse books + progress sync) | ✅ |
+| RSS reader tab (OPML import/export, offline articles) | ✅ |
+| Annotate & share RSS articles (same drawing tools) | ✅ |
 | Material You dynamic colors | ✅ |
 | Offline-first — network only for opt-in sync/catalogs, HTTPS-only, no telemetry | ✅ |
 

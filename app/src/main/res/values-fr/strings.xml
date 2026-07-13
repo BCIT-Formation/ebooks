@@ -159,6 +159,30 @@
     <string name="sync_https_required">L\'URL du serveur doit commencer par https://</string>
     <string name="sync_failed">Échec de la synchronisation : %1$s</string>
 
+    <!-- RSS -->
+    <string name="tab_library">Bibliothèque</string>
+    <string name="tab_rss">RSS</string>
+    <string name="rss_title">Flux RSS</string>
+    <string name="rss_add_feed">Ajouter un flux</string>
+    <string name="rss_feed_url_hint">URL du flux (https://…)</string>
+    <string name="rss_add">Ajouter</string>
+    <string name="rss_import_opml">Importer OPML</string>
+    <string name="rss_export_opml">Exporter OPML</string>
+    <string name="rss_refresh">Actualiser les flux</string>
+    <string name="rss_delete_feed">Supprimer le flux</string>
+    <string name="rss_all_feeds">Tous les flux</string>
+    <string name="rss_empty_title">Aucun flux</string>
+    <string name="rss_empty_hint">Ajoutez un flux RSS ou importez un fichier OPML. Les articles sont téléchargés pour une lecture hors ligne.</string>
+    <string name="rss_no_articles">Aucun article — touchez actualiser</string>
+    <string name="rss_open_original">Ouvrir la page d\'origine</string>
+    <string name="rss_feed_added">« %1$s » ajouté</string>
+    <string name="rss_feed_exists">Ce flux est déjà abonné</string>
+    <string name="rss_feed_failed">Impossible d\'ajouter le flux : %1$s</string>
+    <string name="rss_refreshed">%1$s nouvel(s) article(s)</string>
+    <string name="rss_opml_imported">%1$s flux importé(s)</string>
+    <string name="rss_opml_exported">Flux exportés</string>
+    <string name="rss_delete_feed_message">Se désabonner de « %1$s » et supprimer ses articles ?</string>
+
     <!-- Widget -->
     <string name="widget_label">Lecture en cours</string>
     <string name="widget_description">Affiche le livre que vous êtes en train de lire</string>
