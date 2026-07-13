@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -59,16 +60,39 @@ fun LibraryScreen(
     var showFilterSheet by remember { mutableStateOf(false) }
     var showMenuFor by remember { mutableStateOf<Book?>(null) }
     var showStatsFor by remember { mutableStateOf<Book?>(null) }
+    var showEditFor by remember { mutableStateOf<Book?>(null) }
     var showSettingsMenu by remember { mutableStateOf(false) }
     var isRebuildingCovers by remember { mutableStateOf(false) }
     var searchActive by remember { mutableStateOf(false) }
+    var showRestoreConfirm by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     val filePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let { viewModel.importBook(it) }
+    }
+
+    val backupExport = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri: Uri? ->
+        uri?.let { dest ->
+            viewModel.exportBackup(dest) { ok ->
+                scope.launch { snackbarHostState.showSnackbar(context.getString(if (ok) R.string.backup_exported else R.string.backup_failed)) }
+            }
+        }
+    }
+    val backupRestore = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let { src ->
+            viewModel.restoreBackup(src) { ok ->
+                if (ok) restartApp(context)
+                else scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.backup_restore_failed)) }
+            }
+        }
     }
 
     // Surface import outcomes (success / duplicate / error) and reset the one-shot state.
@@ -198,8 +222,11 @@ fun LibraryScreen(
         FilterSheet(
             currentStatus = uiState.filterStatus,
             currentFileType = uiState.filterFileType,
+            currentTag = uiState.filterTag,
+            allTags = uiState.allTags,
             onStatusSelected = { viewModel.setFilterStatus(it) },
             onFileTypeSelected = { viewModel.setFilterFileType(it) },
+            onTagSelected = { viewModel.setFilterTag(it) },
             onDismiss = { showFilterSheet = false }
         )
     }
@@ -211,7 +238,16 @@ fun LibraryScreen(
             onOpen = { onOpenBook(book.id, book.fileType); showMenuFor = null },
             onMarkStatus = { status -> viewModel.updateReadingStatus(book.id, status); showMenuFor = null },
             onStats = { showStatsFor = book; showMenuFor = null },
+            onEdit = { showEditFor = book; showMenuFor = null },
             onDelete = { viewModel.deleteBook(book); showMenuFor = null }
+        )
+    }
+
+    showEditFor?.let { book ->
+        EditDetailsDialog(
+            book = book,
+            onSave = { viewModel.updateBookDetails(it); showEditFor = null },
+            onDismiss = { showEditFor = null }
         )
     }
 
@@ -234,9 +270,34 @@ fun LibraryScreen(
             onOpenSync = { showSettingsMenu = false; onOpenSync() },
             displayMode = displayMode,
             onDisplayModeChange = onDisplayModeChange,
+            onBackup = { showSettingsMenu = false; backupExport.launch("ebookreader-backup.zip") },
+            onRestore = { showSettingsMenu = false; showRestoreConfirm = true },
             onDismiss = { showSettingsMenu = false }
         )
     }
+
+    if (showRestoreConfirm) {
+        AlertDialog(
+            onDismissRequest = { showRestoreConfirm = false },
+            icon = { Icon(Icons.Default.Restore, null) },
+            title = { Text(stringResource(R.string.backup_restore)) },
+            text = { Text(stringResource(R.string.backup_restore_warning)) },
+            confirmButton = {
+                TextButton(onClick = { showRestoreConfirm = false; backupRestore.launch(arrayOf("application/zip", "*/*")) }) {
+                    Text(stringResource(R.string.backup_restore))
+                }
+            },
+            dismissButton = { TextButton(onClick = { showRestoreConfirm = false }) { Text(stringResource(R.string.cancel)) } }
+        )
+    }
+}
+
+/** Cold-restarts the app so no stale database references survive a restore. */
+private fun restartApp(context: android.content.Context) {
+    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+    intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    context.startActivity(intent)
+    Runtime.getRuntime().exit(0)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -340,7 +401,8 @@ private fun SortSheet(currentSort: SortOrder, onSortSelected: (SortOrder) -> Uni
             SortOrder.TITLE to stringResource(R.string.sort_book_name),
             SortOrder.AUTHOR to stringResource(R.string.sort_author),
             SortOrder.DATE to stringResource(R.string.sort_import_date),
-            SortOrder.RECENT to stringResource(R.string.sort_recent)
+            SortOrder.RECENT to stringResource(R.string.sort_recent),
+            SortOrder.SERIES to stringResource(R.string.sort_series)
         ).forEach { (sort, label) ->
             ListItem(
                 headlineContent = { Text(label) },
@@ -357,8 +419,11 @@ private fun SortSheet(currentSort: SortOrder, onSortSelected: (SortOrder) -> Uni
 private fun FilterSheet(
     currentStatus: ReadingStatus?,
     currentFileType: String?,
+    currentTag: String?,
+    allTags: List<String>,
     onStatusSelected: (ReadingStatus?) -> Unit,
     onFileTypeSelected: (String?) -> Unit,
+    onTagSelected: (String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -382,6 +447,19 @@ private fun FilterSheet(
                     FilterChip(selected = currentFileType == type, onClick = { onFileTypeSelected(type) }, label = { Text(type.uppercase()) })
                 }
             }
+            if (allTags.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(stringResource(R.string.tags), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(selected = currentTag == null, onClick = { onTagSelected(null) }, label = { Text(stringResource(R.string.all)) })
+                    allTags.forEach { tag ->
+                        FilterChip(selected = currentTag == tag, onClick = { onTagSelected(tag) }, label = { Text(tag) })
+                    }
+                }
+            }
         }
     }
 }
@@ -393,6 +471,7 @@ private fun BookContextMenu(
     onOpen: () -> Unit,
     onMarkStatus: (ReadingStatus) -> Unit,
     onStats: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -402,6 +481,7 @@ private fun BookContextMenu(
         text = {
             Column {
                 ListItem(headlineContent = { Text(stringResource(R.string.open_book)) }, leadingContent = { Icon(Icons.Default.MenuBook, null) }, modifier = Modifier.clickable(onClick = onOpen))
+                ListItem(headlineContent = { Text(stringResource(R.string.edit_details)) }, leadingContent = { Icon(Icons.Default.Edit, null) }, modifier = Modifier.clickable(onClick = onEdit))
                 ListItem(headlineContent = { Text(stringResource(R.string.reading_stats)) }, leadingContent = { Icon(Icons.Default.Timer, null) }, modifier = Modifier.clickable(onClick = onStats))
                 HorizontalDivider()
                 Text(stringResource(R.string.mark_as), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 8.dp))
@@ -425,6 +505,53 @@ private fun BookContextMenu(
             dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.cancel)) } }
         )
     }
+}
+
+@Composable
+private fun EditDetailsDialog(book: Book, onSave: (Book) -> Unit, onDismiss: () -> Unit) {
+    var title by remember { mutableStateOf(book.title) }
+    var author by remember { mutableStateOf(book.author) }
+    var series by remember { mutableStateOf(book.series.orEmpty()) }
+    var seriesIndex by remember { mutableStateOf(book.seriesIndex?.toString().orEmpty()) }
+    var tags by remember { mutableStateOf(book.tags) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_details)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(value = title, onValueChange = { title = it }, singleLine = true, label = { Text(stringResource(R.string.field_title)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = author, onValueChange = { author = it }, singleLine = true, label = { Text(stringResource(R.string.field_author)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = series, onValueChange = { series = it }, singleLine = true, label = { Text(stringResource(R.string.field_series)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = seriesIndex,
+                    onValueChange = { v -> seriesIndex = v.filter { it.isDigit() } },
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.field_series_index)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(value = tags, onValueChange = { tags = it }, label = { Text(stringResource(R.string.field_tags)) }, supportingText = { Text(stringResource(R.string.field_tags_hint)) }, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSave(
+                    book.copy(
+                        title = title.trim().ifBlank { book.title },
+                        author = author.trim().ifBlank { "Unknown" },
+                        series = series.trim().ifBlank { null },
+                        seriesIndex = seriesIndex.toIntOrNull(),
+                        tags = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }.joinToString(", ")
+                    )
+                )
+            }) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
+    )
 }
 
 @Composable
@@ -514,6 +641,8 @@ private fun SettingsDialog(
     onOpenSync: () -> Unit,
     displayMode: com.ebooks.reader.ui.theme.DisplayMode,
     onDisplayModeChange: (com.ebooks.reader.ui.theme.DisplayMode) -> Unit,
+    onBackup: () -> Unit,
+    onRestore: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -553,6 +682,18 @@ private fun SettingsDialog(
                     supportingContent = { Text(stringResource(R.string.sync_settings_hint), style = MaterialTheme.typography.bodySmall) },
                     leadingContent = { Icon(Icons.Default.CloudSync, null) },
                     modifier = Modifier.clickable(onClick = onOpenSync)
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.backup_title)) },
+                    supportingContent = { Text(stringResource(R.string.backup_hint), style = MaterialTheme.typography.bodySmall) },
+                    leadingContent = { Icon(Icons.Default.Archive, null) },
+                    modifier = Modifier.clickable(onClick = onBackup)
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.backup_restore)) },
+                    supportingContent = { Text(stringResource(R.string.backup_restore_hint), style = MaterialTheme.typography.bodySmall) },
+                    leadingContent = { Icon(Icons.Default.Restore, null) },
+                    modifier = Modifier.clickable(onClick = onRestore)
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(stringResource(R.string.rebuild_covers_title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)

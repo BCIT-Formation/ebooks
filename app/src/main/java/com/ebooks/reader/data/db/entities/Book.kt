@@ -39,4 +39,9 @@ data class Book(
     val language: String? = null,
     val series: String? = null,
     val seriesIndex: Int? = null,
+    /** Comma-separated user tags / collections (e.g. "Favourites, To read"). */
+    val tags: String = "",
 )
+
+/** The book's tags as a trimmed, non-empty list. */
+fun Book.tagList(): List<String> = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }

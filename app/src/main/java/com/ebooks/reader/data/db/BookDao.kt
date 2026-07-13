@@ -26,6 +26,12 @@ interface BookDao {
     @Query("SELECT * FROM books ORDER BY CASE WHEN lastReadAt IS NULL THEN 1 ELSE 0 END ASC, lastReadAt DESC, title ASC")
     fun getAllBooksByRecent(): Flow<List<Book>>
 
+    /** Series grouped together (books with no series last), then by index, then title. */
+    @Query("""SELECT * FROM books ORDER BY
+              CASE WHEN series IS NULL OR series = '' THEN 1 ELSE 0 END ASC,
+              series ASC, seriesIndex ASC, title ASC""")
+    fun getAllBooksBySeries(): Flow<List<Book>>
+
     @Query("SELECT * FROM books WHERE readingStatus = :status ORDER BY title ASC")
     fun getBooksByStatus(status: ReadingStatus): Flow<List<Book>>
 

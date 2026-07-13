@@ -23,6 +23,9 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | Day / Dark / Sepia / Night reading themes | ✅ |
 | Adjustable font size & line spacing | ✅ |
 | Custom fonts (import your own TTF/OTF) | ✅ |
+| Dictionary &amp; translate on selected text | ✅ |
+| Collections / tags &amp; series grouping | ✅ |
+| Full backup &amp; restore (.zip) | ✅ |
 | Chapter navigation | ✅ |
 | Bookmarks with notes | ✅ |
 | In-book text search | ✅ |

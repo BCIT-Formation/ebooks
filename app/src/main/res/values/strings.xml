@@ -22,6 +22,16 @@
     <string name="sort_author">Author</string>
     <string name="sort_import_date">Import date</string>
     <string name="sort_recent">Recent</string>
+    <string name="sort_series">Series</string>
+    <string name="tags">Tags</string>
+    <string name="edit_details">Edit details</string>
+    <string name="field_title">Title</string>
+    <string name="field_author">Author</string>
+    <string name="field_series">Series</string>
+    <string name="field_series_index">Number in series</string>
+    <string name="field_tags">Tags / collections</string>
+    <string name="field_tags_hint">Separate with commas, e.g. Favourites, To read</string>
+    <string name="save">Save</string>
     <string name="library_filter">Library filter</string>
     <string name="reading_status">Reading status</string>
     <string name="file_type">File type</string>
@@ -88,6 +98,12 @@
     <string name="reader_hint_next">Tap right edge\nNext page</string>
     <string name="reader_hint_menu">Tap center\nShow / hide menu</string>
     <string name="reader_hint_got_it">Got it</string>
+    <string name="dict_define">Define / translate selection</string>
+    <string name="dict_select_word">Select a word in the text first</string>
+    <string name="dict_looking_up">Looking up…</string>
+    <string name="dict_not_found">No definition found. Try Translate or Search.</string>
+    <string name="dict_translate">Translate</string>
+    <string name="dict_search">Search</string>
 
     <!-- Reader settings sheet -->
     <string name="reading_settings">Reading Settings</string>
@@ -158,6 +174,16 @@
     <string name="sync_invalid_snapshot">The progress file is not valid</string>
     <string name="sync_https_required">The server URL must start with https://</string>
     <string name="sync_failed">Sync failed: %1$s</string>
+
+    <!-- Backup &amp; restore -->
+    <string name="backup_title">Back up library</string>
+    <string name="backup_hint">Save books, progress, notes and feeds to a .zip file</string>
+    <string name="backup_restore">Restore library</string>
+    <string name="backup_restore_hint">Load a backup .zip from your device</string>
+    <string name="backup_restore_warning">This replaces your current library, progress and notes with the backup, then restarts the app. Continue?</string>
+    <string name="backup_exported">Backup saved</string>
+    <string name="backup_failed">Backup failed</string>
+    <string name="backup_restore_failed">Restore failed — that file is not a valid backup</string>
 
     <!-- RSS -->
     <string name="tab_library">Library</string>
