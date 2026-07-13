@@ -159,6 +159,30 @@
     <string name="sync_https_required">The server URL must start with https://</string>
     <string name="sync_failed">Sync failed: %1$s</string>
 
+    <!-- RSS -->
+    <string name="tab_library">Library</string>
+    <string name="tab_rss">RSS</string>
+    <string name="rss_title">RSS Feeds</string>
+    <string name="rss_add_feed">Add feed</string>
+    <string name="rss_feed_url_hint">Feed URL (https://…)</string>
+    <string name="rss_add">Add</string>
+    <string name="rss_import_opml">Import OPML</string>
+    <string name="rss_export_opml">Export OPML</string>
+    <string name="rss_refresh">Refresh feeds</string>
+    <string name="rss_delete_feed">Delete feed</string>
+    <string name="rss_all_feeds">All feeds</string>
+    <string name="rss_empty_title">No feeds yet</string>
+    <string name="rss_empty_hint">Add an RSS feed or import an OPML file. Articles are downloaded for offline reading.</string>
+    <string name="rss_no_articles">No articles yet — tap refresh</string>
+    <string name="rss_open_original">Open original page</string>
+    <string name="rss_feed_added">Added “%1$s”</string>
+    <string name="rss_feed_exists">That feed is already subscribed</string>
+    <string name="rss_feed_failed">Could not add feed: %1$s</string>
+    <string name="rss_refreshed">%1$s new article(s)</string>
+    <string name="rss_opml_imported">Imported %1$s feed(s)</string>
+    <string name="rss_opml_exported">Feeds exported</string>
+    <string name="rss_delete_feed_message">Unsubscribe from “%1$s” and remove its articles?</string>
+
     <!-- Widget -->
     <string name="widget_label">Currently reading</string>
     <string name="widget_description">Shows the book you are currently reading</string>

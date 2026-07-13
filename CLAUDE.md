@@ -49,6 +49,10 @@ app/src/main/java/com/ebooks/reader/
       OpdsModels.kt         # OpdsFeed / OpdsEntry
       OpdsParser.kt         # Pure-Kotlin OPDS 1.x Atom feed parser
       OpdsClient.kt         # HTTPS-only catalog fetch + book download (ADR-006)
+    rss/
+      RssParser.kt          # Pure-Kotlin RSS 2.0 + Atom feed parser
+      RssClient.kt          # HTTPS feed fetch (http:// auto-upgraded), size-capped
+      Opml.kt               # OPML import (parse) + export (serialize) for feed lists
     parser/
       EpubBook.kt           # EpubBook, EpubChapter, TocItem, ManifestItem, SpineItem
       EpubParser.kt         # Pure-Kotlin EPUB parser + ReaderTheme data class
@@ -57,6 +61,7 @@ app/src/main/java/com/ebooks/reader/
       DownloadLimits.kt     # Size-capped download helpers (guards against disk-fill)
     repository/
       BookRepository.kt     # Single source of truth. Wraps DAO + parsers. ImportResult sealed class
+      RssRepository.kt      # Feed add/refresh/delete, OPML import/export, offline articles, article annotations
     sync/
       ProgressSnapshot.kt   # Device-independent progress model + newer-wins merge (pure Kotlin)
       ProgressSnapshotJson.kt # org.json (de)serialization of the snapshot
@@ -74,6 +79,8 @@ app/src/main/java/com/ebooks/reader/
       LibraryScreen.kt
       OpdsScreen.kt          # OPDS catalog browser (browse feeds, download books)
       SyncScreen.kt          # Sync & backup (cloud folder via SAF + WebDAV)
+      RssScreen.kt           # RSS tab: feeds + article timeline, add feed, OPML import/export
+      RssReaderScreen.kt     # Offline RSS article reader (WebView) + drawing tools + share
       ReaderScreen.kt        # EPUB reader (WebView)
       PdfReaderScreen.kt     # PDF reader (PdfRenderer)
       TxtReaderScreen.kt     # Plain-text reader (Compose)
@@ -91,6 +98,7 @@ app/src/main/java/com/ebooks/reader/
     ReaderViewModel.kt
     OpdsViewModel.kt        # catalog navigation stack + download/import
     SyncViewModel.kt        # cloud folder + WebDAV sync state
+    RssViewModel.kt         # feeds + article timeline, add/refresh/delete, OPML import/export
   widget/
     CurrentBookWidget.kt    # Glance home-screen widget (most recently read book)
 
@@ -266,6 +274,11 @@ Routes are plain strings in `MainActivity.kt`:
 - `"txt_reader/{bookId}"` — `TxtReaderScreen`
 - `"fb2_reader/{bookId}"` — `Fb2ReaderScreen`
 - `"cbz_reader/{bookId}"` — `CbzReaderScreen`
+- `"rss"` — `RssScreen` (second bottom-nav tab)
+- `"rss_reader/{articleId}"` — `RssReaderScreen`
+
+`MainActivity` hosts a two-tab `NavigationBar` (Library / RSS) shown only on the `library`
+and `rss` routes; all reader/opds/sync/rss_reader routes are full-screen.
 
 Do not add a navigation graph file. Keep navigation simple and co-located in `MainActivity`.
 
@@ -290,15 +303,19 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
 ## Room database
 
 - **DB name:** `ebook_reader.db`
-- **Version:** 2
-- **Tables:** `books`, `reading_progress`, `bookmarks`, `reading_sessions`
+- **Version:** 4
+- **Tables:** `books`, `reading_progress`, `bookmarks`, `reading_sessions`, `annotations`,
+  `rss_feeds`, `rss_articles`
 - `exportSchema = false` — schema JSONs are **not** generated. (Was `true`, but no schemas
   were ever committed and the debug/release KSP passes collided on `$projectDir/schemas`,
   failing the build with "Empty schema file". Re-enabling export needs per-variant schema
   dirs or the AndroidX Room Gradle plugin.)
-- **Migrations:** `MIGRATION_1_2` in `AppDatabase` adds the `reading_sessions` table (v1 → v2).
-  When you bump the DB version you MUST add a corresponding `Migration` object (and ideally a
-  migration test).
+- **Migrations:** `MIGRATION_1_2` adds `reading_sessions`; `MIGRATION_2_3` adds `annotations`;
+  `MIGRATION_3_4` adds the RSS tables (`rss_feeds`, `rss_articles`) and **rebuilds `annotations`
+  without its `books` FK** so RSS articles can be annotated (annotation `bookId` holds a book id
+  or an `rss:<articleId>` key; owners clean up their own annotations on delete since there is no
+  cascade). When you bump the DB version you MUST add a corresponding `Migration` object (and
+  ideally a migration test).
 - `fallbackToDestructiveMigration()` is configured as a *safety net only* so an un-migrated
   schema bump wipes rather than crashes. **Do not rely on it** — always write a real `Migration`.
   Never remove the explicit migrations in favour of destructive fallback.
