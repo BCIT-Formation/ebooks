@@ -152,4 +152,8 @@ interface BookDao {
 
     @Query("SELECT COUNT(*) FROM annotations WHERE bookId = :bookId AND isDeleted = 0")
     suspend fun getAnnotationCount(bookId: String): Int
+
+    /** One-shot snapshot of a book's live annotations — for share/export. */
+    @Query("SELECT * FROM annotations WHERE bookId = :bookId AND isDeleted = 0 ORDER BY pageIndex ASC, createdAt ASC")
+    suspend fun getAnnotationsSnapshot(bookId: String): List<Annotation>
 }

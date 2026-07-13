@@ -104,7 +104,7 @@ class OpdsViewModel(application: Application) : AndroidViewModel(application) {
             val message = withContext(Dispatchers.IO) {
                 runCatching {
                     val destDir = File(context().filesDir, "downloads")
-                    val file = client.download(client.resolve(base, href), destDir, entry.title)
+                    val file = client.download(client.resolve(base, href), destDir, entry.title, entry.acquisitionType)
                     when (val result = repository.importBook(Uri.fromFile(file))) {
                         is BookRepository.ImportResult.Success ->
                             context().getString(R.string.opds_download_success, result.book.title)

@@ -62,6 +62,8 @@
     <string name="previous_match">Previous match</string>
     <string name="next_match">Next match</string>
     <string name="share_excerpt">Share excerpt</string>
+    <string name="share_book">Share book</string>
+    <string name="share_failed">Could not prepare the book for sharing</string>
     <string name="share_excerpt_format">“%1$s”\n\n— %2$s, %3$s</string>
     <string name="share_book_format">“%1$s” by %2$s</string>
     <string name="draw_annotations">Draw annotations</string>
