@@ -26,3 +26,21 @@ val OnSurfaceDark = Color(0xFFE6E1E5)
 // Reader themes
 val SepiaBg = Color(0xFFF3EAD3)
 val NightBg = Color(0xFF0D0D0D)
+
+// AMOLED — pure black surfaces so OLED pixels switch off; bright accents stay legible.
+val AmoledBackground = Color(0xFF000000)
+val AmoledSurface = Color(0xFF000000)
+val AmoledSurfaceVariant = Color(0xFF161616)
+val AmoledPrimary = Color(0xFF6FB0FF)
+val AmoledOnSurface = Color(0xFFF2F2F2)
+val AmoledOnSurfaceVariant = Color(0xFFC7C7C7)
+val AmoledOutline = Color(0xFF5C5C5C)
+
+// E-ink — maximum contrast black-on-white, no colour, strong outlines.
+val EinkBackground = Color(0xFFFFFFFF)
+val EinkSurface = Color(0xFFFFFFFF)
+val EinkSurfaceVariant = Color(0xFFE4E4E4)
+val EinkPrimary = Color(0xFF000000)
+val EinkOnSurface = Color(0xFF000000)
+val EinkOnSurfaceVariant = Color(0xFF222222)
+val EinkOutline = Color(0xFF000000)

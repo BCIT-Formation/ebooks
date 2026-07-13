@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -47,6 +48,8 @@ fun LibraryScreen(
     onOpenBook: (bookId: String, fileType: String) -> Unit,
     onOpenOpds: () -> Unit = {},
     onOpenSync: () -> Unit = {},
+    displayMode: com.ebooks.reader.ui.theme.DisplayMode = com.ebooks.reader.ui.theme.DisplayMode.LCD,
+    onDisplayModeChange: (com.ebooks.reader.ui.theme.DisplayMode) -> Unit = {},
     viewModel: LibraryViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -229,6 +232,8 @@ fun LibraryScreen(
             },
             onOpenOpds = { showSettingsMenu = false; onOpenOpds() },
             onOpenSync = { showSettingsMenu = false; onOpenSync() },
+            displayMode = displayMode,
+            onDisplayModeChange = onDisplayModeChange,
             onDismiss = { showSettingsMenu = false }
         )
     }
@@ -507,13 +512,36 @@ private fun SettingsDialog(
     onRebuildCovers: () -> Unit,
     onOpenOpds: () -> Unit,
     onOpenSync: () -> Unit,
+    displayMode: com.ebooks.reader.ui.theme.DisplayMode,
+    onDisplayModeChange: (com.ebooks.reader.ui.theme.DisplayMode) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.library_settings)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                // Display mode (screen type) — fixes contrast by picking a
+                // predictable high-contrast scheme instead of wallpaper colours.
+                Text(stringResource(R.string.display_mode), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(stringResource(R.string.display_mode_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                val modes = listOf(
+                    com.ebooks.reader.ui.theme.DisplayMode.LCD to R.string.display_lcd,
+                    com.ebooks.reader.ui.theme.DisplayMode.AMOLED to R.string.display_amoled,
+                    com.ebooks.reader.ui.theme.DisplayMode.EINK to R.string.display_eink,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    modes.forEach { (mode, labelRes) ->
+                        FilterChip(
+                            selected = displayMode == mode,
+                            onClick = { onDisplayModeChange(mode) },
+                            label = { Text(stringResource(labelRes)) }
+                        )
+                    }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.opds_title)) },
                     supportingContent = { Text(stringResource(R.string.opds_settings_hint), style = MaterialTheme.typography.bodySmall) },
