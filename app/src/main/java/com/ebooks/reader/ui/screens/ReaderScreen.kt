@@ -51,7 +51,6 @@ import com.ebooks.reader.util.htmlToPlainText
 import com.ebooks.reader.viewmodel.OrientationLock
 import com.ebooks.reader.viewmodel.ReaderThemeOption
 import com.ebooks.reader.viewmodel.ReaderViewModel
-import org.json.JSONTokener
 
 @Composable
 fun ReaderScreen(
@@ -77,19 +76,35 @@ fun ReaderScreen(
     // The queued speech text is stale once the chapter changes
     LaunchedEffect(uiState.currentChapterIndex) { ttsSpeaker.stop() }
 
-    // Share the given selection (or just the book reference when empty) via the system sheet
-    val shareExcerpt: (String) -> Unit = shareExcerpt@{ selection ->
-        val book = uiState.book ?: return@shareExcerpt
-        val shareText = if (selection.isBlank()) {
-            context.getString(R.string.share_book_format, book.title, book.author)
-        } else {
-            context.getString(R.string.share_excerpt_format, selection, book.title, book.author)
+    // Share the actual book file (plus rendered annotation images) via the system sheet.
+    val shareBook: () -> Unit = {
+        viewModel.prepareShare { bundle ->
+            if (bundle == null) {
+                android.widget.Toast.makeText(context, context.getString(R.string.share_failed), android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                val authority = "${context.packageName}.fileprovider"
+                val bookUri = androidx.core.content.FileProvider.getUriForFile(context, authority, bundle.bookFile)
+                val imageUris = bundle.annotationImages.map {
+                    androidx.core.content.FileProvider.getUriForFile(context, authority, it)
+                }
+                val title = uiState.book?.title ?: ""
+                val intent = if (imageUris.isEmpty()) {
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = bundle.mimeType
+                        putExtra(Intent.EXTRA_STREAM, bookUri)
+                        putExtra(Intent.EXTRA_SUBJECT, title)
+                    }
+                } else {
+                    Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                        type = "*/*"
+                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(listOf(bookUri) + imageUris))
+                        putExtra(Intent.EXTRA_SUBJECT, title)
+                    }
+                }
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_book)))
+            }
         }
-        val sendIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareText)
-        }
-        context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.share_excerpt)))
     }
 
     // Auto-scroll: collect ticks from ViewModel and drive WebView scrolling
@@ -246,19 +261,7 @@ fun ReaderScreen(
                                 onSettings = { viewModel.toggleSettingsPanel() },
                                 onSearch = { viewModel.toggleSearch() },
                                 onDraw = { viewModel.toggleDrawingMode() },
-                                onShare = {
-                                    val webView = webViewRef.value
-                                    if (webView == null) {
-                                        shareExcerpt("")
-                                    } else {
-                                        webView.evaluateJavascript("window.getSelection().toString()") { value ->
-                                            val selection = runCatching {
-                                                JSONTokener(value).nextValue() as? String
-                                            }.getOrNull().orEmpty()
-                                            shareExcerpt(selection)
-                                        }
-                                    }
-                                }
+                                onShare = shareBook
                             )
                         }
                     }
@@ -457,7 +460,7 @@ private fun ReaderTopBar(
         navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
         actions = {
             TooltipIconButton(Icons.Default.Search, stringResource(R.string.search_in_book), onSearch)
-            TooltipIconButton(Icons.Default.Share, stringResource(R.string.share_excerpt), onShare)
+            TooltipIconButton(Icons.Default.Share, stringResource(R.string.share_book), onShare)
             TooltipIconButton(Icons.Default.Edit, stringResource(R.string.draw_annotations), onDraw)
             TooltipIconButton(Icons.Default.List, stringResource(R.string.chapters), onChapters)
             TooltipIconButton(Icons.Default.BookmarkAdd, stringResource(R.string.add_bookmark), onBookmark)

@@ -350,6 +350,11 @@ class ReaderViewModel(
         _uiState.update { it.copy(chapterError = null) }
     }
 
+    /** Prepares the book file (+ annotation images) for the system share sheet. */
+    fun prepareShare(onReady: (BookRepository.ShareBundle?) -> Unit) {
+        viewModelScope.launch { onReady(repository.prepareShare(bookId)) }
+    }
+
     fun toggleSearch() {
         _uiState.update { it.copy(isSearchVisible = !it.isSearchVisible, searchQuery = "") }
     }

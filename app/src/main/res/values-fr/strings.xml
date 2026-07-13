@@ -62,6 +62,8 @@
     <string name="previous_match">Résultat précédent</string>
     <string name="next_match">Résultat suivant</string>
     <string name="share_excerpt">Partager un extrait</string>
+    <string name="share_book">Partager le livre</string>
+    <string name="share_failed">Impossible de préparer le livre pour le partage</string>
     <string name="share_excerpt_format">« %1$s »\n\n— %2$s, %3$s</string>
     <string name="share_book_format">« %1$s » de %2$s</string>
     <string name="draw_annotations">Annoter</string>

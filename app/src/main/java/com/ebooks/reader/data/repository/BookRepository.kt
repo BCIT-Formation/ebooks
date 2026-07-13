@@ -384,6 +384,55 @@ class BookRepository(private val context: Context) {
     suspend fun hasAnnotations(bookId: String): Boolean =
         dao.getAnnotationCount(bookId) > 0
 
+    // ── Sharing ───────────────────────────────────────────────────────────────
+
+    /** Files to hand to the system share sheet: the book itself plus any annotation images. */
+    data class ShareBundle(val bookFile: File, val mimeType: String, val annotationImages: List<File>)
+
+    /**
+     * Prepares a book (and its annotations, if any) for sharing. Copies the book
+     * into cache (so a `content://` SAF book becomes a shareable file), and renders
+     * each annotated page to a PNG. Returns null if the book file can't be read.
+     */
+    suspend fun prepareShare(bookId: String): ShareBundle? = withContext(Dispatchers.IO) {
+        val book = dao.getBookById(bookId) ?: return@withContext null
+        val shareDir = File(context.cacheDir, "share").also { it.mkdirs(); it.clearContents() }
+
+        val safeTitle = book.title.replace(Regex("[^A-Za-z0-9._ -]"), "_").trim().ifBlank { "book" }
+        val bookFile = File(shareDir, "$safeTitle.${book.fileType}")
+        val copied = runCatching {
+            context.contentResolver.openInputStream(resolveUri(book.filePath))?.use { input ->
+                FileOutputStream(bookFile).use { output -> input.copyTo(output) }
+            }
+        }.getOrNull() ?: return@withContext null
+
+        val annotations = dao.getAnnotationsSnapshot(bookId)
+        val images = annotations.groupBy { it.pageIndex }.toSortedMap().mapNotNull { (page, pageAnnotations) ->
+            runCatching {
+                val bitmap = com.ebooks.reader.util.renderAnnotationsToBitmap(pageAnnotations)
+                val imageFile = File(shareDir, "${safeTitle}_notes_p${page + 1}.png")
+                FileOutputStream(imageFile).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+                bitmap.recycle()
+                imageFile
+            }.getOrNull()
+        }
+
+        ShareBundle(bookFile, mimeTypeFor(book.fileType), images)
+    }
+
+    private fun mimeTypeFor(fileType: String): String = when (fileType.lowercase()) {
+        "epub" -> "application/epub+zip"
+        "pdf" -> "application/pdf"
+        "txt" -> "text/plain"
+        "fb2" -> "application/x-fictionbook+xml"
+        "cbz" -> "application/x-cbz"
+        else -> "application/octet-stream"
+    }
+
+    private fun File.clearContents() {
+        listFiles()?.forEach { it.delete() }
+    }
+
     // ── EPUB Content ──────────────────────────────────────────────────────────
 
     private fun resolveUri(filePath: String): Uri = when (filePath) {

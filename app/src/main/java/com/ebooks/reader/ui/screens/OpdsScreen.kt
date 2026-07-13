@@ -27,11 +27,15 @@ import com.ebooks.reader.viewmodel.OpdsViewModel
 
 private data class PresetCatalog(val name: String, val description: String, val url: String)
 
-/** Well-known free HTTPS OPDS catalogs offered as one-tap starting points. */
+/**
+ * Free, no-login HTTPS OPDS catalogs offered as one-tap starting points.
+ * All verified reachable without authentication. (Standard Ebooks and the old
+ * Feedbooks public-domain feed require a login / are gone, so they are omitted.)
+ */
 private val PRESET_CATALOGS = listOf(
-    PresetCatalog("Project Gutenberg", "70,000+ free public-domain books", "https://m.gutenberg.org/ebooks.opds/"),
-    PresetCatalog("Standard Ebooks", "Carefully produced public-domain classics", "https://standardebooks.org/feeds/opds"),
-    PresetCatalog("Feedbooks — Public Domain", "Free classic literature", "https://catalog.feedbooks.com/catalog/public_domain.atom"),
+    PresetCatalog("Project Gutenberg", "Browse & search 70,000+ free books", "https://m.gutenberg.org/ebooks.opds/"),
+    PresetCatalog("Gutenberg — Most popular", "The most downloaded titles", "https://www.gutenberg.org/ebooks/search.opds/?sort_order=downloads"),
+    PresetCatalog("Gutenberg — Latest", "Recently added titles", "https://www.gutenberg.org/ebooks/search.opds/?sort_order=release_date"),
 )
 
 /**
