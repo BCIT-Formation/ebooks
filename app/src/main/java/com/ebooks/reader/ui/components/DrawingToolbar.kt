@@ -2,6 +2,7 @@ package com.ebooks.reader.ui.components
 
 import android.graphics.Color
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -176,20 +177,28 @@ private fun ToolButton(
     label: String,
     enabled: Boolean = true
 ) {
+    val shape = RoundedCornerShape(6.dp)
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(shape)
             .background(
                 if (selected) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.surface
             )
+            // A visible outline keeps every chip legible against the toolbar,
+            // including in the high-contrast E-ink and AMOLED display modes.
+            .border(
+                width = 1.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                shape = shape
+            )
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             color = if (selected) MaterialTheme.colorScheme.onPrimary
             else MaterialTheme.colorScheme.onSurface
         )

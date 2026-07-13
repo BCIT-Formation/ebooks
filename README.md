@@ -19,7 +19,8 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | CBZ comics | ✅ |
 | Library with sort & filter | ✅ |
 | Grid / List / 3D Bookshelf view | ✅ |
-| Day / Dark / Sepia / Night themes | ✅ |
+| Display modes: LCD / AMOLED / E-reader (high contrast) | ✅ |
+| Day / Dark / Sepia / Night reading themes | ✅ |
 | Adjustable font size & line spacing | ✅ |
 | Custom fonts (import your own TTF/OTF) | ✅ |
 | Chapter navigation | ✅ |

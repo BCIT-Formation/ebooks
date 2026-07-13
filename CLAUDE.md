@@ -81,7 +81,8 @@ app/src/main/java/com/ebooks/reader/
       CbzReaderScreen.kt     # CBZ comic reader (ZipInputStream → cached images → Coil)
     theme/
       Color.kt
-      Theme.kt
+      DisplayMode.kt        # LCD / AMOLED / E-ink app display profiles (persisted in app_prefs)
+      Theme.kt              # Fixed high-contrast schemes per DisplayMode (no dynamic colour)
       Type.kt
   util/
     HtmlText.kt             # htmlToPlainText — chapter HTML → plain text (TTS/share)
@@ -279,6 +280,7 @@ Do not add a navigation graph file. Keep navigation simple and co-located in `Ma
 | ADR-003 | Room (SQLite) for all persistence — books, bookmarks, reading progress, sessions. |
 | ADR-004 | Jetpack Compose only — no XML layouts. |
 | ADR-005 | Coil 2 for cover image loading. |
+| — | **No Material You dynamic colour.** Wallpaper-derived palettes produced low-contrast, hard-to-read buttons. The app ships fixed high-contrast schemes selected by `DisplayMode` (LCD / AMOLED / E-ink); do not re-enable `dynamicColor`. |
 
 See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-Kotlin approach
 (`Fb2Parser` converts the FB2 body to HTML, then renders it in a WebView like EPUB).

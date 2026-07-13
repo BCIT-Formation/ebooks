@@ -38,7 +38,12 @@
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
     <string name="done">Done</string>
-    <string name="library_settings">Library Settings</string>
+    <string name="library_settings">Settings</string>
+    <string name="display_mode">Display mode</string>
+    <string name="display_mode_hint">Match the app colours to your screen for the best contrast.</string>
+    <string name="display_lcd">LCD</string>
+    <string name="display_amoled">AMOLED</string>
+    <string name="display_eink">E-reader</string>
     <string name="rebuild_covers_title">Rebuild Cover Images</string>
     <string name="rebuild_covers_description">Re-import cover images from all EPUB books in your library.</string>
     <string name="rebuild_covers">Rebuild Covers</string>

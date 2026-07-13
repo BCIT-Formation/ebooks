@@ -38,7 +38,12 @@
     <string name="cancel">Annuler</string>
     <string name="close">Fermer</string>
     <string name="done">Terminé</string>
-    <string name="library_settings">Paramètres de la bibliothèque</string>
+    <string name="library_settings">Paramètres</string>
+    <string name="display_mode">Type d\'écran</string>
+    <string name="display_mode_hint">Adaptez les couleurs de l\'app à votre écran pour un meilleur contraste.</string>
+    <string name="display_lcd">LCD</string>
+    <string name="display_amoled">AMOLED</string>
+    <string name="display_eink">Liseuse</string>
     <string name="rebuild_covers_title">Reconstruire les couvertures</string>
     <string name="rebuild_covers_description">Réimporter les images de couverture de tous les livres EPUB de votre bibliothèque.</string>
     <string name="rebuild_covers">Reconstruire les couvertures</string>

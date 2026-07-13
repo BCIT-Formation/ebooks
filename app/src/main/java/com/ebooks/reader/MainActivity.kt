@@ -6,7 +6,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -23,6 +28,7 @@ import com.ebooks.reader.ui.screens.ReaderScreen
 import com.ebooks.reader.ui.screens.SyncScreen
 import com.ebooks.reader.ui.screens.TxtReaderScreen
 import com.ebooks.reader.ui.screens.Fb2ReaderScreen
+import com.ebooks.reader.ui.theme.DisplayMode
 import com.ebooks.reader.ui.theme.EbookReaderTheme
 import com.ebooks.reader.widget.CurrentBookWidget
 
@@ -41,7 +47,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            EbookReaderTheme {
+            val context = LocalContext.current
+            var displayMode by remember { mutableStateOf(DisplayMode.load(context)) }
+            EbookReaderTheme(displayMode = displayMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
 
@@ -51,6 +59,11 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable("library") {
                             LibraryScreen(
+                                displayMode = displayMode,
+                                onDisplayModeChange = { mode ->
+                                    displayMode = mode
+                                    DisplayMode.save(context, mode)
+                                },
                                 onOpenBook = { bookId, fileType ->
                                     when (fileType) {
                                         "pdf" -> navController.navigate("pdf_reader/$bookId")
