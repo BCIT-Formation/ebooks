@@ -53,6 +53,10 @@ app/src/main/java/com/ebooks/reader/
       RssParser.kt          # Pure-Kotlin RSS 2.0 + Atom feed parser
       RssClient.kt          # HTTPS feed fetch (http:// auto-upgraded), size-capped
       Opml.kt               # OPML import (parse) + export (serialize) for feed lists
+    dict/
+      DictionaryClient.kt   # HTTPS word lookup via dictionaryapi.dev (ADR-006, keyless)
+    backup/
+      BackupManager.kt      # Export/restore library (DB + covers) as a .zip via SAF
     parser/
       EpubBook.kt           # EpubBook, EpubChapter, TocItem, ManifestItem, SpineItem
       EpubParser.kt         # Pure-Kotlin EPUB parser + ReaderTheme data class
@@ -303,9 +307,9 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
 ## Room database
 
 - **DB name:** `ebook_reader.db`
-- **Version:** 4
-- **Tables:** `books`, `reading_progress`, `bookmarks`, `reading_sessions`, `annotations`,
-  `rss_feeds`, `rss_articles`
+- **Version:** 5
+- **Tables:** `books` (incl. a `tags` column for collections), `reading_progress`, `bookmarks`,
+  `reading_sessions`, `annotations`, `rss_feeds`, `rss_articles`
 - `exportSchema = false` — schema JSONs are **not** generated. (Was `true`, but no schemas
   were ever committed and the debug/release KSP passes collided on `$projectDir/schemas`,
   failing the build with "Empty schema file". Re-enabling export needs per-variant schema
@@ -314,8 +318,8 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
   `MIGRATION_3_4` adds the RSS tables (`rss_feeds`, `rss_articles`) and **rebuilds `annotations`
   without its `books` FK** so RSS articles can be annotated (annotation `bookId` holds a book id
   or an `rss:<articleId>` key; owners clean up their own annotations on delete since there is no
-  cascade). When you bump the DB version you MUST add a corresponding `Migration` object (and
-  ideally a migration test).
+  cascade). `MIGRATION_4_5` adds the `books.tags` column (collections/tags). When you bump the DB
+  version you MUST add a corresponding `Migration` object (and ideally a migration test).
 - `fallbackToDestructiveMigration()` is configured as a *safety net only* so an un-migrated
   schema bump wipes rather than crashes. **Do not rely on it** — always write a real `Migration`.
   Never remove the explicit migrations in favour of destructive fallback.

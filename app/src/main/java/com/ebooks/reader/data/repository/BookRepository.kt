@@ -42,6 +42,7 @@ class BookRepository(private val context: Context) {
     fun getBooksByAuthor(): Flow<List<Book>> = dao.getAllBooksByAuthor()
     fun getBooksByDate(): Flow<List<Book>> = dao.getAllBooksByDate()
     fun getBooksByRecent(): Flow<List<Book>> = dao.getAllBooksByRecent()
+    fun getBooksBySeries(): Flow<List<Book>> = dao.getAllBooksBySeries()
     fun getBooksByStatus(status: ReadingStatus): Flow<List<Book>> = dao.getBooksByStatus(status)
     fun getBooksByType(fileType: String): Flow<List<Book>> = dao.getBooksByType(fileType)
 

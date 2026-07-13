@@ -44,10 +44,16 @@ import com.ebooks.reader.R
 import com.ebooks.reader.ui.components.ChapterPanel
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingToolbar
+import com.ebooks.reader.data.dict.DictionaryClient
+import com.ebooks.reader.data.dict.WordDefinition
 import com.ebooks.reader.ui.components.ReaderSettingsSheet
 import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.ui.components.rememberTtsSpeaker
 import com.ebooks.reader.util.htmlToPlainText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONTokener
 import com.ebooks.reader.viewmodel.OrientationLock
 import com.ebooks.reader.viewmodel.ReaderThemeOption
 import com.ebooks.reader.viewmodel.ReaderViewModel
@@ -72,6 +78,37 @@ fun ReaderScreen(
         context.getSharedPreferences("reader_prefs", android.content.Context.MODE_PRIVATE)
     }
     var showGestureHint by remember { mutableStateOf(!readerPrefs.getBoolean("gesture_hint_shown", false)) }
+
+    // Dictionary / translate on the current text selection.
+    val dictClient = remember { DictionaryClient() }
+    val dictScope = rememberCoroutineScope()
+    var dictWord by remember { mutableStateOf<String?>(null) }
+    var dictLoading by remember { mutableStateOf(false) }
+    var dictResult by remember { mutableStateOf<WordDefinition?>(null) }
+    var showDictSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(dictWord) {
+        val w = dictWord ?: return@LaunchedEffect
+        dictLoading = true
+        dictResult = null
+        dictResult = withContext(Dispatchers.IO) { dictClient.lookup(w) }
+        dictLoading = false
+    }
+
+    val defineSelection: () -> Unit = defineSelection@{
+        val webView = webViewRef.value ?: return@defineSelection
+        webView.evaluateJavascript("window.getSelection().toString()") { value ->
+            val selection = runCatching { JSONTokener(value).nextValue() as? String }.getOrNull().orEmpty()
+            val word = selection.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
+                .replace(Regex("[^\\p{L}'’-]"), "")
+            if (word.isNotBlank()) {
+                dictWord = word
+                showDictSheet = true
+            } else {
+                dictScope.launch { snackbarHostState.showSnackbar(context.getString(R.string.dict_select_word)) }
+            }
+        }
+    }
 
     // The queued speech text is stale once the chapter changes
     LaunchedEffect(uiState.currentChapterIndex) { ttsSpeaker.stop() }
@@ -261,7 +298,8 @@ fun ReaderScreen(
                                 onSettings = { viewModel.toggleSettingsPanel() },
                                 onSearch = { viewModel.toggleSearch() },
                                 onDraw = { viewModel.toggleDrawingMode() },
-                                onShare = shareBook
+                                onShare = shareBook,
+                                onDefine = defineSelection
                             )
                         }
                     }
@@ -339,10 +377,98 @@ fun ReaderScreen(
                         onImportFont = { viewModel.importFont(it) }
                     )
                 }
+
+                if (showDictSheet && dictWord != null) {
+                    DictionarySheet(
+                        word = dictWord!!,
+                        loading = dictLoading,
+                        result = dictResult,
+                        onTranslate = { translateWord(context, dictWord!!) },
+                        onSearch = { webSearch(context, dictWord!!) },
+                        onDismiss = { showDictSheet = false }
+                    )
+                }
             }
         }
     } // end Box
     } // end Scaffold content lambda
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DictionarySheet(
+    word: String,
+    loading: Boolean,
+    result: WordDefinition?,
+    onTranslate: () -> Unit,
+    onSearch: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(result?.word ?: word, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                result?.phonetic?.let {
+                    Spacer(Modifier.width(8.dp))
+                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            when {
+                loading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(12.dp)); Text(stringResource(R.string.dict_looking_up))
+                }
+                result == null -> Text(stringResource(R.string.dict_not_found), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else -> result.meanings.take(3).forEach { meaning ->
+                    if (meaning.partOfSpeech.isNotBlank()) {
+                        Text(meaning.partOfSpeech, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    }
+                    meaning.definitions.forEach { def ->
+                        Text("• $def", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 2.dp))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onTranslate, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Translate, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.dict_translate))
+                }
+                OutlinedButton(onClick = onSearch, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Search, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.dict_search))
+                }
+            }
+        }
+    }
+}
+
+/** Sends the word to a translator: prefers the system text-processor (Google Translate, …). */
+private fun translateWord(context: android.content.Context, word: String) {
+    val process = Intent(Intent.ACTION_PROCESS_TEXT).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_PROCESS_TEXT, word)
+        putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+    }
+    if (process.resolveActivity(context.packageManager) != null) {
+        context.startActivity(Intent.createChooser(process, word))
+    } else {
+        val uri = android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=&op=translate&text=" +
+            java.net.URLEncoder.encode(word, "UTF-8"))
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+    }
+}
+
+private fun webSearch(context: android.content.Context, word: String) {
+    val search = Intent(Intent.ACTION_WEB_SEARCH).apply { putExtra(android.app.SearchManager.QUERY, word) }
+    if (search.resolveActivity(context.packageManager) != null) {
+        context.startActivity(search)
+    } else {
+        val uri = android.net.Uri.parse("https://www.google.com/search?q=" + java.net.URLEncoder.encode(word, "UTF-8"))
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+    }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -446,7 +572,8 @@ private fun ReaderTopBar(
     onSettings: () -> Unit,
     onSearch: () -> Unit,
     onDraw: () -> Unit = {},
-    onShare: () -> Unit = {}
+    onShare: () -> Unit = {},
+    onDefine: () -> Unit = {}
 ) {
     TopAppBar(
         title = {
@@ -459,6 +586,7 @@ private fun ReaderTopBar(
         },
         navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
         actions = {
+            TooltipIconButton(Icons.Default.Translate, stringResource(R.string.dict_define), onDefine)
             TooltipIconButton(Icons.Default.Search, stringResource(R.string.search_in_book), onSearch)
             TooltipIconButton(Icons.Default.Share, stringResource(R.string.share_book), onShare)
             TooltipIconButton(Icons.Default.Edit, stringResource(R.string.draw_annotations), onDraw)

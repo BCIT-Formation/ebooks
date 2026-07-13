@@ -20,7 +20,7 @@ import com.ebooks.reader.data.db.entities.RssFeed
         Book::class, ReadingProgress::class, Bookmark::class, ReadingSession::class,
         Annotation::class, RssFeed::class, RssArticle::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -154,6 +154,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Database file name, exposed for backup/restore. */
+        const val DB_NAME = "ebook_reader.db"
+
+        /** Closes and forgets the singleton so a restore can swap the DB file. */
+        fun resetInstance() = synchronized(this) {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
+
+        /** Adds the `tags` column to `books` for user collections/tags. */
+        internal val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE books ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -161,7 +177,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "ebook_reader.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     // Safety net: if a future schema change has no migration, wipe rather than crash.
                     .fallbackToDestructiveMigration()
                     .build().also { INSTANCE = it }

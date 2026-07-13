@@ -22,6 +22,16 @@
     <string name="sort_author">Auteur</string>
     <string name="sort_import_date">Date d\'import</string>
     <string name="sort_recent">Récents</string>
+    <string name="sort_series">Série</string>
+    <string name="tags">Étiquettes</string>
+    <string name="edit_details">Modifier les détails</string>
+    <string name="field_title">Titre</string>
+    <string name="field_author">Auteur</string>
+    <string name="field_series">Série</string>
+    <string name="field_series_index">Numéro dans la série</string>
+    <string name="field_tags">Étiquettes / collections</string>
+    <string name="field_tags_hint">Séparez par des virgules, ex. Favoris, À lire</string>
+    <string name="save">Enregistrer</string>
     <string name="library_filter">Filtre de bibliothèque</string>
     <string name="reading_status">Statut de lecture</string>
     <string name="file_type">Type de fichier</string>
@@ -88,6 +98,12 @@
     <string name="reader_hint_next">Touchez le bord droit\nPage suivante</string>
     <string name="reader_hint_menu">Touchez le centre\nAfficher / masquer le menu</string>
     <string name="reader_hint_got_it">Compris</string>
+    <string name="dict_define">Définir / traduire la sélection</string>
+    <string name="dict_select_word">Sélectionnez d\'abord un mot dans le texte</string>
+    <string name="dict_looking_up">Recherche…</string>
+    <string name="dict_not_found">Aucune définition trouvée. Essayez Traduire ou Rechercher.</string>
+    <string name="dict_translate">Traduire</string>
+    <string name="dict_search">Rechercher</string>
 
     <!-- Reader settings sheet -->
     <string name="reading_settings">Paramètres de lecture</string>
@@ -158,6 +174,16 @@
     <string name="sync_invalid_snapshot">Le fichier de progression n\'est pas valide</string>
     <string name="sync_https_required">L\'URL du serveur doit commencer par https://</string>
     <string name="sync_failed">Échec de la synchronisation : %1$s</string>
+
+    <!-- Backup &amp; restore -->
+    <string name="backup_title">Sauvegarder la bibliothèque</string>
+    <string name="backup_hint">Enregistrer livres, progression, notes et flux dans un fichier .zip</string>
+    <string name="backup_restore">Restaurer la bibliothèque</string>
+    <string name="backup_restore_hint">Charger un fichier de sauvegarde .zip</string>
+    <string name="backup_restore_warning">Cela remplace votre bibliothèque, votre progression et vos notes actuelles par la sauvegarde, puis redémarre l\'app. Continuer ?</string>
+    <string name="backup_exported">Sauvegarde enregistrée</string>
+    <string name="backup_failed">Échec de la sauvegarde</string>
+    <string name="backup_restore_failed">Échec de la restauration — ce fichier n\'est pas une sauvegarde valide</string>
 
     <!-- RSS -->
     <string name="tab_library">Bibliothèque</string>
