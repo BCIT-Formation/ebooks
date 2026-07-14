@@ -357,7 +357,12 @@ class BookRepository(private val context: Context) {
 
     suspend fun addBookmark(bookmark: Bookmark) = dao.insertBookmark(bookmark)
 
+    /** Re-inserts (REPLACE by id) — used to edit a highlight's note. */
+    suspend fun updateBookmark(bookmark: Bookmark) = dao.insertBookmark(bookmark)
+
     suspend fun deleteBookmark(bookmark: Bookmark) = dao.deleteBookmark(bookmark)
+
+    suspend fun getHighlightsSnapshot(bookId: String): List<Bookmark> = dao.getHighlightsSnapshot(bookId)
 
     // ── Annotations ───────────────────────────────────────────────────────────
 

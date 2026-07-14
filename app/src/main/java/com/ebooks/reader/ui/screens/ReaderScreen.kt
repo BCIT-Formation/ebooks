@@ -14,6 +14,11 @@ import android.webkit.WebViewClient
 import com.ebooks.reader.BuildConfig
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -44,6 +49,9 @@ import com.ebooks.reader.R
 import com.ebooks.reader.ui.components.ChapterPanel
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingToolbar
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.ebooks.reader.data.db.entities.Bookmark
 import com.ebooks.reader.data.dict.DictionaryClient
 import com.ebooks.reader.data.dict.WordDefinition
 import com.ebooks.reader.ui.components.ReaderSettingsSheet
@@ -108,6 +116,36 @@ fun ReaderScreen(
                 dictScope.launch { snackbarHostState.showSnackbar(context.getString(R.string.dict_select_word)) }
             }
         }
+    }
+
+    // Text highlighting.
+    var pendingHighlight by remember { mutableStateOf<String?>(null) }
+    val highlightExport = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
+        uri?.let { dest ->
+            dictScope.launch {
+                val md = viewModel.buildHighlightsMarkdown()
+                withContext(Dispatchers.IO) {
+                    runCatching { context.contentResolver.openOutputStream(dest)?.use { it.write(md.toByteArray()) } }
+                }
+                snackbarHostState.showSnackbar(context.getString(R.string.hl_exported))
+            }
+        }
+    }
+    val captureHighlight: () -> Unit = captureHighlight@{
+        val webView = webViewRef.value ?: return@captureHighlight
+        webView.evaluateJavascript("window.getSelection().toString()") { value ->
+            val sel = runCatching { JSONTokener(value).nextValue() as? String }.getOrNull().orEmpty().trim()
+            if (sel.isNotBlank()) pendingHighlight = sel
+            else dictScope.launch { snackbarHostState.showSnackbar(context.getString(R.string.hl_select_text)) }
+        }
+    }
+
+    // Re-apply saved highlights to the WebView when the chapter or its highlights change.
+    val chapterHighlights = remember(uiState.bookmarks, uiState.currentChapterIndex) {
+        uiState.bookmarks.filter { !it.selectedText.isNullOrBlank() && it.chapterIndex == uiState.currentChapterIndex }
+    }
+    LaunchedEffect(chapterHighlights, uiState.currentChapterHtml) {
+        webViewRef.value?.evaluateJavascript(buildHighlightJs(chapterHighlights), null)
     }
 
     // The queued speech text is stale once the chapter changes
@@ -246,6 +284,7 @@ fun ReaderScreen(
                         onSwipeLeft = { viewModel.nextChapter() },
                         onSwipeRight = { viewModel.previousChapter() },
                         webViewRef = webViewRef,
+                        highlightScriptProvider = { buildHighlightJs(chapterHighlights) },
                         modifier = Modifier.fillMaxSize()
                     )
 
@@ -299,7 +338,10 @@ fun ReaderScreen(
                                 onSearch = { viewModel.toggleSearch() },
                                 onDraw = { viewModel.toggleDrawingMode() },
                                 onShare = shareBook,
-                                onDefine = defineSelection
+                                onDefine = defineSelection,
+                                onHighlight = captureHighlight,
+                                onHighlightsList = { viewModel.toggleHighlightsPanel() },
+                                onExportHighlights = { highlightExport.launch("highlights.md") }
                             )
                         }
                     }
@@ -388,10 +430,131 @@ fun ReaderScreen(
                         onDismiss = { showDictSheet = false }
                     )
                 }
+
+                pendingHighlight?.let { text ->
+                    HighlightDialog(
+                        text = text,
+                        onConfirm = { color, note -> viewModel.addHighlight(text, color, note); pendingHighlight = null },
+                        onDismiss = { pendingHighlight = null }
+                    )
+                }
+
+                if (uiState.showHighlightsPanel) {
+                    val highlights = remember(uiState.bookmarks) {
+                        uiState.bookmarks.filter { !it.selectedText.isNullOrBlank() }
+                            .sortedWith(compareBy({ it.chapterIndex }, { it.position }))
+                    }
+                    HighlightsPanel(
+                        highlights = highlights,
+                        chapterTitleFor = { idx -> uiState.chapters.getOrNull(idx)?.title?.takeIf { it.isNotBlank() } },
+                        onOpen = { viewModel.navigateToBookmark(it); viewModel.closeAllPanels() },
+                        onDelete = { viewModel.deleteBookmark(it) },
+                        onEditNote = { bm, note -> viewModel.updateHighlightNote(bm, note) },
+                        onExport = { highlightExport.launch("highlights.md") },
+                        onClose = { viewModel.closeAllPanels() }
+                    )
+                }
             }
         }
     } // end Box
     } // end Scaffold content lambda
+}
+
+@Composable
+private fun HighlightDialog(text: String, onConfirm: (Int, String) -> Unit, onDismiss: () -> Unit) {
+    var color by remember { mutableStateOf(HIGHLIGHT_COLORS.first()) }
+    var note by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.hl_highlight)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("“${text.take(160)}${if (text.length > 160) "…" else ""}”", style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    HIGHLIGHT_COLORS.forEach { c ->
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(Color(c))
+                                .then(if (c == color) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, androidx.compose.foundation.shape.CircleShape) else Modifier)
+                                .pointerInput(c) { detectTapGestures { color = c } }
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = note, onValueChange = { note = it },
+                    label = { Text(stringResource(R.string.hl_note)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(color, note) }) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HighlightsPanel(
+    highlights: List<Bookmark>,
+    chapterTitleFor: (Int) -> String?,
+    onOpen: (Bookmark) -> Unit,
+    onDelete: (Bookmark) -> Unit,
+    onEditNote: (Bookmark, String) -> Unit,
+    onExport: () -> Unit,
+    onClose: () -> Unit
+) {
+    var editing by remember { mutableStateOf<Bookmark?>(null) }
+    Surface(
+        modifier = Modifier.fillMaxWidth(0.86f).fillMaxHeight(),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp
+    ) {
+        Column {
+            TopAppBar(
+                title = { Text(stringResource(R.string.hl_list)) },
+                navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
+                actions = { if (highlights.isNotEmpty()) TooltipIconButton(Icons.Default.Download, stringResource(R.string.hl_export), onExport) }
+            )
+            if (highlights.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.hl_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(24.dp))
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(highlights, key = { it.id }) { h ->
+                        Column(modifier = Modifier.fillMaxWidth().pointerInput(h.id) { detectTapGestures { onOpen(h) } }.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(12.dp).clip(CircleShape).background(Color(if (h.color == 0) HIGHLIGHT_COLORS.first() else h.color)))
+                                Spacer(Modifier.width(8.dp))
+                                Text(chapterTitleFor(h.chapterIndex) ?: "Chapter ${h.chapterIndex + 1}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                IconButton(onClick = { editing = h }) { Icon(Icons.Default.Edit, stringResource(R.string.hl_note), modifier = Modifier.size(18.dp)) }
+                                IconButton(onClick = { onDelete(h) }) { Icon(Icons.Default.Delete, stringResource(R.string.delete_book), modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error) }
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text("“${h.selectedText}”", style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                            h.note?.takeIf { it.isNotBlank() }?.let {
+                                Spacer(Modifier.height(4.dp))
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
+    }
+    editing?.let { h ->
+        var note by remember(h.id) { mutableStateOf(h.note.orEmpty()) }
+        AlertDialog(
+            onDismissRequest = { editing = null },
+            title = { Text(stringResource(R.string.hl_note)) },
+            text = { OutlinedTextField(value = note, onValueChange = { note = it }, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton(onClick = { onEditNote(h, note); editing = null }) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton(onClick = { editing = null }) { Text(stringResource(R.string.cancel)) } }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -461,6 +624,54 @@ private fun translateWord(context: android.content.Context, word: String) {
     }
 }
 
+/** Builds JS that unwraps any old highlights then re-wraps the given ones in `<mark>`. */
+private fun buildHighlightJs(highlights: List<Bookmark>): String {
+    val arr = org.json.JSONArray()
+    highlights.forEach { h ->
+        val text = h.selectedText ?: return@forEach
+        arr.put(org.json.JSONObject().put("t", text).put("c", highlightCss(h.color)))
+    }
+    return """
+        (function(){
+          document.querySelectorAll('mark[data-hl]').forEach(function(m){
+            var p=m.parentNode; while(m.firstChild){p.insertBefore(m.firstChild,m);} p.removeChild(m); p.normalize();
+          });
+          var hs = $arr;
+          hs.forEach(function(h){ apply(h.t, h.c); });
+          function apply(text,color){
+            if(!text) return;
+            var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false); var n;
+            while(n=w.nextNode()){
+              if(n.parentNode && n.parentNode.nodeName==='MARK') continue;
+              var i=n.nodeValue.indexOf(text);
+              if(i>=0){
+                var r=document.createRange(); r.setStart(n,i); r.setEnd(n,i+text.length);
+                var m=document.createElement('mark'); m.setAttribute('data-hl','1');
+                m.style.backgroundColor=color; m.style.color='inherit';
+                try{ r.surroundContents(m); }catch(e){}
+                return;
+              }
+            }
+          }
+        })();
+    """.trimIndent()
+}
+
+private fun highlightCss(color: Int): String {
+    val safe = if (color == 0) 0xFFF9A825.toInt() else color
+    val r = (safe shr 16) and 0xFF; val g = (safe shr 8) and 0xFF; val b = safe and 0xFF
+    return "rgba($r,$g,$b,0.45)"
+}
+
+/** Preset highlight colours (opaque ARGB). */
+internal val HIGHLIGHT_COLORS = listOf(
+    0xFFF9A825.toInt(), // amber
+    0xFF66BB6A.toInt(), // green
+    0xFF42A5F5.toInt(), // blue
+    0xFFEF5350.toInt(), // red
+    0xFFAB47BC.toInt()  // purple
+)
+
 private fun webSearch(context: android.content.Context, word: String) {
     val search = Intent(Intent.ACTION_WEB_SEARCH).apply { putExtra(android.app.SearchManager.QUERY, word) }
     if (search.resolveActivity(context.packageManager) != null) {
@@ -481,6 +692,7 @@ private fun EpubWebView(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     webViewRef: MutableState<WebView?>,
+    highlightScriptProvider: () -> String = { "" },
     modifier: Modifier = Modifier
 ) {
     AndroidView(
@@ -528,6 +740,9 @@ private fun EpubWebView(
                                 }, { passive: true });
                             })();
                         """.trimIndent(), null)
+                        // Re-apply saved highlights once the chapter DOM is ready.
+                        val hlScript = highlightScriptProvider()
+                        if (hlScript.isNotBlank()) view.evaluateJavascript(hlScript, null)
                     }
                 }
 
@@ -573,8 +788,12 @@ private fun ReaderTopBar(
     onSearch: () -> Unit,
     onDraw: () -> Unit = {},
     onShare: () -> Unit = {},
-    onDefine: () -> Unit = {}
+    onDefine: () -> Unit = {},
+    onHighlight: () -> Unit = {},
+    onHighlightsList: () -> Unit = {},
+    onExportHighlights: () -> Unit = {}
 ) {
+    var showMenu by remember { mutableStateOf(false) }
     TopAppBar(
         title = {
             Column {
@@ -586,13 +805,21 @@ private fun ReaderTopBar(
         },
         navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
         actions = {
-            TooltipIconButton(Icons.Default.Translate, stringResource(R.string.dict_define), onDefine)
+            TooltipIconButton(Icons.Default.BorderColor, stringResource(R.string.hl_highlight), onHighlight)
             TooltipIconButton(Icons.Default.Search, stringResource(R.string.search_in_book), onSearch)
-            TooltipIconButton(Icons.Default.Share, stringResource(R.string.share_book), onShare)
             TooltipIconButton(Icons.Default.Edit, stringResource(R.string.draw_annotations), onDraw)
             TooltipIconButton(Icons.Default.List, stringResource(R.string.chapters), onChapters)
-            TooltipIconButton(Icons.Default.BookmarkAdd, stringResource(R.string.add_bookmark), onBookmark)
             TooltipIconButton(Icons.Default.TextFormat, stringResource(R.string.settings), onSettings)
+            Box {
+                TooltipIconButton(Icons.Default.MoreVert, stringResource(R.string.more), { showMenu = true })
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.hl_list)) }, leadingIcon = { Icon(Icons.Default.FormatQuote, null) }, onClick = { showMenu = false; onHighlightsList() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.hl_export)) }, leadingIcon = { Icon(Icons.Default.Download, null) }, onClick = { showMenu = false; onExportHighlights() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.dict_define)) }, leadingIcon = { Icon(Icons.Default.Translate, null) }, onClick = { showMenu = false; onDefine() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.add_bookmark)) }, leadingIcon = { Icon(Icons.Default.BookmarkAdd, null) }, onClick = { showMenu = false; onBookmark() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.share_book)) }, leadingIcon = { Icon(Icons.Default.Share, null) }, onClick = { showMenu = false; onShare() })
+                }
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
     )

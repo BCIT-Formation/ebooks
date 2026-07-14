@@ -104,6 +104,14 @@
     <string name="dict_not_found">Aucune définition trouvée. Essayez Traduire ou Rechercher.</string>
     <string name="dict_translate">Traduire</string>
     <string name="dict_search">Rechercher</string>
+    <string name="more">Plus</string>
+    <string name="hl_highlight">Surligner la sélection</string>
+    <string name="hl_select_text">Sélectionnez d\'abord du texte dans la page</string>
+    <string name="hl_note">Note</string>
+    <string name="hl_list">Surlignages et notes</string>
+    <string name="hl_export">Exporter en Markdown</string>
+    <string name="hl_exported">Surlignages exportés</string>
+    <string name="hl_empty">Aucun surlignage. Sélectionnez du texte, puis touchez le surligneur.</string>
 
     <!-- Reader settings sheet -->
     <string name="reading_settings">Paramètres de lecture</string>
