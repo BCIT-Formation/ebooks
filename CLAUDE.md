@@ -324,6 +324,9 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
   schema bump wipes rather than crashes. **Do not rely on it** — always write a real `Migration`.
   Never remove the explicit migrations in favour of destructive fallback.
 - `reading_sessions` has a `CASCADE` foreign key to `books`; deleting a book removes its sessions.
+- **Highlights reuse the `bookmarks` table** — a highlight is a `Bookmark` with a non-blank
+  `selectedText` plus `color`/`note`. The EPUB reader re-applies them by wrapping matching text
+  in `<mark>` via injected JS (`buildHighlightJs`), and exports them to Markdown.
 
 ---
 

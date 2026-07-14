@@ -28,6 +28,7 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | Full backup &amp; restore (.zip) | ✅ |
 | Chapter navigation | ✅ |
 | Bookmarks with notes | ✅ |
+| Text highlights + notes, export to Markdown | ✅ |
 | In-book text search | ✅ |
 | Reading progress sync | ✅ |
 | Reading statistics | ✅ |

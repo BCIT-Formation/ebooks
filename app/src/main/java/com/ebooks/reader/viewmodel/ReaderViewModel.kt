@@ -70,6 +70,7 @@ data class ReaderUiState(
     val showChapterPanel: Boolean = false,
     val showSettingsPanel: Boolean = false,
     val showBookmarksPanel: Boolean = false,
+    val showHighlightsPanel: Boolean = false,
     val isSearchVisible: Boolean = false,
     val searchQuery: String = "",
     val settings: ReaderSettings = ReaderSettings(),
@@ -217,7 +218,8 @@ class ReaderViewModel(
         _uiState.update { it.copy(
             showChapterPanel = !it.showChapterPanel,
             showSettingsPanel = false,
-            showBookmarksPanel = false
+            showBookmarksPanel = false,
+            showHighlightsPanel = false
         )}
     }
 
@@ -225,7 +227,8 @@ class ReaderViewModel(
         _uiState.update { it.copy(
             showSettingsPanel = !it.showSettingsPanel,
             showChapterPanel = false,
-            showBookmarksPanel = false
+            showBookmarksPanel = false,
+            showHighlightsPanel = false
         )}
     }
 
@@ -233,7 +236,8 @@ class ReaderViewModel(
         _uiState.update { it.copy(
             showBookmarksPanel = !it.showBookmarksPanel,
             showChapterPanel = false,
-            showSettingsPanel = false
+            showSettingsPanel = false,
+            showHighlightsPanel = false
         )}
     }
 
@@ -241,7 +245,8 @@ class ReaderViewModel(
         _uiState.update { it.copy(
             showChapterPanel = false,
             showSettingsPanel = false,
-            showBookmarksPanel = false
+            showBookmarksPanel = false,
+            showHighlightsPanel = false
         )}
     }
 
@@ -390,6 +395,72 @@ class ReaderViewModel(
             loadChapter(bookmark.chapterIndex)
         }
         // Scroll position handled by WebView
+    }
+
+    // ── Highlights (a bookmark that carries selected text + colour + note) ──────
+
+    fun toggleHighlightsPanel() {
+        _uiState.update { it.copy(
+            showHighlightsPanel = !it.showHighlightsPanel,
+            showChapterPanel = false, showSettingsPanel = false, showBookmarksPanel = false
+        )}
+    }
+
+    /** Highlights of the currently-open chapter — re-applied to the WebView. */
+    fun currentChapterHighlights(): List<Bookmark> =
+        _uiState.value.bookmarks.filter {
+            !it.selectedText.isNullOrBlank() && it.chapterIndex == _uiState.value.currentChapterIndex
+        }
+
+    fun addHighlight(text: String, color: Int, note: String) {
+        val cleaned = text.trim()
+        if (cleaned.isBlank()) return
+        val state = _uiState.value
+        val chapter = state.chapters.getOrNull(state.currentChapterIndex) ?: return
+        viewModelScope.launch {
+            repository.addBookmark(
+                Bookmark(
+                    id = UUID.randomUUID().toString(),
+                    bookId = bookId,
+                    chapterIndex = state.currentChapterIndex,
+                    chapterHref = chapter.href,
+                    position = 0,
+                    selectedText = cleaned,
+                    note = note.trim().ifBlank { null },
+                    color = color
+                )
+            )
+        }
+    }
+
+    fun updateHighlightNote(bookmark: Bookmark, note: String) {
+        viewModelScope.launch { repository.updateBookmark(bookmark.copy(note = note.trim().ifBlank { null })) }
+    }
+
+    /** Builds a Markdown document of every highlight in the book, grouped by chapter. */
+    fun buildHighlightsMarkdown(): String {
+        val state = _uiState.value
+        val book = state.book
+        val highlights = state.bookmarks
+            .filter { !it.selectedText.isNullOrBlank() }
+            .sortedWith(compareBy({ it.chapterIndex }, { it.position }))
+        val sb = StringBuilder()
+        sb.append("# ").append(book?.title ?: "Highlights").append("\n")
+        if (!book?.author.isNullOrBlank() && book?.author != "Unknown") sb.append("*").append(book?.author).append("*\n")
+        sb.append("\n")
+        var lastChapter = -1
+        for (h in highlights) {
+            if (h.chapterIndex != lastChapter) {
+                val title = state.chapters.getOrNull(h.chapterIndex)?.title?.takeIf { it.isNotBlank() }
+                    ?: "Chapter ${h.chapterIndex + 1}"
+                sb.append("\n## ").append(title).append("\n\n")
+                lastChapter = h.chapterIndex
+            }
+            sb.append("> ").append(h.selectedText?.replace("\n", "\n> ")).append("\n")
+            h.note?.takeIf { it.isNotBlank() }?.let { sb.append("\n").append(it).append("\n") }
+            sb.append("\n")
+        }
+        return sb.toString()
     }
 
     // ── Annotations ───────────────────────────────────────────────────────────

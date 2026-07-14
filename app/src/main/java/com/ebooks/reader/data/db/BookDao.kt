@@ -95,6 +95,10 @@ interface BookDao {
     @Query("SELECT * FROM bookmarks WHERE bookId = :bookId AND chapterIndex = :chapterIndex ORDER BY position ASC")
     suspend fun getBookmarksForChapter(bookId: String, chapterIndex: Int): List<Bookmark>
 
+    /** One-shot snapshot of highlights (bookmarks with captured text) for export. */
+    @Query("SELECT * FROM bookmarks WHERE bookId = :bookId AND selectedText IS NOT NULL AND selectedText != '' ORDER BY chapterIndex ASC, position ASC")
+    suspend fun getHighlightsSnapshot(bookId: String): List<Bookmark>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBookmark(bookmark: Bookmark)
 
