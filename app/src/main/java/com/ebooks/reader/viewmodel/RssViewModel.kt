@@ -42,7 +42,13 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
         _message,
         _selectedArticleIds,
         _isSelectionMode
-    ) { feeds, articles, busy, message, selectedIds, selectionMode ->
+    ) { values ->
+        val feeds = values[0] as List<RssFeed>
+        val articles = values[1] as List<RssArticle>
+        val busy = values[2] as Boolean
+        val message = values[3] as String?
+        val selectedIds = values[4] as Set<String>
+        val selectionMode = values[5] as Boolean
         RssUiState(
             feeds = feeds,
             articles = articles,
