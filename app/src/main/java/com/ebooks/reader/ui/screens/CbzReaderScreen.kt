@@ -4,6 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -15,10 +19,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ebooks.reader.R
@@ -170,12 +179,54 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         itemsIndexed(pages, key = { _, file -> file.name }) { index, file ->
-                            Box(modifier = Modifier.fillMaxWidth()) {
+                            var zoom by remember(file.name) { mutableFloatStateOf(1f) }
+                            var pan by remember(file.name) { mutableStateOf(Offset.Zero) }
+                            var boxSize by remember(file.name) { mutableStateOf(IntSize.Zero) }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onSizeChanged { boxSize = it }
+                                    // Only two-or-more-finger gestures are consumed here, so a
+                                    // single-finger drag still reaches the LazyColumn's scroll.
+                                    .pointerInput(file.name) {
+                                        awaitEachGesture {
+                                            awaitFirstDown(requireUnconsumed = false)
+                                            do {
+                                                val event = awaitPointerEvent()
+                                                if (event.changes.size >= 2) {
+                                                    val zoomChange = event.calculateZoom()
+                                                    val panChange = event.calculatePan()
+                                                    val newZoom = (zoom * zoomChange).coerceIn(1f, 4f)
+                                                    val maxX = (boxSize.width * (newZoom - 1f) / 2f).coerceAtLeast(0f)
+                                                    val maxY = (boxSize.height * (newZoom - 1f) / 2f).coerceAtLeast(0f)
+                                                    pan = if (newZoom > 1f) {
+                                                        Offset(
+                                                            (pan.x + panChange.x).coerceIn(-maxX, maxX),
+                                                            (pan.y + panChange.y).coerceIn(-maxY, maxY)
+                                                        )
+                                                    } else {
+                                                        Offset.Zero
+                                                    }
+                                                    zoom = newZoom
+                                                    event.changes.forEach { it.consume() }
+                                                }
+                                            } while (event.changes.any { it.pressed })
+                                        }
+                                    }
+                            ) {
                                 AsyncImage(
                                     model = file,
                                     contentDescription = stringResource(R.string.page_number_desc, index + 1),
                                     contentScale = ContentScale.FillWidth,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .graphicsLayer(
+                                            scaleX = zoom,
+                                            scaleY = zoom,
+                                            translationX = pan.x,
+                                            translationY = pan.y
+                                        )
                                 )
 
                                 if (annotationsByPage[index]?.isNotEmpty() == true || isDrawingMode) {
