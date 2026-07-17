@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -49,6 +50,7 @@ fun RssScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var selectedFeedId by remember { mutableStateOf<String?>(null) }
@@ -73,6 +75,7 @@ fun RssScreen(
     val feedTitles = remember(uiState.feeds) { uiState.feeds.associate { it.id to it.title } }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (uiState.isSelectionMode) {
@@ -102,7 +105,8 @@ fun RssScreen(
                                 )
                             }
                         }
-                    }
+                    },
+                    scrollBehavior = scrollBehavior
                 )
             } else {
                 TopAppBar(
@@ -123,7 +127,8 @@ fun RssScreen(
                                 )
                             }
                         }
-                    }
+                    },
+                    scrollBehavior = scrollBehavior
                 )
             }
         },
@@ -205,25 +210,42 @@ private fun FeedFilterRow(
     onSelect: (String?) -> Unit,
     onDeleteRequest: (RssFeed) -> Unit
 ) {
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilterChip(selected = selectedFeedId == null, onClick = { onSelect(null) }, label = { Text(stringResource(R.string.rss_all_feeds)) })
+            FilterChip(
+                selected = selectedFeedId == null,
+                onClick = { onSelect(null) },
+                label = { Text(stringResource(R.string.rss_all_feeds)) },
+                leadingIcon = if (selectedFeedId == null) {
+                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                } else null
+            )
             feeds.forEach { feed ->
                 FilterChip(
                     selected = selectedFeedId == feed.id,
                     onClick = { onSelect(feed.id) },
-                    label = { Text(feed.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                    label = { Text(feed.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    leadingIcon = if (selectedFeedId == feed.id) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null
                 )
             }
         }
-        // Unsubscribe affordance for the currently-filtered feed.
         feeds.firstOrNull { it.id == selectedFeedId }?.let { feed ->
+            Divider(modifier = Modifier.padding(horizontal = 12.dp))
             TextButton(
                 onClick = { onDeleteRequest(feed) },
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
             ) {
                 Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
@@ -383,20 +405,41 @@ private fun AddFeedDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {
 
 @Composable
 private fun EmptyRss(onAdd: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Icon(Icons.Default.RssFeed, null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-        Spacer(Modifier.height(16.dp))
-        Text(stringResource(R.string.rss_empty_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.height(8.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Default.RssFeed,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+        )
+        Spacer(Modifier.height(24.dp))
+        Text(
+            stringResource(R.string.rss_empty_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.rss_empty_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
-        Spacer(Modifier.height(20.dp))
-        Button(onClick = onAdd) {
-            Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.rss_add_feed))
+        Spacer(Modifier.height(28.dp))
+        Button(
+            onClick = onAdd,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        ) {
+            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.rss_add_feed))
         }
     }
 }
