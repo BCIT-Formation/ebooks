@@ -15,6 +15,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -44,6 +46,8 @@ import com.ebooks.reader.ui.screens.Fb2ReaderScreen
 import com.ebooks.reader.ui.theme.DisplayMode
 import com.ebooks.reader.ui.theme.EbookReaderTheme
 import com.ebooks.reader.widget.CurrentBookWidget
+import com.ebooks.reader.data.settings.ThemeSettings
+import com.ebooks.reader.data.settings.AppTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -62,7 +66,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             var displayMode by remember { mutableStateOf(DisplayMode.load(context)) }
-            EbookReaderTheme(displayMode = displayMode) {
+            val themeSettings = remember { ThemeSettings.getInstance(context) }
+            val appTheme by themeSettings.currentTheme.collectAsStateWithLifecycle(initialValue = AppTheme.LIGHT)
+            EbookReaderTheme(displayMode = displayMode, appTheme = appTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
                     val backStackEntry by navController.currentBackStackEntryAsState()

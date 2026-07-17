@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.ebooks.reader.data.settings.AppTheme
 
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
@@ -72,13 +73,24 @@ private val EinkColorScheme = lightColorScheme(
  * App theme. The [displayMode] picks a fixed, high-contrast colour scheme —
  * we deliberately do NOT use Material You dynamic colours, because deriving the
  * palette from the wallpaper produced washed-out, hard-to-read buttons.
+ *
+ * The [appTheme] controls light/dark mode for LCD displays:
+ * - LIGHT: always use light colors
+ * - DARK: always use dark colors
+ * - SYSTEM: follow system dark theme preference (default)
  */
 @Composable
 fun EbookReaderTheme(
     displayMode: DisplayMode = DisplayMode.LCD,
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    appTheme: AppTheme = AppTheme.LIGHT,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (appTheme) {
+        AppTheme.LIGHT -> false
+        AppTheme.DARK -> true
+        AppTheme.SYSTEM -> isSystemInDarkTheme()
+    }
+
     val colorScheme = when (displayMode) {
         DisplayMode.EINK -> EinkColorScheme
         DisplayMode.AMOLED -> AmoledColorScheme

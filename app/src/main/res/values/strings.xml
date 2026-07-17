@@ -224,6 +224,14 @@
     <string name="rss_unfavorite">Unfavorite</string>
     <string name="rss_articles_selected">%1$d selected</string>
 
+    <!-- Theme -->
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System</string>
+    <string name="theme_setting">Theme</string>
+    <string name="theme_light_mode">Light mode (day)</string>
+    <string name="theme_dark_mode">Dark mode (night)</string>
+
     <!-- Widget -->
     <string name="widget_label">Currently reading</string>
     <string name="widget_description">Shows the book you are currently reading</string>
