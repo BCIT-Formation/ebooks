@@ -33,8 +33,8 @@
 - [x] Comic book (CBZ) reader — basic vertical page reader (`CbzReaderScreen`); CBR and pinch-to-zoom still open
 - [x] Night light / warm color filter overlay
 - [x] Widget for current reading book (Glance app widget showing the most recently read book)
-- [x] Android 13+ per-app language preferences (`localeConfig` + en/fr resources for the main screens; ViewModel error strings and secondary readers still hardcoded English)
-- [ ] Finish string extraction for full localization (ViewModel error messages, PDF/FB2/CBZ reader labels, chapter panel, drawing toolbar)
+- [x] Android 13+ per-app language preferences (`localeConfig` + en/fr resources for the main screens)
+- [x] Finish string extraction for full localization (ViewModel error messages, PDF/FB2/CBZ reader labels, chapter panel, drawing toolbar; font family names and Markdown-export fallbacks intentionally left as-is)
 - [ ] CBR support + pinch-to-zoom for the comic reader
 - [x] Cloud sync (reading progress across devices) — via a user-picked cloud folder
       (Google Drive / OneDrive document providers through SAF) and via WebDAV;
