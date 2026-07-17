@@ -18,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.AppDatabase
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.ReadingProgress
@@ -47,7 +49,7 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var title by remember { mutableStateOf("Comic") }
+    var title by remember { mutableStateOf(context.getString(R.string.cbz_default_title)) }
     var pages by remember { mutableStateOf<List<File>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -61,7 +63,7 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
             val dao = AppDatabase.getInstance(context).bookDao()
             val book = dao.getBookById(bookId)
             if (book == null) {
-                error = "Book not found."
+                error = context.getString(R.string.reader_book_not_found)
                 isLoading = false
                 return@withContext null
             }
@@ -69,7 +71,7 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
             try {
                 val extracted = extractCbzPages(context, bookId, Uri.parse(book.filePath))
                 if (extracted.isEmpty()) {
-                    error = "No images found in this comic archive."
+                    error = context.getString(R.string.cbz_no_images)
                 } else {
                     pages = extracted
                 }
@@ -79,7 +81,7 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                 isLoading = false
                 dao.getReadingProgress(bookId)?.scrollPosition
             } catch (e: Exception) {
-                error = "Could not open comic: ${e.localizedMessage}"
+                error = context.getString(R.string.cbz_could_not_open, e.localizedMessage)
                 isLoading = false
                 null
             }
@@ -113,20 +115,20 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                 title = { Text(title, maxLines = 1) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
                         Icon(
                             Icons.Filled.Edit,
-                            contentDescription = "Draw",
+                            contentDescription = stringResource(R.string.draw_annotations),
                             tint = if (isDrawingMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
                     if (pages.isNotEmpty()) {
                         Text(
-                            "${listState.firstVisibleItemIndex + 1} / ${pages.size}",
+                            stringResource(R.string.page_counter, listState.firstVisibleItemIndex + 1, pages.size),
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.padding(end = 16.dp)
                         )
@@ -171,7 +173,7 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
                             Box(modifier = Modifier.fillMaxWidth()) {
                                 AsyncImage(
                                     model = file,
-                                    contentDescription = "Page ${index + 1}",
+                                    contentDescription = stringResource(R.string.page_number_desc, index + 1),
                                     contentScale = ContentScale.FillWidth,
                                     modifier = Modifier.fillMaxWidth()
                                 )

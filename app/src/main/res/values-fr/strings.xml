@@ -65,6 +65,11 @@
     <string name="avg_session_length">Durée moyenne des sessions</string>
     <string name="last_session">Dernière session</string>
     <string name="no_sessions_yet">Aucune session de lecture enregistrée.\nOuvrez le livre pour commencer le suivi !</string>
+    <string name="import_error_no_extension">Fichier non pris en charge (pas d\'extension).</string>
+    <string name="import_error_unsupported_format">Format non pris en charge : .%1$s</string>
+    <string name="import_error_unreadable">Impossible de lire le fichier. Il a peut-être été déplacé ou supprimé.</string>
+    <string name="import_error_parse_failed">Impossible d\'ouvrir « %1$s ». Le fichier est peut-être corrompu.</string>
+    <string name="add">Ajouter</string>
 
     <!-- Reader -->
     <string name="back">Retour</string>
@@ -112,6 +117,46 @@
     <string name="hl_export">Exporter en Markdown</string>
     <string name="hl_exported">Surlignages exportés</string>
     <string name="hl_empty">Aucun surlignage. Sélectionnez du texte, puis touchez le surligneur.</string>
+    <string name="hl_export_default_title">Surlignages</string>
+    <string name="reader_book_not_found">Livre introuvable.</string>
+    <string name="reader_could_not_open_book">Impossible d\'ouvrir le fichier du livre. Il a peut-être été déplacé ou supprimé.</string>
+    <string name="reader_parse_failed">Échec de l\'analyse du fichier du livre.</string>
+    <string name="reader_chapter_load_failed">Impossible de charger le chapitre. Le fichier a peut-être été déplacé ou supprimé.</string>
+    <string name="reader_import_font_failed">Impossible d\'importer la police. Choisissez un fichier .ttf ou .otf.</string>
+    <string name="chapter_panel_contents">Sommaire</string>
+    <string name="no_bookmarks_yet">Aucun signet</string>
+    <string name="chapter_number">Chapitre %1$d</string>
+    <string name="current_chapter_desc">Chapitre actuel</string>
+    <string name="delete_bookmark">Supprimer le signet</string>
+    <string name="page_number_desc">Page %1$d</string>
+    <string name="page_counter">%1$d / %2$d</string>
+
+    <!-- PDF reader -->
+    <string name="pdf_default_title">PDF</string>
+    <string name="pdf_could_not_open">Impossible d\'ouvrir le PDF : %1$s</string>
+
+    <!-- FB2 reader -->
+    <string name="fb2_default_title">Livre FB2</string>
+    <string name="fb2_parse_failed">Échec de l\'analyse du fichier FB2.</string>
+    <string name="fb2_load_error">Erreur lors du chargement du livre : %1$s</string>
+
+    <!-- CBZ reader -->
+    <string name="cbz_default_title">BD</string>
+    <string name="cbz_no_images">Aucune image trouvée dans cette archive de bande dessinée.</string>
+    <string name="cbz_could_not_open">Impossible d\'ouvrir la bande dessinée : %1$s</string>
+
+    <!-- Drawing toolbar -->
+    <string name="draw_tool_pen">Stylo</string>
+    <string name="draw_tool_highlight">Surligner</string>
+    <string name="draw_tool_text">Texte</string>
+    <string name="draw_tool_rect">Rectangle</string>
+    <string name="draw_tool_circle">Cercle</string>
+    <string name="draw_stroke_label">Épaisseur : %1$s</string>
+    <string name="draw_opacity_label">Opacité : %1$d%%</string>
+    <string name="draw_clear_page">Effacer la page</string>
+    <string name="draw_clear_all">Tout effacer</string>
+    <string name="draw_add_text_note">Ajouter une note texte</string>
+    <string name="draw_text_note_hint">Saisissez votre note…</string>
 
     <!-- Reader settings sheet -->
     <string name="reading_settings">Paramètres de lecture</string>

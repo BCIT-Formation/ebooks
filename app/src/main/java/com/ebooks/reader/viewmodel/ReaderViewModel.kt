@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.Book
 import com.ebooks.reader.data.db.entities.Bookmark
@@ -128,16 +129,16 @@ class ReaderViewModel(
         // second launch reads an empty chapters list before the first has populated it.
         viewModelScope.launch {
             val book = repository.getBookById(bookId) ?: run {
-                _uiState.update { it.copy(error = "Book not found") }
+                _uiState.update { it.copy(error = context().getString(R.string.reader_book_not_found)) }
                 return@launch
             }
             val epubBook = try {
                 repository.parseEpubBook(book)
             } catch (_: java.io.IOException) {
-                _uiState.update { it.copy(error = "Could not open book file. It may have been moved or deleted.") }
+                _uiState.update { it.copy(error = context().getString(R.string.reader_could_not_open_book)) }
                 return@launch
             } catch (_: Exception) {
-                _uiState.update { it.copy(error = "Failed to parse book file.") }
+                _uiState.update { it.copy(error = context().getString(R.string.reader_parse_failed)) }
                 return@launch
             }
             val progress = repository.getReadingProgress(bookId)
@@ -182,7 +183,7 @@ class ReaderViewModel(
             if (html == null) {
                 _uiState.update { it.copy(
                     isChapterLoading = false,
-                    chapterError = "Could not load chapter. The file may have been moved or deleted."
+                    chapterError = context().getString(R.string.reader_chapter_load_failed)
                 )}
             } else {
                 _uiState.update { it.copy(
@@ -296,7 +297,7 @@ class ReaderViewModel(
     fun importFont(uri: android.net.Uri) {
         viewModelScope.launch {
             val imported = repository.importFont(uri) ?: run {
-                _uiState.update { it.copy(chapterError = "Could not import font. Pick a .ttf or .otf file.") }
+                _uiState.update { it.copy(chapterError = context().getString(R.string.reader_import_font_failed)) }
                 return@launch
             }
             val fonts = repository.listCustomFonts().map { it.absolutePath }
@@ -445,14 +446,14 @@ class ReaderViewModel(
             .filter { !it.selectedText.isNullOrBlank() }
             .sortedWith(compareBy({ it.chapterIndex }, { it.position }))
         val sb = StringBuilder()
-        sb.append("# ").append(book?.title ?: "Highlights").append("\n")
+        sb.append("# ").append(book?.title ?: context().getString(R.string.hl_export_default_title)).append("\n")
         if (!book?.author.isNullOrBlank() && book?.author != "Unknown") sb.append("*").append(book?.author).append("*\n")
         sb.append("\n")
         var lastChapter = -1
         for (h in highlights) {
             if (h.chapterIndex != lastChapter) {
                 val title = state.chapters.getOrNull(h.chapterIndex)?.title?.takeIf { it.isNotBlank() }
-                    ?: "Chapter ${h.chapterIndex + 1}"
+                    ?: context().getString(R.string.chapter_number, h.chapterIndex + 1)
                 sb.append("\n## ").append(title).append("\n\n")
                 lastChapter = h.chapterIndex
             }
@@ -590,4 +591,6 @@ class ReaderViewModel(
             }
         }
     }
+
+    private fun context(): Application = getApplication()
 }

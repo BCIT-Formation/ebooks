@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import com.ebooks.reader.R
@@ -68,31 +69,31 @@ fun DrawingToolbar(
             ToolButton(
                 selected = settings.tool == DrawingTool.PEN,
                 onClick = { onSettingsChanged(settings.copy(tool = DrawingTool.PEN)) },
-                label = "Pen",
+                label = stringResource(R.string.draw_tool_pen),
                 enabled = isDrawingEnabled
             )
             ToolButton(
                 selected = settings.tool == DrawingTool.HIGHLIGHT,
                 onClick = { onSettingsChanged(settings.copy(tool = DrawingTool.HIGHLIGHT)) },
-                label = "Highlight",
+                label = stringResource(R.string.draw_tool_highlight),
                 enabled = isDrawingEnabled
             )
             ToolButton(
                 selected = settings.tool == DrawingTool.TEXT,
                 onClick = { onSettingsChanged(settings.copy(tool = DrawingTool.TEXT)) },
-                label = "Text",
+                label = stringResource(R.string.draw_tool_text),
                 enabled = isDrawingEnabled
             )
             ToolButton(
                 selected = settings.tool == DrawingTool.RECTANGLE,
                 onClick = { onSettingsChanged(settings.copy(tool = DrawingTool.RECTANGLE)) },
-                label = "Rect",
+                label = stringResource(R.string.draw_tool_rect),
                 enabled = isDrawingEnabled
             )
             ToolButton(
                 selected = settings.tool == DrawingTool.CIRCLE,
                 onClick = { onSettingsChanged(settings.copy(tool = DrawingTool.CIRCLE)) },
-                label = "Circle",
+                label = stringResource(R.string.draw_tool_circle),
                 enabled = isDrawingEnabled
             )
 
@@ -124,7 +125,7 @@ fun DrawingToolbar(
                 .padding(bottom = 8.dp)
         ) {
             Text(
-                "Stroke: ${String.format("%.1f", settings.strokeWidth)}",
+                stringResource(R.string.draw_stroke_label, String.format("%.1f", settings.strokeWidth)),
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
@@ -142,7 +143,7 @@ fun DrawingToolbar(
                 .padding(bottom = 8.dp)
         ) {
             Text(
-                "Opacity: ${(settings.opacity * 100).toInt()}%",
+                stringResource(R.string.draw_opacity_label, (settings.opacity * 100).toInt()),
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
@@ -161,10 +162,10 @@ fun DrawingToolbar(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             IconButton(onClick = onClearPage, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.Clear, contentDescription = "Clear Page")
+                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.draw_clear_page))
             }
             IconButton(onClick = onClearAll, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.Delete, contentDescription = "Clear All")
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.draw_clear_all))
             }
         }
     }
