@@ -15,6 +15,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -37,13 +39,16 @@ import com.ebooks.reader.ui.screens.OpdsScreen
 import com.ebooks.reader.ui.screens.PdfReaderScreen
 import com.ebooks.reader.ui.screens.ReaderScreen
 import com.ebooks.reader.ui.screens.RssReaderScreen
-import com.ebooks.reader.ui.screens.RssScreen
+import com.ebooks.reader.ui.screens.RssFeedsScreen
+import com.ebooks.reader.ui.screens.RssFeedArticlesScreen
 import com.ebooks.reader.ui.screens.SyncScreen
 import com.ebooks.reader.ui.screens.TxtReaderScreen
 import com.ebooks.reader.ui.screens.Fb2ReaderScreen
 import com.ebooks.reader.ui.theme.DisplayMode
 import com.ebooks.reader.ui.theme.EbookReaderTheme
 import com.ebooks.reader.widget.CurrentBookWidget
+import com.ebooks.reader.data.settings.ThemeSettings
+import com.ebooks.reader.data.settings.AppTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -62,12 +67,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             var displayMode by remember { mutableStateOf(DisplayMode.load(context)) }
-            EbookReaderTheme(displayMode = displayMode) {
+            val themeSettings = remember { ThemeSettings.getInstance(context) }
+            val appTheme by themeSettings.currentTheme.collectAsStateWithLifecycle(initialValue = AppTheme.LIGHT)
+            EbookReaderTheme(displayMode = displayMode, appTheme = appTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
                     val backStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = backStackEntry?.destination?.route
-                    val showTabs = currentRoute == "library" || currentRoute == "rss"
+                    val showTabs = currentRoute == "library" || currentRoute == "rss_feeds"
 
                     Scaffold(
                         bottomBar = {
@@ -85,9 +92,9 @@ class MainActivity : ComponentActivity() {
                                         label = { Text(stringResource(R.string.tab_library)) }
                                     )
                                     NavigationBarItem(
-                                        selected = currentRoute == "rss",
+                                        selected = currentRoute == "rss_feeds",
                                         onClick = {
-                                            navController.navigate("rss") {
+                                            navController.navigate("rss_feeds") {
                                                 popUpTo("library") { inclusive = false }
                                                 launchSingleTop = true
                                             }
@@ -133,9 +140,21 @@ class MainActivity : ComponentActivity() {
                             SyncScreen(onBack = { navController.popBackStack() })
                         }
 
-                        composable("rss") {
-                            RssScreen(
-                                onOpenArticle = { articleId -> navController.navigate("rss_reader/$articleId") }
+                        composable("rss_feeds") {
+                            RssFeedsScreen(
+                                onOpenFeed = { feedId -> navController.navigate("rss_articles/$feedId") }
+                            )
+                        }
+
+                        composable(
+                            route = "rss_articles/{feedId}",
+                            arguments = listOf(navArgument("feedId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val feedId = backStackEntry.arguments?.getString("feedId") ?: return@composable
+                            RssFeedArticlesScreen(
+                                feedId = feedId,
+                                onOpenArticle = { articleId -> navController.navigate("rss_reader/$articleId") },
+                                onBack = { navController.popBackStack() }
                             )
                         }
 

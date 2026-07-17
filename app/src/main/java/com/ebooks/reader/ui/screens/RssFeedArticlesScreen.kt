@@ -1,22 +1,17 @@
 package com.ebooks.reader.ui.screens
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RssFeed
@@ -39,29 +34,18 @@ import com.ebooks.reader.data.db.entities.RssArticle
 import com.ebooks.reader.data.db.entities.RssFeed
 import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.viewmodel.RssViewModel
-import java.text.DateFormat
-import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RssScreen(
+fun RssFeedArticlesScreen(
+    feedId: String,
     onOpenArticle: (String) -> Unit,
+    onBack: () -> Unit,
     viewModel: RssViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    var showAddDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-    var selectedFeedId by remember { mutableStateOf<String?>(null) }
-    var feedToDelete by remember { mutableStateOf<RssFeed?>(null) }
-
-    val opmlImport = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        uri?.let(viewModel::importOpml)
-    }
-    val opmlExport = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/xml")) { uri: Uri? ->
-        uri?.let(viewModel::exportOpml)
-    }
 
     LaunchedEffect(uiState.message) {
         val msg = uiState.message ?: return@LaunchedEffect
@@ -69,10 +53,8 @@ fun RssScreen(
         viewModel.consumeMessage()
     }
 
-    val articles = remember(uiState.articles, selectedFeedId) {
-        selectedFeedId?.let { id -> uiState.articles.filter { it.feedId == id } } ?: uiState.articles
-    }
-    val feedTitles = remember(uiState.feeds) { uiState.feeds.associate { it.id to it.title } }
+    val feed = uiState.feeds.firstOrNull { it.id == feedId }
+    val articles = uiState.articles.filter { it.feedId == feedId }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -110,34 +92,20 @@ fun RssScreen(
                 )
             } else {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.rss_title), fontWeight = FontWeight.Bold) },
-                    actions = {
-                        TooltipIconButton(Icons.Default.Refresh, stringResource(R.string.rss_refresh), { viewModel.refresh() })
-                        TooltipIconButton(Icons.Default.Add, stringResource(R.string.rss_add_feed), { showAddDialog = true })
-                        Box {
-                            TooltipIconButton(Icons.Default.MoreVert, stringResource(R.string.settings), { showMenu = true })
-                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.rss_import_opml)) },
-                                    onClick = { showMenu = false; opmlImport.launch(arrayOf("*/*")) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.rss_export_opml)) },
-                                    onClick = { showMenu = false; opmlExport.launch("subscriptions.opml") }
-                                )
-                            }
+                    title = {
+                        Column {
+                            Text(feed?.title ?: stringResource(R.string.rss_title), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("${articles.size} ${stringResource(R.string.rss_articles)}", style = MaterialTheme.typography.labelSmall)
                         }
                     },
-                    scrollBehavior = scrollBehavior
-                )
-            }
-        },
-        floatingActionButton = {
-            if (!uiState.isSelectionMode) {
-                ExtendedFloatingActionButton(
-                    onClick = { showAddDialog = true },
-                    icon = { Icon(Icons.Default.Add, null) },
-                    text = { Text(stringResource(R.string.rss_add_feed)) }
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
+                        }
+                    },
+                    actions = {
+                        TooltipIconButton(Icons.Default.Refresh, stringResource(R.string.rss_refresh), { viewModel.refresh() })
+                    }
                 )
             }
         }
@@ -145,17 +113,7 @@ fun RssScreen(
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             if (uiState.isBusy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 
-            if (uiState.feeds.isNotEmpty()) {
-                FeedFilterRow(
-                    feeds = uiState.feeds,
-                    selectedFeedId = selectedFeedId,
-                    onSelect = { selectedFeedId = it },
-                    onDeleteRequest = { feedToDelete = it }
-                )
-            }
-
             when {
-                uiState.feeds.isEmpty() -> EmptyRss(onAdd = { showAddDialog = true })
                 articles.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.rss_no_articles), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -163,7 +121,7 @@ fun RssScreen(
                     items(articles, key = { it.id }) { article ->
                         ArticleRow(
                             article = article,
-                            feedTitle = feedTitles[article.feedId].orEmpty(),
+                            feedTitle = feed?.title.orEmpty(),
                             isSelectionMode = uiState.isSelectionMode,
                             isSelected = article.id in uiState.selectedArticleIds,
                             onToggleSelection = { viewModel.toggleArticleSelection(article.id) },
@@ -178,85 +136,10 @@ fun RssScreen(
             }
         }
     }
-
-    if (showAddDialog) {
-        AddFeedDialog(
-            onAdd = { url -> viewModel.addFeed(url); showAddDialog = false },
-            onDismiss = { showAddDialog = false }
-        )
-    }
-
-    feedToDelete?.let { feed ->
-        AlertDialog(
-            onDismissRequest = { feedToDelete = null },
-            title = { Text(stringResource(R.string.rss_delete_feed)) },
-            text = { Text(stringResource(R.string.rss_delete_feed_message, feed.title)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (selectedFeedId == feed.id) selectedFeedId = null
-                    viewModel.deleteFeed(feed); feedToDelete = null
-                }) { Text(stringResource(R.string.delete_book), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = { TextButton(onClick = { feedToDelete = null }) { Text(stringResource(R.string.cancel)) } }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FeedFilterRow(
-    feeds: List<RssFeed>,
-    selectedFeedId: String?,
-    onSelect: (String?) -> Unit,
-    onDeleteRequest: (RssFeed) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = selectedFeedId == null,
-                onClick = { onSelect(null) },
-                label = { Text(stringResource(R.string.rss_all_feeds)) },
-                leadingIcon = if (selectedFeedId == null) {
-                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                } else null
-            )
-            feeds.forEach { feed ->
-                FilterChip(
-                    selected = selectedFeedId == feed.id,
-                    onClick = { onSelect(feed.id) },
-                    label = { Text(feed.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    leadingIcon = if (selectedFeedId == feed.id) {
-                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                    } else null
-                )
-            }
-        }
-        feeds.firstOrNull { it.id == selectedFeedId }?.let { feed ->
-            Divider(modifier = Modifier.padding(horizontal = 12.dp))
-            TextButton(
-                onClick = { onDeleteRequest(feed) },
-                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
-            ) {
-                Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.rss_delete_feed))
-            }
-        }
-    }
 }
 
 @Composable
-private fun ArticleRow(
+fun ArticleRow(
     article: RssArticle,
     feedTitle: String,
     isSelectionMode: Boolean,
@@ -352,7 +235,8 @@ private fun ArticleRow(
                 )
             },
             supportingContent = {
-                val date = if (article.publishedAt > 0) DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(article.publishedAt)) else ""
+                val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+                val date = if (article.publishedAt > 0) dateFormatter.format(Date(article.publishedAt)) else ""
                 Text(listOf(feedTitle, date).filter { it.isNotBlank() }.joinToString(" · "), maxLines = 1, overflow = TextOverflow.Ellipsis)
             },
             leadingContent = {
@@ -381,65 +265,5 @@ private fun ArticleRow(
                 .fillMaxWidth()
                 .offset(x = (swipeOffset / 10).dp)
         )
-    }
-}
-
-@Composable
-private fun AddFeedDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {
-    var url by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.rss_add_feed)) },
-        text = {
-            OutlinedTextField(
-                value = url,
-                onValueChange = { url = it },
-                singleLine = true,
-                placeholder = { Text(stringResource(R.string.rss_feed_url_hint)) }
-            )
-        },
-        confirmButton = { TextButton(onClick = { if (url.isNotBlank()) onAdd(url) }) { Text(stringResource(R.string.rss_add)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
-    )
-}
-
-@Composable
-private fun EmptyRss(onAdd: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            Icons.Default.RssFeed,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-        )
-        Spacer(Modifier.height(24.dp))
-        Text(
-            stringResource(R.string.rss_empty_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            stringResource(R.string.rss_empty_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-        Spacer(Modifier.height(28.dp))
-        Button(
-            onClick = onAdd,
-            modifier = Modifier.padding(horizontal = 32.dp)
-        ) {
-            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.rss_add_feed))
-        }
     }
 }

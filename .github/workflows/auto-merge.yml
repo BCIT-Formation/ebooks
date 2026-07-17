@@ -1,13 +1,18 @@
 name: Auto Merge
 
-# Merges a PR into main only after the CI workflow (lint + test + build-debug)
-# has completed successfully for the PR's current head commit.
+# Automatic (CI-triggered):
+#   Merges a PR into main only after the CI workflow (lint + test + build-debug)
+#   has completed successfully for the PR's current head commit.
 #
-# Why workflow_run instead of pull_request: this repo has no branch protection
-# rules requiring status checks, so enabling auto-merge at PR-open time merges
-# the PR immediately — before CI has run. That is how broken dependency bumps
-# previously landed on main. Gating on the finished CI run closes that hole:
-# a PR is only merged for a commit whose CI is green.
+#   Why workflow_run instead of pull_request: this repo has no branch protection
+#   rules requiring status checks, so enabling auto-merge at PR-open time merges
+#   the PR immediately — before CI has run. That is how broken dependency bumps
+#   previously landed on main. Gating on the finished CI run closes that hole:
+#   a PR is only merged for a commit whose CI is green.
+#
+# Manual (workflow_dispatch):
+#   Manually trigger auto-merge for all open PRs on main that have green checks.
+#   Supports dry-run mode to test without actual merges.
 #
 # Note: merges pushed with GITHUB_TOKEN do not trigger workflows on main
 # (GitHub recursion guard), so auto-release.yml must be run manually via
@@ -17,16 +22,26 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (list PRs but do not merge)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  merge-green-prs:
-    name: Merge PRs with green CI
+  merge-green-prs-auto:
+    name: Merge PRs with green CI (automatic)
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Merge open PRs whose head commit passed CI
         env:
@@ -42,3 +57,76 @@ jobs:
               || gh pr merge --squash "$pr" --repo "$GITHUB_REPOSITORY" \
               || echo "Could not merge PR #$pr (conflict or new push) — skipping"
           done
+
+  merge-all-prs-manual:
+    name: Auto-merge all open PRs (manual)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Enable auto-merge on all non-draft PRs with green checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          set +e  # Don't exit on command failures
+
+          REPO="${{ github.repository }}"
+          BRANCH="main"
+
+          echo "🔄 Auto-merging PRs for $REPO (branch: $BRANCH)"
+          [[ "$DRY_RUN" == "true" ]] && echo "📋 DRY RUN MODE - no actual merges will occur"
+          echo ""
+
+          # Get all open PRs targeting main
+          MERGED=0
+          SKIPPED=0
+          FAILED=0
+
+          while read -r PR_NUMBER IS_DRAFT; do
+            # Skip if values are empty
+            if [[ -z "$PR_NUMBER" ]] || [[ -z "$IS_DRAFT" ]]; then
+              continue
+            fi
+
+            # Skip draft PRs
+            if [[ "$IS_DRAFT" == "true" ]]; then
+              echo "⏭️  PR #$PR_NUMBER (draft - skipping)"
+              ((SKIPPED++))
+              continue
+            fi
+
+            echo -n "🔄 PR #$PR_NUMBER: "
+
+            # Never merge a PR whose checks are failing or still running.
+            # There is no branch protection requiring status checks, so
+            # `gh pr merge` would otherwise merge immediately regardless of CI.
+            if ! gh pr checks "$PR_NUMBER" --repo "$REPO" >/dev/null 2>&1; then
+              echo "⏭️  checks failing or pending - skipping"
+              ((SKIPPED++))
+              continue
+            fi
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "would merge (checks green)"
+              ((MERGED++))
+            else
+              if gh pr merge --auto --squash "$PR_NUMBER" --repo "$REPO" 2>/dev/null; then
+                echo "✅ merged"
+                ((MERGED++))
+              else
+                echo "⚠️  could not merge"
+                ((FAILED++))
+              fi
+            fi
+          done < <(gh pr list \
+            --repo "$REPO" \
+            --state open \
+            --base "$BRANCH" \
+            --jq '.[] | "\(.number) \(.isDraft)"' \
+            --limit 100)
+
+          echo ""
+          echo "📊 Summary:"
+          echo "   ✅ Auto-merged: $MERGED"
+          echo "   ⏭️  Skipped (draft): $SKIPPED"
+          echo "   ⚠️  Failed: $FAILED"

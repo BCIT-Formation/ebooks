@@ -268,6 +268,14 @@
     <string name="rss_favorite">Favorite</string>
     <string name="rss_unfavorite">Unfavorite</string>
     <string name="rss_articles_selected">%1$d selected</string>
+    <string name="rss_articles">articles</string>
+    <string name="rss_unread">unread</string>
+
+    <!-- App Theme Mode (light/dark/system) -->
+    <string name="theme_system">System</string>
+    <string name="theme_setting">App theme</string>
+    <string name="theme_light_mode">Light mode (day)</string>
+    <string name="theme_dark_mode">Dark mode (night)</string>
 
     <!-- Widget -->
     <string name="widget_label">Currently reading</string>

@@ -43,6 +43,7 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
         _selectedArticleIds,
         _isSelectionMode
     ) { values ->
+        @Suppress("UNCHECKED_CAST")
         RssUiState(
             feeds = values[0] as List<RssFeed>,
             articles = values[1] as List<RssArticle>,
@@ -100,9 +101,11 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleArticleSelection(articleId: String) {
-        val current = _selectedArticleIds.value.toMutableSet()
-        if (current.contains(articleId)) current.remove(articleId) else current.add(articleId)
-        _selectedArticleIds.value = current
+        _selectedArticleIds.value = if (articleId in _selectedArticleIds.value) {
+            _selectedArticleIds.value - articleId
+        } else {
+            _selectedArticleIds.value + articleId
+        }
     }
 
     fun selectAll(articleIds: List<String>) {

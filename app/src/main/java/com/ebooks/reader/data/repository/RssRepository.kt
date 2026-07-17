@@ -94,7 +94,7 @@ class RssRepository(context: Context) {
                 lastFetchedAt = System.currentTimeMillis()
             )
             rssDao.upsertFeed(feed)
-            val inserted = storeArticles(feedId, parsed.articles.map { it })
+            val inserted = storeArticles(feedId, parsed.articles)
             AddResult.Success(feed, inserted)
         }.getOrElse { AddResult.Failed(it.message ?: "Unknown error") }
     }
@@ -272,10 +272,19 @@ class RssRepository(context: Context) {
     }
 
     private fun buildAnnotationsMarkdown(annotations: List<Annotation>, safeTitle: String): String {
-        val items = annotations.map { annotation ->
-            AnnotationMarkdownBuilder.AnnotationItem(annotation.textContent, annotation.metadata)
+        return buildString {
+            append("# Annotations - ").append(safeTitle).append("\n\n")
+
+            annotations.forEach { annotation ->
+                if (!annotation.textContent.isNullOrBlank()) {
+                    append("> ").append(annotation.textContent.replace("\n", "\n> ")).append("\n\n")
+                }
+                if (!annotation.metadata.isNullOrBlank()) {
+                    append("**Note:** ").append(annotation.metadata).append("\n\n")
+                }
+                append("---\n\n")
+            }
         }
-        return AnnotationMarkdownBuilder.buildMarkdown(items, "Annotations - $safeTitle", includeHeader = true)
     }
 
     private fun deterministicId(seed: String): String =

@@ -6,13 +6,16 @@ package com.ebooks.reader.util
  */
 object BionicReading {
 
+    private val WORD_PATTERN = Regex("\\s+")
+    private val PUNCTUATION_CHARS = charArrayOf(',', '.', '!', '?', ':', ';', '"', '\'')
+
     /**
      * Convert plain text to Bionic Reading format (HTML with <b> tags)
      * Only words with more than 3 characters get the treatment
      */
     fun toHtml(text: String): String {
         val builder = StringBuilder()
-        val words = text.split("\\s+".toRegex())
+        val words = text.split(WORD_PATTERN)
 
         for ((index, word) in words.withIndex()) {
             if (index > 0) builder.append(" ")
@@ -28,7 +31,7 @@ object BionicReading {
      */
     fun toAnnotatedText(text: String): List<TextSegment> {
         val segments = mutableListOf<TextSegment>()
-        val words = text.split("\\s+".toRegex())
+        val words = text.split(WORD_PATTERN)
 
         for ((index, word) in words.withIndex()) {
             if (index > 0) {
@@ -50,13 +53,8 @@ object BionicReading {
         val isProcessed: Boolean
     )
 
-    /**
-     * Parse a word into bold and normal segments (first half bolded for words > 3 chars)
-     */
-    private fun parseWord(word: String): WordParts {
-        if (word.length <= 3) return WordParts("", "", "", isProcessed = false)
-
-        val wordEnd = word.indexOfAny(charArrayOf(',', '.', '!', '?', ':', ';', '"', '\''))
+        // Find where the actual word ends (no punctuation)
+        val wordEnd = word.indexOfAny(PUNCTUATION_CHARS)
             .let { if (it > 0) it else word.length }
 
         val actualWord = word.substring(0, wordEnd)
@@ -96,9 +94,17 @@ object BionicReading {
         }
 
         val segments = mutableListOf<TextSegment>()
-        segments.add(TextSegment(parts.bold, isBold = true))
-        if (parts.normal.isNotEmpty()) {
-            segments.add(TextSegment(parts.normal, isBold = false))
+
+        // Find punctuation
+        val wordEnd = word.indexOfAny(PUNCTUATION_CHARS)
+            .let { if (it > 0) it else word.length }
+
+        val actualWord = word.substring(0, wordEnd)
+        val punctuation = word.substring(wordEnd)
+
+        if (actualWord.length <= 3) {
+            segments.add(TextSegment(word, isBold = false))
+            return segments
         }
         if (parts.punctuation.isNotEmpty()) {
             segments.add(TextSegment(parts.punctuation, isBold = false))
