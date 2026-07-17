@@ -222,11 +222,10 @@ Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-instal
 | Room | 2.6.1 | Local SQLite database |
 | Coil | 2.7.0 | Compose-native image loading |
 | Glance | 1.1.0 | Home screen app widget (Compose-style RemoteViews) |
-| DocumentFile | 1.0.1 | SAF tree access for cloud-folder sync |
 | Navigation Compose | 2.8.0 | In-app navigation |
 | Coroutines Test | 1.8.1 | Unit test utilities |
 | Compose UI Test | 1.6.8 | Instrumented Compose UI tests |
-| Espresso / AndroidX JUnit | 3.6.1 / 1.2.1 | Instrumented test runner |
+| AndroidX JUnit | 1.2.1 | Instrumented test runner |
 
 **Dependency updates go in `gradle/libs.versions.toml` only.** Never hardcode versions
 in `build.gradle.kts`. Dependabot opens update PRs automatically.

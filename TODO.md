@@ -47,10 +47,16 @@
 
 ## ✨ Advanced Features (New)
 
-- [x] Offline dictionary (StarDict format: `.ifo`, `.idx`, `.dict`) — word lookup on selected text in readers (`data/dictionary/StarDictParser`, `DictionaryRepository`)
-- [x] Bionic Reading algorithm — automatic bold formatting of word fragments for improved speed-reading (`util/BionicReading` with HTML + Compose support)
-- [x] E-Ink mode enhancements — volume key pagination without scroll, animation disable for e-readers (Boox, Kobo, etc.) (`ui/theme/EInkMode`, `data/settings/EInkSettings`)
 - [x] Smooth scrolling optimization — `remember`, `key`, `contentType` for LazyColumn/BookshelfView (reduce recompositions) — ready for integration
+- [ ] Offline dictionary (StarDict format) — word lookup on selected text in readers.
+      A parser/repository scaffold existed but was never reachable from any screen and was
+      removed as dead code; re-implementing needs the parser plus real UI integration
+      (the online `DictionaryClient` lookup is what ships today)
+- [ ] Bionic Reading mode (auto-bold word fragments) — a converter existed but was never
+      wired into any reader; removed as dead code, needs reader-settings integration to ship
+- [ ] E-Ink device extras (volume-key pagination, animation disable for Boox/Kobo) — a
+      settings scaffold existed but was never reachable; removed as dead code. The shipping
+      E-ink support is the `DisplayMode.EINK` display profile
 
 ## 🌐 Network follow-ups (ADR-006)
 
