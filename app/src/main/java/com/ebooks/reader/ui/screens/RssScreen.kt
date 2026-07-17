@@ -1,6 +1,9 @@
 package com.ebooks.reader.ui.screens
 
 import android.net.Uri
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -330,7 +333,8 @@ private fun ArticleRow(
                 )
             },
             supportingContent = {
-                val date = if (article.publishedAt > 0) DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(article.publishedAt)) else ""
+                val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+                val date = if (article.publishedAt > 0) dateFormatter.format(Date(article.publishedAt)) else ""
                 Text(listOf(feedTitle, date).filter { it.isNotBlank() }.joinToString(" · "), maxLines = 1, overflow = TextOverflow.Ellipsis)
             },
             leadingContent = {

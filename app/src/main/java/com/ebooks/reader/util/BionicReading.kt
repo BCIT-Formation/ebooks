@@ -6,13 +6,16 @@ package com.ebooks.reader.util
  */
 object BionicReading {
 
+    private val WORD_PATTERN = Regex("\\s+")
+    private val PUNCTUATION_CHARS = charArrayOf(',', '.', '!', '?', ':', ';', '"', '\'')
+
     /**
      * Convert plain text to Bionic Reading format (HTML with <b> tags)
      * Only words with more than 3 characters get the treatment
      */
     fun toHtml(text: String): String {
         val builder = StringBuilder()
-        val words = text.split("\\s+".toRegex())
+        val words = text.split(WORD_PATTERN)
 
         for ((index, word) in words.withIndex()) {
             if (index > 0) builder.append(" ")
@@ -28,7 +31,7 @@ object BionicReading {
      */
     fun toAnnotatedText(text: String): List<TextSegment> {
         val segments = mutableListOf<TextSegment>()
-        val words = text.split("\\s+".toRegex())
+        val words = text.split(WORD_PATTERN)
 
         for ((index, word) in words.withIndex()) {
             if (index > 0) {
@@ -48,7 +51,7 @@ object BionicReading {
         if (word.length <= 3) return word
 
         // Find where the actual word ends (no punctuation)
-        val wordEnd = word.indexOfAny(charArrayOf(',', '.', '!', '?', ':', ';', '"', '\''))
+        val wordEnd = word.indexOfAny(PUNCTUATION_CHARS)
             .let { if (it > 0) it else word.length }
 
         val actualWord = word.substring(0, wordEnd)
@@ -74,7 +77,7 @@ object BionicReading {
         val segments = mutableListOf<TextSegment>()
 
         // Find punctuation
-        val wordEnd = word.indexOfAny(charArrayOf(',', '.', '!', '?', ':', ';', '"', '\''))
+        val wordEnd = word.indexOfAny(PUNCTUATION_CHARS)
             .let { if (it > 0) it else word.length }
 
         val actualWord = word.substring(0, wordEnd)

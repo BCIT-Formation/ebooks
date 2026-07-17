@@ -25,6 +25,24 @@ class RssRepository(context: Context) {
     private val bookDao = db.bookDao() // annotations live in the shared annotations table
     private val client = RssClient()
 
+    companion object {
+        private val REGEX_H_OPEN = Regex("<h[1-6][^>]*>")
+        private val REGEX_H_CLOSE = Regex("</h[1-6]>")
+        private val REGEX_P_OPEN = Regex("<p[^>]*>")
+        private val REGEX_P_CLOSE = Regex("</p>")
+        private val REGEX_BR = Regex("<br\\s*/?\\s*>")
+        private val REGEX_STRONG_OPEN = Regex("<strong[^>]*>")
+        private val REGEX_STRONG_CLOSE = Regex("</strong>")
+        private val REGEX_EM_OPEN = Regex("<em[^>]*>")
+        private val REGEX_EM_CLOSE = Regex("</em>")
+        private val REGEX_B_OPEN = Regex("<b[^>]*>")
+        private val REGEX_B_CLOSE = Regex("</b>")
+        private val REGEX_I_OPEN = Regex("<i[^>]*>")
+        private val REGEX_I_CLOSE = Regex("</i>")
+        private val REGEX_LINK = Regex("<a[^>]*href=\"([^\"]+)\"[^>]*>([^<]*)</a>")
+        private val REGEX_TAG = Regex("<[^>]+>")
+    }
+
     // ── Reads ─────────────────────────────────────────────────────────────────
 
     fun getFeeds(): Flow<List<RssFeed>> = rssDao.getFeeds()
@@ -75,7 +93,7 @@ class RssRepository(context: Context) {
                 lastFetchedAt = System.currentTimeMillis()
             )
             rssDao.upsertFeed(feed)
-            val inserted = storeArticles(feedId, parsed.articles.map { it })
+            val inserted = storeArticles(feedId, parsed.articles)
             AddResult.Success(feed, inserted)
         }.getOrElse { AddResult.Failed(it.message ?: "Unknown error") }
     }
@@ -230,25 +248,25 @@ class RssRepository(context: Context) {
 
     private fun htmlToMarkdown(html: String): String {
         return html
-            .replace(Regex("<h[1-6][^>]*>"), "## ")
-            .replace(Regex("</h[1-6]>"), "\n\n")
-            .replace(Regex("<p[^>]*>"), "")
-            .replace(Regex("</p>"), "\n\n")
-            .replace(Regex("<br\\s*/?\\s*>"), "\n")
-            .replace(Regex("<strong[^>]*>"), "**")
-            .replace(Regex("</strong>"), "**")
-            .replace(Regex("<em[^>]*>"), "*")
-            .replace(Regex("</em>"), "*")
-            .replace(Regex("<b[^>]*>"), "**")
-            .replace(Regex("</b>"), "**")
-            .replace(Regex("<i[^>]*>"), "*")
-            .replace(Regex("</i>"), "*")
-            .replace(Regex("<a[^>]*href=\"([^\"]+)\"[^>]*>([^<]*)</a>"), "[$2]($1)")
-            .replace(Regex("<[^>]+>"), "")
-            .replace(Regex("&nbsp;"), " ")
-            .replace(Regex("&amp;"), "&")
-            .replace(Regex("&quot;"), "\"")
-            .replace(Regex("&#39;"), "'")
+            .replace(REGEX_H_OPEN, "## ")
+            .replace(REGEX_H_CLOSE, "\n\n")
+            .replace(REGEX_P_OPEN, "")
+            .replace(REGEX_P_CLOSE, "\n\n")
+            .replace(REGEX_BR, "\n")
+            .replace(REGEX_STRONG_OPEN, "**")
+            .replace(REGEX_STRONG_CLOSE, "**")
+            .replace(REGEX_EM_OPEN, "*")
+            .replace(REGEX_EM_CLOSE, "*")
+            .replace(REGEX_B_OPEN, "**")
+            .replace(REGEX_B_CLOSE, "**")
+            .replace(REGEX_I_OPEN, "*")
+            .replace(REGEX_I_CLOSE, "*")
+            .replace(REGEX_LINK, "[$2]($1)")
+            .replace(REGEX_TAG, "")
+            .replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
             .trim()
     }
 

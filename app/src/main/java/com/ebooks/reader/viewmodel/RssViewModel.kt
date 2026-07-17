@@ -42,20 +42,15 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
         _message,
         _selectedArticleIds,
         _isSelectionMode
-    ) { values ->
-        val feeds = values[0] as List<RssFeed>
-        val articles = values[1] as List<RssArticle>
-        val busy = values[2] as Boolean
-        val message = values[3] as String?
-        val selectedIds = values[4] as Set<String>
-        val selectionMode = values[5] as Boolean
+    ) { feeds, articles, busy, message, selectedIds, selectionMode ->
+        @Suppress("UNCHECKED_CAST")
         RssUiState(
-            feeds = feeds,
-            articles = articles,
-            isBusy = busy,
-            message = message,
-            selectedArticleIds = selectedIds,
-            isSelectionMode = selectionMode
+            feeds = feeds as List<RssFeed>,
+            articles = articles as List<RssArticle>,
+            isBusy = busy as Boolean,
+            message = message as String?,
+            selectedArticleIds = selectedIds as Set<String>,
+            isSelectionMode = selectionMode as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RssUiState())
 
@@ -106,9 +101,11 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleArticleSelection(articleId: String) {
-        val current = _selectedArticleIds.value.toMutableSet()
-        if (current.contains(articleId)) current.remove(articleId) else current.add(articleId)
-        _selectedArticleIds.value = current
+        _selectedArticleIds.value = if (articleId in _selectedArticleIds.value) {
+            _selectedArticleIds.value - articleId
+        } else {
+            _selectedArticleIds.value + articleId
+        }
     }
 
     fun selectAll(articleIds: List<String>) {
