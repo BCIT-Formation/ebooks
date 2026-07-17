@@ -57,6 +57,7 @@ fun RssFeedArticlesScreen(
     val articles = uiState.articles.filter { it.feedId == feedId }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (uiState.isSelectionMode) {
@@ -86,7 +87,8 @@ fun RssFeedArticlesScreen(
                                 )
                             }
                         }
-                    }
+                    },
+                    scrollBehavior = scrollBehavior
                 )
             } else {
                 TopAppBar(

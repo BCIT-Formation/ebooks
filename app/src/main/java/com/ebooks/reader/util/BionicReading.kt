@@ -44,11 +44,14 @@ object BionicReading {
     }
 
     /**
-     * Process a single word for Bionic Reading
-     * Returns HTML string with <b> tags
+     * Parsed word structure: bold part, normal part, and trailing punctuation
      */
-    private fun procesWord(word: String): String {
-        if (word.length <= 3) return word
+    private data class WordParts(
+        val bold: String,
+        val normal: String,
+        val punctuation: String,
+        val isProcessed: Boolean
+    )
 
         // Find where the actual word ends (no punctuation)
         val wordEnd = word.indexOfAny(PUNCTUATION_CHARS)
@@ -57,20 +60,36 @@ object BionicReading {
         val actualWord = word.substring(0, wordEnd)
         val punctuation = word.substring(wordEnd)
 
-        if (actualWord.length <= 3) return word
+        if (actualWord.length <= 3) return WordParts("", "", "", isProcessed = false)
 
-        val boldLength = (actualWord.length + 1) / 2 // First half (rounding up)
-        val bold = actualWord.substring(0, boldLength)
-        val normal = actualWord.substring(boldLength)
+        val boldLength = (actualWord.length + 1) / 2
+        return WordParts(
+            bold = actualWord.substring(0, boldLength),
+            normal = actualWord.substring(boldLength),
+            punctuation = punctuation,
+            isProcessed = true
+        )
+    }
 
-        return "<b>$bold</b>$normal$punctuation"
+    /**
+     * Process a single word for Bionic Reading
+     * Returns HTML string with <b> tags
+     */
+    private fun procesWord(word: String): String {
+        val parts = parseWord(word)
+        return if (parts.isProcessed) {
+            "<b>${parts.bold}</b>${parts.normal}${parts.punctuation}"
+        } else {
+            word
+        }
     }
 
     /**
      * Process a single word into text segments
      */
     private fun processWordToSegments(word: String): List<TextSegment> {
-        if (word.length <= 3) {
+        val parts = parseWord(word)
+        if (!parts.isProcessed) {
             return listOf(TextSegment(word, isBold = false))
         }
 
@@ -87,19 +106,9 @@ object BionicReading {
             segments.add(TextSegment(word, isBold = false))
             return segments
         }
-
-        val boldLength = (actualWord.length + 1) / 2
-        val bold = actualWord.substring(0, boldLength)
-        val normal = actualWord.substring(boldLength)
-
-        segments.add(TextSegment(bold, isBold = true))
-        if (normal.isNotEmpty()) {
-            segments.add(TextSegment(normal, isBold = false))
+        if (parts.punctuation.isNotEmpty()) {
+            segments.add(TextSegment(parts.punctuation, isBold = false))
         }
-        if (punctuation.isNotEmpty()) {
-            segments.add(TextSegment(punctuation, isBold = false))
-        }
-
         return segments
     }
 

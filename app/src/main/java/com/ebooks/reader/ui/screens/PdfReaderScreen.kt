@@ -21,7 +21,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.AppDatabase
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.ReadingProgress
@@ -46,7 +48,7 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
 
-    var title by remember { mutableStateOf("PDF") }
+    var title by remember { mutableStateOf(context.getString(R.string.pdf_default_title)) }
     var filePath by remember { mutableStateOf<String?>(null) }
     var pageCount by remember { mutableIntStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -63,7 +65,7 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
             val dao = AppDatabase.getInstance(context).bookDao()
             val book = dao.getBookById(bookId)
             if (book == null) {
-                error = "Book not found."
+                error = context.getString(R.string.reader_book_not_found)
                 return@withContext null
             }
             title = book.title
@@ -80,7 +82,7 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                 annotationsByPage = allAnnotations.groupBy { it.pageIndex }
                 dao.getReadingProgress(bookId)?.scrollPosition
             } catch (e: Exception) {
-                error = "Could not open PDF: ${e.localizedMessage}"
+                error = context.getString(R.string.pdf_could_not_open, e.localizedMessage)
                 null
             }
         }
@@ -192,14 +194,14 @@ fun PdfReaderScreen(bookId: String, onBack: () -> Unit) {
                             title = { Text(title, maxLines = 1) },
                             navigationIcon = {
                                 IconButton(onClick = onBack) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                                 }
                             },
                             actions = {
                                 IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
                                     Icon(
                                         Icons.Filled.Edit,
-                                        contentDescription = "Draw",
+                                        contentDescription = stringResource(R.string.draw_annotations),
                                         tint = if (isDrawingMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
@@ -285,7 +287,7 @@ private fun PdfPageItem(
         Box(modifier = Modifier.fillMaxWidth()) {
             Image(
                 bitmap = bmp.asImageBitmap(),
-                contentDescription = "Page ${pageIndex + 1}",
+                contentDescription = stringResource(R.string.page_number_desc, pageIndex + 1),
                 contentScale = ContentScale.FillWidth,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -363,7 +365,7 @@ private fun PdfBottomBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "$currentPage / $totalPages",
+                    stringResource(R.string.page_counter, currentPage, totalPages),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.width(60.dp)
@@ -377,7 +379,7 @@ private fun PdfBottomBar(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    if (autoScrollSpeed == 0) "Off" else "$autoScrollSpeed",
+                    if (autoScrollSpeed == 0) stringResource(R.string.off) else "$autoScrollSpeed",
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.width(32.dp)
                 )

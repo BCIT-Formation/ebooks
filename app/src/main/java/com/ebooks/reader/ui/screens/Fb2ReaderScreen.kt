@@ -17,11 +17,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.AppDatabase
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.parser.Fb2Parser
@@ -44,7 +46,7 @@ import kotlinx.coroutines.withContext
 fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var title by remember { mutableStateOf("FB2 Book") }
+    var title by remember { mutableStateOf(context.getString(R.string.fb2_default_title)) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     // Parsed HTML is held in state and pushed to the WebView from AndroidView's
@@ -67,7 +69,7 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                 val dao = AppDatabase.getInstance(context).bookDao()
                 val book = dao.getBookById(bookId)
                 if (book == null) {
-                    error = "Book not found."
+                    error = context.getString(R.string.reader_book_not_found)
                     isLoading = false
                     return@withContext
                 }
@@ -78,7 +80,7 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                 val fb2Book = parser.parse(uri)
 
                 if (fb2Book == null) {
-                    error = "Failed to parse FB2 file."
+                    error = context.getString(R.string.fb2_parse_failed)
                     isLoading = false
                     return@withContext
                 }
@@ -89,7 +91,7 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                     .filter { it.pageIdentifier == "chapter-0" && !it.isDeleted }
                 isLoading = false
             } catch (e: Exception) {
-                error = "Error loading book: ${e.localizedMessage}"
+                error = context.getString(R.string.fb2_load_error, e.localizedMessage)
                 isLoading = false
             }
         }
@@ -229,19 +231,19 @@ fun Fb2ReaderScreen(bookId: String, onBack: () -> Unit) {
                                 title = { Text(title, maxLines = 1) },
                                 navigationIcon = {
                                     IconButton(onClick = onBack) {
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                                     }
                                 },
                                 actions = {
                                     IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
                                         Icon(
                                             Icons.Filled.Edit,
-                                            contentDescription = "Draw",
+                                            contentDescription = stringResource(R.string.draw_annotations),
                                             tint = if (isDrawingMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                     IconButton(onClick = { searchVisible = true }) {
-                                        Icon(Icons.Default.Search, "Search in book")
+                                        Icon(Icons.Default.Search, stringResource(R.string.search_in_book))
                                     }
                                 }
                             )
@@ -314,7 +316,7 @@ private fun Fb2SearchBar(
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = { Text("Search in book…") },
+                placeholder = { Text(stringResource(R.string.search_in_book_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearchNext() }),
@@ -326,11 +328,11 @@ private fun Fb2SearchBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close search") }
+            IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.close_search)) }
         },
         actions = {
-            IconButton(onClick = onSearchPrev) { Icon(Icons.Default.KeyboardArrowUp, "Previous match") }
-            IconButton(onClick = onSearchNext) { Icon(Icons.Default.KeyboardArrowDown, "Next match") }
+            IconButton(onClick = onSearchPrev) { Icon(Icons.Default.KeyboardArrowUp, stringResource(R.string.previous_match)) }
+            IconButton(onClick = onSearchNext) { Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.next_match)) }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
     )
@@ -362,7 +364,7 @@ private fun Fb2BottomBar(
                 modifier = Modifier.weight(1f)
             )
             Text(
-                if (autoScrollSpeed == 0) "Off" else "$autoScrollSpeed",
+                if (autoScrollSpeed == 0) stringResource(R.string.off) else "$autoScrollSpeed",
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.width(32.dp)
             )

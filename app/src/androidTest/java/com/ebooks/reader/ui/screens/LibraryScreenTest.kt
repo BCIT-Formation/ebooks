@@ -1,6 +1,7 @@
 package com.ebooks.reader.ui.screens
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -22,22 +23,22 @@ class LibraryScreenTest {
     @Test
     fun libraryScreenDisplaysTitle() {
         composeTestRule.setContent {
-            LibraryScreen(onBookSelected = {})
+            LibraryScreen(onOpenBook = { _, _ -> })
         }
 
         composeTestRule
-            .onNodeWithText("ebook reader", substring = true)
+            .onNodeWithText("My Library", substring = true)
             .assertExists()
     }
 
     @Test
     fun libraryScreenDisplaysAddButton() {
         composeTestRule.setContent {
-            LibraryScreen(onBookSelected = {})
+            LibraryScreen(onOpenBook = { _, _ -> })
         }
 
         composeTestRule
-            .onNodeWithContentDescription("Add book")
+            .onNodeWithText("Add Book", useUnmergedTree = true)
             .assertExists()
     }
 
@@ -45,32 +46,23 @@ class LibraryScreenTest {
     fun bookCardClickNavigatesToReader() {
         var selectedBookId: String? = null
         composeTestRule.setContent {
-            LibraryScreen(onBookSelected = { bookId ->
+            LibraryScreen(onOpenBook = { bookId, _ ->
                 selectedBookId = bookId
             })
         }
 
-        // Try to find and click a book card (will work once books are loaded)
-        // This test assumes at least one book is in the database
-        val bookCardSelector = { it: androidx.compose.ui.semantics.SemanticsNode ->
-            it.contentDescription.contains("Book card", ignoreCase = true)
-        }
-
-        try {
-            composeTestRule
-                .onNode(bookCardSelector)
-                .performClick()
-
+        // Assumes at least one book is present in the library; skips gracefully otherwise.
+        val bookCards = composeTestRule.onAllNodesWithTag("book_card")
+        if (bookCards.fetchSemanticsNodes().isNotEmpty()) {
+            bookCards[0].performClick()
             assert(selectedBookId != null) { "Book selection should invoke callback" }
-        } catch (e: AssertionError) {
-            // No books loaded is acceptable for unit test
         }
     }
 
     @Test
     fun settingsButtonIsAccessible() {
         composeTestRule.setContent {
-            LibraryScreen(onBookSelected = {})
+            LibraryScreen(onOpenBook = { _, _ -> })
         }
 
         composeTestRule

@@ -21,6 +21,7 @@ import com.ebooks.reader.data.parser.ReaderTheme
 import com.ebooks.reader.data.sync.ProgressEntry
 import com.ebooks.reader.data.sync.ProgressSnapshot
 import com.ebooks.reader.data.sync.selectNewerEntries
+import com.ebooks.reader.util.AnnotationMarkdownBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -282,7 +283,15 @@ class BookRepository(private val context: Context) {
     suspend fun saveReadingSession(session: ReadingSession) = withContext(Dispatchers.IO) {
         val durationMs = session.endTime - session.startTime
         if (durationMs < 10_000L) return@withContext
-        dao.insertReadingSession(session)
+        // This write is fired from ReaderViewModel.onCleared() on a scope that
+        // outlives the ViewModel, so it can race a concurrent book deletion
+        // (e.g. the user removes the book right as the reader closes). The
+        // session's CASCADE foreign key to books then rejects the insert —
+        // harmless once the book is gone, so drop it rather than crash.
+        try {
+            dao.insertReadingSession(session)
+        } catch (_: android.database.sqlite.SQLiteConstraintException) {
+        }
     }
 
     data class ReadingStats(
