@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.entities.Annotation
 import kotlin.math.abs
 import kotlin.math.max
@@ -187,19 +189,19 @@ private fun TextAnnotationDialog(onConfirm: (String) -> Unit, onDismiss: () -> U
     var text by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add text note") },
+        title = { Text(stringResource(R.string.draw_add_text_note)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
                 singleLine = false,
-                placeholder = { Text("Type your note…") }
+                placeholder = { Text(stringResource(R.string.draw_text_note_hint)) }
             )
         },
         confirmButton = {
-            TextButton(onClick = { if (text.isNotBlank()) onConfirm(text.trim()) }) { Text("Add") }
+            TextButton(onClick = { if (text.isNotBlank()) onConfirm(text.trim()) }) { Text(stringResource(R.string.add)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }
 

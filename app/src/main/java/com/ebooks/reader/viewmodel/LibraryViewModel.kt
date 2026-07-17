@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ebooks.reader.R
 import com.ebooks.reader.data.backup.BackupManager
 import com.ebooks.reader.data.db.entities.Book
 import com.ebooks.reader.data.db.entities.ReadingStatus
@@ -136,13 +137,13 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
                     ImportState.AlreadyExists(result.book)
                 is BookRepository.ImportResult.UnsupportedFormat ->
                     ImportState.Error(
-                        if (result.extension.isBlank()) "Unsupported file (no extension)."
-                        else "Unsupported format: .${result.extension}"
+                        if (result.extension.isBlank()) context().getString(R.string.import_error_no_extension)
+                        else context().getString(R.string.import_error_unsupported_format, result.extension)
                     )
                 is BookRepository.ImportResult.Unreadable ->
-                    ImportState.Error("Could not read the file. It may have been moved or deleted.")
+                    ImportState.Error(context().getString(R.string.import_error_unreadable))
                 is BookRepository.ImportResult.ParseFailed ->
-                    ImportState.Error("Could not open \"${result.fileName}\". The file may be corrupted.")
+                    ImportState.Error(context().getString(R.string.import_error_parse_failed, result.fileName))
             }
         }
     }
@@ -198,4 +199,6 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             onResult(ok)
         }
     }
+
+    private fun context(): Application = getApplication()
 }

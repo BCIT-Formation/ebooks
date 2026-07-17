@@ -15,9 +15,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.entities.Bookmark
 import com.ebooks.reader.data.parser.EpubChapter
 
@@ -60,12 +62,12 @@ fun ChapterPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Contents",
+                    text = stringResource(R.string.chapter_panel_contents),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                 }
             }
 
@@ -75,13 +77,13 @@ fun ChapterPanel(
                     selected = selectedTab == ChapterPanelTab.CHAPTERS,
                     onClick = { selectedTab = ChapterPanelTab.CHAPTERS },
                     icon = { Icon(Icons.Default.List, contentDescription = null) },
-                    text = { Text("Chapters") }
+                    text = { Text(stringResource(R.string.chapters)) }
                 )
                 Tab(
                     selected = selectedTab == ChapterPanelTab.BOOKMARKS,
                     onClick = { selectedTab = ChapterPanelTab.BOOKMARKS },
                     icon = { Icon(Icons.Default.Bookmark, contentDescription = null) },
-                    text = { Text("Bookmarks") }
+                    text = { Text(stringResource(R.string.bookmarks)) }
                 )
             }
 
@@ -116,7 +118,7 @@ fun ChapterPanel(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "No bookmarks yet",
+                                    stringResource(R.string.no_bookmarks_yet),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -163,7 +165,7 @@ private fun ChapterItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = chapter.title.ifBlank { "Chapter ${chapter.index + 1}" },
+            text = chapter.title.ifBlank { stringResource(R.string.chapter_number, chapter.index + 1) },
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -176,7 +178,7 @@ private fun ChapterItem(
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 Icons.Default.Check,
-                contentDescription = "Current chapter",
+                contentDescription = stringResource(R.string.current_chapter_desc),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp)
             )
@@ -193,13 +195,13 @@ private fun BookmarkItem(
     ListItem(
         headlineContent = {
             Text(
-                bookmark.selectedText ?: "Chapter ${bookmark.chapterIndex + 1}",
+                bookmark.selectedText ?: stringResource(R.string.chapter_number, bookmark.chapterIndex + 1),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         },
         supportingContent = {
-            Text("Chapter ${bookmark.chapterIndex + 1}", style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(R.string.chapter_number, bookmark.chapterIndex + 1), style = MaterialTheme.typography.labelSmall)
         },
         leadingContent = {
             Icon(Icons.Default.Bookmark, contentDescription = null,
@@ -207,7 +209,7 @@ private fun BookmarkItem(
         },
         trailingContent = {
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Close, contentDescription = "Delete bookmark",
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.delete_bookmark),
                     modifier = Modifier.size(16.dp))
             }
         },
