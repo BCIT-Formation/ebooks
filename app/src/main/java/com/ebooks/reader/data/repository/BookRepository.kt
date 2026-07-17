@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import com.ebooks.reader.data.db.AppDatabase
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.Book
@@ -392,13 +393,19 @@ class BookRepository(private val context: Context) {
 
     // ── Sharing ───────────────────────────────────────────────────────────────
 
-    /** Files to hand to the system share sheet: the book itself plus any annotation images. */
-    data class ShareBundle(val bookFile: File, val mimeType: String, val annotationImages: List<File>)
+    /** Files to hand to the system share sheet: the book itself plus any annotation images/markdown. */
+    data class ShareBundle(
+        val bookFile: File,
+        val mimeType: String,
+        val annotationImages: List<File>,
+        val annotationMarkdown: File? = null
+    )
 
     /**
      * Prepares a book (and its annotations, if any) for sharing. Copies the book
-     * into cache (so a `content://` SAF book becomes a shareable file), and renders
-     * each annotated page to a PNG. Returns null if the book file can't be read.
+     * into cache (so a `content://` SAF book becomes a shareable file), renders
+     * each annotated page to a PNG, and creates a markdown file with all highlights + notes.
+     * Returns null if the book file can't be read.
      */
     suspend fun prepareShare(bookId: String): ShareBundle? = withContext(Dispatchers.IO) {
         val book = dao.getBookById(bookId) ?: return@withContext null
@@ -423,7 +430,50 @@ class BookRepository(private val context: Context) {
             }.getOrNull()
         }
 
-        ShareBundle(bookFile, mimeTypeFor(book.fileType), images)
+        // Generate markdown with all highlights and notes
+        val markdownFile = generateAnnotationsMarkdown(book, annotations, safeTitle, shareDir)
+
+        ShareBundle(bookFile, mimeTypeFor(book.fileType), images, markdownFile)
+    }
+
+    /**
+     * Generates a markdown file containing all highlights and notes from a book
+     */
+    private fun generateAnnotationsMarkdown(
+        book: Book,
+        annotations: List<Annotation>,
+        safeTitle: String,
+        shareDir: File
+    ): File? {
+        val highlights = annotations.filter { it.note != null || it.selectedText != null }
+        if (highlights.isEmpty()) return null
+
+        val markdown = buildString {
+            append("# ").append(book.title).append("\n\n")
+            if (book.author != "Unknown") {
+                append("**Auteur:** ").append(book.author).append("\n\n")
+            }
+            append("## Annotations\n\n")
+
+            highlights.forEach { annotation ->
+                if (!annotation.selectedText.isNullOrBlank()) {
+                    append("> ").append(annotation.selectedText?.replace("\n", "\n> ")).append("\n\n")
+                }
+                if (!annotation.note.isNullOrBlank()) {
+                    append("**Note:** ").append(annotation.note).append("\n\n")
+                }
+                append("---\n\n")
+            }
+        }
+
+        return try {
+            File(shareDir, "${safeTitle}_annotations.md").apply {
+                writeText(markdown)
+            }
+        } catch (e: Exception) {
+            Log.e("BookRepository", "Error creating markdown file", e)
+            null
+        }
     }
 
     private fun mimeTypeFor(fileType: String): String = when (fileType.lowercase()) {

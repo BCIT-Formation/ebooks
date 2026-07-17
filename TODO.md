@@ -48,6 +48,14 @@
 - [x] Bionic Reading algorithm — automatic bold formatting of word fragments for improved speed-reading (`util/BionicReading` with HTML + Compose support)
 - [x] E-Ink mode enhancements — volume key pagination without scroll, animation disable for e-readers (Boox, Kobo, etc.) (`ui/theme/EInkMode`, `data/settings/EInkSettings`)
 - [x] Smooth scrolling optimization — `remember`, `key`, `contentType` for LazyColumn/BookshelfView (reduce recompositions) — ready for integration
+- [x] Enhanced file sharing — ebook file + markdown annotations (`BookRepository.prepareShare`)
+- [x] RSS article export — full markdown content + annotations (`RssRepository.prepareShareArticle`)
+
+## 📦 Release & Distribution
+
+- [x] Play Store publication guide (full setup + automation via GitHub Actions)
+- [x] Automated release workflow (semver version bumping, signing, upload)
+- [x] Testing tracks (internal, beta, production)
 
 ## 🌐 Network follow-ups (ADR-006)
 
