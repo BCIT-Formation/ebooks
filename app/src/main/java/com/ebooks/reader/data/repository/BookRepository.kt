@@ -431,7 +431,7 @@ class BookRepository(private val context: Context) {
         }
 
         // Generate markdown with all highlights and notes
-        val markdownFile = generateAnnotationsMarkdown(book, annotations, safeTitle, shareDir)
+        val markdownFile = generateAnnotationsMarkdown(book, safeTitle, shareDir)
 
         ShareBundle(bookFile, mimeTypeFor(book.fileType), images, markdownFile)
     }
@@ -439,14 +439,14 @@ class BookRepository(private val context: Context) {
     /**
      * Generates a markdown file containing all highlights and notes from a book
      */
-    private fun generateAnnotationsMarkdown(
+    private suspend fun generateAnnotationsMarkdown(
         book: Book,
-        annotations: List<Annotation>,
         safeTitle: String,
         shareDir: File
-    ): File? {
-        val highlights = annotations.filter { it.note != null || it.selectedText != null }
-        if (highlights.isEmpty()) return null
+    ): File? = withContext(Dispatchers.IO) {
+        val bookmarks = dao.getBookmarksByBook(book.id)
+        val highlights = bookmarks.filter { !it.selectedText.isNullOrBlank() }
+        if (highlights.isEmpty()) return@withContext null
 
         val markdown = buildString {
             append("# ").append(book.title).append("\n\n")
@@ -455,18 +455,18 @@ class BookRepository(private val context: Context) {
             }
             append("## Annotations\n\n")
 
-            highlights.forEach { annotation ->
-                if (!annotation.selectedText.isNullOrBlank()) {
-                    append("> ").append(annotation.selectedText?.replace("\n", "\n> ")).append("\n\n")
+            highlights.forEach { bookmark ->
+                if (!bookmark.selectedText.isNullOrBlank()) {
+                    append("> ").append(bookmark.selectedText?.replace("\n", "\n> ")).append("\n\n")
                 }
-                if (!annotation.note.isNullOrBlank()) {
-                    append("**Note:** ").append(annotation.note).append("\n\n")
+                if (!bookmark.note.isNullOrBlank()) {
+                    append("**Note:** ").append(bookmark.note).append("\n\n")
                 }
                 append("---\n\n")
             }
         }
 
-        return try {
+        try {
             File(shareDir, "${safeTitle}_annotations.md").apply {
                 writeText(markdown)
             }

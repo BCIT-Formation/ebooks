@@ -50,6 +50,8 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | E-Ink display mode (e-readers: Boox, Kobo; volume nav, no animations) | ✅ |
 | Smooth scrolling optimization (LazyColumn, BookshelfView) | ✅ |
 | Offline-first — network only for opt-in sync/catalogs, HTTPS-only, no telemetry | ✅ |
+| RSS reader tab (OPML import/export, full-text extraction) | 🚧 |
+| Biometric App Lock & Encrypted credential storage | 🚧 |
 
 ---
 
@@ -415,4 +417,7 @@ See [TODO.md](TODO.md) for the full prioritized backlog, organized by:
 - 🔴 **Critical** — essential fixes and features (all done)
 - 🟠 **Important** — next-tier enhancements (all done)
 - 🟢 **Nice to Have** — polish and advanced features (remaining: full localization coverage, CBR + pinch-to-zoom)
+- ✨ **Advanced Features** — offline dictionary, bionic reading, E-Ink mode (all done)
+- 📰 **RSS Client** — Room modeling, OPML import/export, WorkManager sync, and Readability.js full-text extraction
+- 🔒 **Security & Privacy** — EncryptedSharedPreferences, Biometric app lock, and WebView tracker blocking
 - 🌐 **Network follow-ups** — FTPS / SFTP / SMB shares and native Drive/OneDrive API sync (see ADR-006)

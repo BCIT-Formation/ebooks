@@ -57,6 +57,19 @@
 - [x] Automated release workflow (semver version bumping, signing, upload)
 - [x] Testing tracks (internal, beta, production)
 
+## 📰 RSS Client (New)
+
+- [ ] Room database modeling — Feed and Article entities with DAOs (`data/db/entities/`, `data/db/RssDao.kt`)
+- [ ] OPML Import/Export — robust parsing using XmlPullParser for subscription management
+- [ ] Background sync worker — WorkManager for periodic fetching and 30-day article retention cleanup
+- [ ] Full-text extraction (Reader Mode) — integrate Readability.js into WebViewClient for truncated feeds
+
+## 🔒 Security & Privacy (New)
+
+- [ ] Secure credential storage — migrate WebDAV/Sync passwords to EncryptedSharedPreferences via Android Keystore
+- [ ] Biometric App Lock — BiometricPrompt implementation for app startup protection
+- [ ] Anti-tracking in WebViews — block known ad/tracker domains in shouldInterceptRequest for RSS and OPDS
+
 ## 🌐 Network follow-ups (ADR-006)
 
 Approved by the repository owner; each needs a library or credential decision first:
