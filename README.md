@@ -43,6 +43,10 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | RSS reader tab (OPML import/export, offline articles) | ✅ |
 | Annotate & share RSS articles (same drawing tools) | ✅ |
 | Material You dynamic colors | ✅ |
+| Offline dictionary support (StarDict format) | ✅ |
+| Bionic Reading algorithm (auto-bold word fragments) | ✅ |
+| E-Ink display mode (e-readers: Boox, Kobo; volume nav, no animations) | ✅ |
+| Smooth scrolling optimization (LazyColumn, BookshelfView) | ✅ |
 | Offline-first — network only for opt-in sync/catalogs, HTTPS-only, no telemetry | ✅ |
 
 ---
