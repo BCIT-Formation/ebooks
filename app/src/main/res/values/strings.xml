@@ -224,11 +224,9 @@
     <string name="rss_unfavorite">Unfavorite</string>
     <string name="rss_articles_selected">%1$d selected</string>
 
-    <!-- Theme -->
-    <string name="theme_light">Light</string>
-    <string name="theme_dark">Dark</string>
+    <!-- App Theme Mode (light/dark/system) -->
     <string name="theme_system">System</string>
-    <string name="theme_setting">Theme</string>
+    <string name="theme_setting">App theme</string>
     <string name="theme_light_mode">Light mode (day)</string>
     <string name="theme_dark_mode">Dark mode (night)</string>
 
