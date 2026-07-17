@@ -21,6 +21,7 @@ import com.ebooks.reader.data.parser.ReaderTheme
 import com.ebooks.reader.data.sync.ProgressEntry
 import com.ebooks.reader.data.sync.ProgressSnapshot
 import com.ebooks.reader.data.sync.selectNewerEntries
+import com.ebooks.reader.util.AnnotationMarkdownBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -448,23 +449,17 @@ class BookRepository(private val context: Context) {
         val highlights = bookmarks.filter { !it.selectedText.isNullOrBlank() }
         if (highlights.isEmpty()) return@withContext null
 
-        val markdown = buildString {
+        val items = highlights.map { bookmark ->
+            AnnotationMarkdownBuilder.AnnotationItem(bookmark.selectedText, bookmark.note)
+        }
+        val header = buildString {
             append("# ").append(book.title).append("\n\n")
             if (book.author != "Unknown") {
                 append("**Auteur:** ").append(book.author).append("\n\n")
             }
             append("## Annotations\n\n")
-
-            highlights.forEach { bookmark ->
-                if (!bookmark.selectedText.isNullOrBlank()) {
-                    append("> ").append(bookmark.selectedText?.replace("\n", "\n> ")).append("\n\n")
-                }
-                if (!bookmark.note.isNullOrBlank()) {
-                    append("**Note:** ").append(bookmark.note).append("\n\n")
-                }
-                append("---\n\n")
-            }
         }
+        val markdown = header + AnnotationMarkdownBuilder.buildMarkdown(items, "", includeHeader = false)
 
         try {
             File(shareDir, "${safeTitle}_annotations.md").apply {

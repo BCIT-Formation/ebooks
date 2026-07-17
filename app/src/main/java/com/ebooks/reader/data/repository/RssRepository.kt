@@ -8,6 +8,7 @@ import com.ebooks.reader.data.db.entities.RssArticle
 import com.ebooks.reader.data.db.entities.RssFeed
 import com.ebooks.reader.data.rss.Opml
 import com.ebooks.reader.data.rss.RssClient
+import com.ebooks.reader.util.AnnotationMarkdownBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -24,6 +25,24 @@ class RssRepository(context: Context) {
     private val rssDao = db.rssDao()
     private val bookDao = db.bookDao() // annotations live in the shared annotations table
     private val client = RssClient()
+
+    companion object {
+        private val REGEX_H_OPEN = Regex("<h[1-6][^>]*>")
+        private val REGEX_H_CLOSE = Regex("</h[1-6]>")
+        private val REGEX_P_OPEN = Regex("<p[^>]*>")
+        private val REGEX_P_CLOSE = Regex("</p>")
+        private val REGEX_BR = Regex("<br\\s*/?\\s*>")
+        private val REGEX_STRONG_OPEN = Regex("<strong[^>]*>")
+        private val REGEX_STRONG_CLOSE = Regex("</strong>")
+        private val REGEX_EM_OPEN = Regex("<em[^>]*>")
+        private val REGEX_EM_CLOSE = Regex("</em>")
+        private val REGEX_B_OPEN = Regex("<b[^>]*>")
+        private val REGEX_B_CLOSE = Regex("</b>")
+        private val REGEX_I_OPEN = Regex("<i[^>]*>")
+        private val REGEX_I_CLOSE = Regex("</i>")
+        private val REGEX_LINK = Regex("<a[^>]*href=\"([^\"]+)\"[^>]*>([^<]*)</a>")
+        private val REGEX_TAG = Regex("<[^>]+>")
+    }
 
     // ── Reads ─────────────────────────────────────────────────────────────────
 
@@ -230,42 +249,33 @@ class RssRepository(context: Context) {
 
     private fun htmlToMarkdown(html: String): String {
         return html
-            .replace(Regex("<h[1-6][^>]*>"), "## ")
-            .replace(Regex("</h[1-6]>"), "\n\n")
-            .replace(Regex("<p[^>]*>"), "")
-            .replace(Regex("</p>"), "\n\n")
-            .replace(Regex("<br\\s*/?\\s*>"), "\n")
-            .replace(Regex("<strong[^>]*>"), "**")
-            .replace(Regex("</strong>"), "**")
-            .replace(Regex("<em[^>]*>"), "*")
-            .replace(Regex("</em>"), "*")
-            .replace(Regex("<b[^>]*>"), "**")
-            .replace(Regex("</b>"), "**")
-            .replace(Regex("<i[^>]*>"), "*")
-            .replace(Regex("</i>"), "*")
-            .replace(Regex("<a[^>]*href=\"([^\"]+)\"[^>]*>([^<]*)</a>"), "[$2]($1)")
-            .replace(Regex("<[^>]+>"), "")
-            .replace(Regex("&nbsp;"), " ")
-            .replace(Regex("&amp;"), "&")
-            .replace(Regex("&quot;"), "\"")
-            .replace(Regex("&#39;"), "'")
+            .replace(REGEX_H_OPEN, "## ")
+            .replace(REGEX_H_CLOSE, "\n\n")
+            .replace(REGEX_P_OPEN, "")
+            .replace(REGEX_P_CLOSE, "\n\n")
+            .replace(REGEX_BR, "\n")
+            .replace(REGEX_STRONG_OPEN, "**")
+            .replace(REGEX_STRONG_CLOSE, "**")
+            .replace(REGEX_EM_OPEN, "*")
+            .replace(REGEX_EM_CLOSE, "*")
+            .replace(REGEX_B_OPEN, "**")
+            .replace(REGEX_B_CLOSE, "**")
+            .replace(REGEX_I_OPEN, "*")
+            .replace(REGEX_I_CLOSE, "*")
+            .replace(REGEX_LINK, "[$2]($1)")
+            .replace(REGEX_TAG, "")
+            .replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
             .trim()
     }
 
     private fun buildAnnotationsMarkdown(annotations: List<Annotation>, safeTitle: String): String {
-        return buildString {
-            append("# Annotations - ").append(safeTitle).append("\n\n")
-
-            annotations.forEach { annotation ->
-                if (!annotation.textContent.isNullOrBlank()) {
-                    append("> ").append(annotation.textContent.replace("\n", "\n> ")).append("\n\n")
-                }
-                if (!annotation.metadata.isNullOrBlank()) {
-                    append("**Note:** ").append(annotation.metadata).append("\n\n")
-                }
-                append("---\n\n")
-            }
+        val items = annotations.map { annotation ->
+            AnnotationMarkdownBuilder.AnnotationItem(annotation.textContent, annotation.metadata)
         }
+        return AnnotationMarkdownBuilder.buildMarkdown(items, "Annotations - $safeTitle", includeHeader = true)
     }
 
     private fun deterministicId(seed: String): String =
