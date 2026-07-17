@@ -3,26 +3,27 @@ package com.ebooks.reader.ui.screens
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,9 @@ import com.ebooks.reader.data.db.entities.RssFeed
 import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.viewmodel.RssViewModel
 
+enum class ArticleSortOrder { NEWEST, OLDEST, UNREAD_FIRST }
+data class UndoAction(val articleId: String, val actionType: String, val previousValue: Boolean)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RssFeedArticlesScreen(
@@ -46,8 +50,12 @@ fun RssFeedArticlesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var showMenu by remember { mutableStateOf(false) }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    var searchQuery by remember { mutableStateOf("") }
+    var sortOrder by remember { mutableStateOf(ArticleSortOrder.NEWEST) }
+    var lastUndoAction by remember { mutableStateOf<UndoAction?>(null) }
+    var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.message) {
         val msg = uiState.message ?: return@LaunchedEffect
@@ -56,7 +64,24 @@ fun RssFeedArticlesScreen(
     }
 
     val feed = uiState.feeds.firstOrNull { it.id == feedId }
-    val articles = uiState.articles.filter { it.feedId == feedId }
+    val allArticles = uiState.articles.filter { it.feedId == feedId }
+
+    // Filter articles by search query
+    val filteredArticles = if (searchQuery.isBlank()) {
+        allArticles
+    } else {
+        allArticles.filter { article ->
+            article.title.contains(searchQuery, ignoreCase = true) ||
+            article.summary?.contains(searchQuery, ignoreCase = true) == true
+        }
+    }
+
+    // Sort articles based on selected order
+    val sortedArticles = when (sortOrder) {
+        ArticleSortOrder.NEWEST -> filteredArticles.sortedByDescending { it.publishedAt }
+        ArticleSortOrder.OLDEST -> filteredArticles.sortedBy { it.publishedAt }
+        ArticleSortOrder.UNREAD_FIRST -> filteredArticles.sortedWith(compareBy({ it.isRead }, { -it.publishedAt }))
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -85,9 +110,31 @@ fun RssFeedArticlesScreen(
                                 )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.rss_select_all)) },
-                                    onClick = { showMenu = false; viewModel.selectAll(articles.map { it.id }) }
+                                    onClick = { showMenu = false; viewModel.selectAll(sortedArticles.map { it.id }) }
                                 )
                             }
+                        }
+                    },
+                    scrollBehavior = scrollBehavior
+                )
+            } else if (showSearchBar) {
+                TopAppBar(
+                    title = {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text(stringResource(R.string.rss_search_articles)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { showSearchBar = false; searchQuery = "" }) {
+                            Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                         }
                     },
                     scrollBehavior = scrollBehavior
@@ -97,7 +144,7 @@ fun RssFeedArticlesScreen(
                     title = {
                         Column {
                             Text(feed?.title ?: stringResource(R.string.rss_title), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("${articles.size} ${stringResource(R.string.rss_articles)}", style = MaterialTheme.typography.labelSmall)
+                            Text("${sortedArticles.size} ${stringResource(R.string.rss_articles)}", style = MaterialTheme.typography.labelSmall)
                         }
                     },
                     navigationIcon = {
@@ -106,9 +153,35 @@ fun RssFeedArticlesScreen(
                         }
                     },
                     actions = {
-                        TooltipIconButton(Icons.Default.Refresh, stringResource(R.string.rss_refresh), { viewModel.refresh() })
-                    },
-                    scrollBehavior = scrollBehavior
+                        TooltipIconButton(Icons.Default.Search, stringResource(R.string.rss_search_articles), { showSearchBar = true })
+                        Box {
+                            TooltipIconButton(Icons.Default.MoreVert, stringResource(R.string.settings), { showMenu = true })
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.rss_sort_newest)) },
+                                    onClick = { showMenu = false; sortOrder = ArticleSortOrder.NEWEST }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.rss_sort_oldest)) },
+                                    onClick = { showMenu = false; sortOrder = ArticleSortOrder.OLDEST }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.rss_sort_unread_first)) },
+                                    onClick = { showMenu = false; sortOrder = ArticleSortOrder.UNREAD_FIRST }
+                                )
+                                Divider()
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.rss_mark_as_read)) },
+                                    leadingIcon = { Icon(Icons.Default.DoneAll, null) },
+                                    onClick = { showMenu = false; viewModel.markArticlesAsRead(sortedArticles.map { it.id }) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.rss_select_multiple)) },
+                                    onClick = { showMenu = false; viewModel.setSelectionMode(true) }
+                                )
+                            }
+                        }
+                    }
                 )
             }
         }
@@ -117,19 +190,32 @@ fun RssFeedArticlesScreen(
             if (uiState.isBusy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 
             when {
-                articles.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.rss_no_articles), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                sortedArticles.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val message = if (searchQuery.isNotBlank()) {
+                        stringResource(R.string.rss_no_results)
+                    } else if (allArticles.isEmpty()) {
+                        stringResource(R.string.rss_no_articles)
+                    } else {
+                        "No articles match filters"
+                    }
+                    Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(articles, key = { it.id }) { article ->
+                    items(sortedArticles, key = { it.id }) { article ->
                         ArticleRow(
                             article = article,
                             feedTitle = feed?.title.orEmpty(),
                             isSelectionMode = uiState.isSelectionMode,
                             isSelected = article.id in uiState.selectedArticleIds,
                             onToggleSelection = { viewModel.toggleArticleSelection(article.id) },
-                            onToggleFavorite = { viewModel.toggleFavorite(article.id) },
-                            onToggleRead = { viewModel.toggleRead(article.id) },
+                            onToggleFavorite = {
+                                lastUndoAction = UndoAction(article.id, "favorite", article.isFavorite)
+                                viewModel.toggleFavorite(article.id)
+                            },
+                            onToggleRead = {
+                                lastUndoAction = UndoAction(article.id, "read", article.isRead)
+                                viewModel.toggleRead(article.id)
+                            },
                             onLongPress = { viewModel.setSelectionMode(true); viewModel.toggleArticleSelection(article.id) },
                             onOpenArticle = { if (!uiState.isSelectionMode) onOpenArticle(article.id) else viewModel.toggleArticleSelection(article.id) }
                         )
@@ -137,6 +223,26 @@ fun RssFeedArticlesScreen(
                     }
                 }
             }
+        }
+    }
+
+    // Undo action snackbar
+    if (lastUndoAction != null) {
+        LaunchedEffect(lastUndoAction) {
+            val action = lastUndoAction ?: return@LaunchedEffect
+            val result = snackbarHostState.showSnackbar(
+                message = "Action performed",
+                actionLabel = "Undo",
+                duration = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                // Undo the action
+                when (action.actionType) {
+                    "favorite" -> viewModel.toggleFavorite(action.articleId)
+                    "read" -> viewModel.toggleRead(action.articleId)
+                }
+            }
+            lastUndoAction = null
         }
     }
 }
@@ -154,15 +260,15 @@ fun ArticleRow(
     onOpenArticle: () -> Unit
 ) {
     var swipeOffset by remember { mutableStateOf(0f) }
-    val swipeThreshold = 80f
+    val swipeThreshold = 60f
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .pointerInput(Unit) {
-                detectHorizontalDragGestures { change, dragAmount ->
+                detectHorizontalDragGestures(onDragEnd = { swipeOffset = 0f }) { change, dragAmount ->
                     change.consume()
-                    swipeOffset = (swipeOffset + dragAmount).coerceIn(-200f, 200f)
+                    swipeOffset = (swipeOffset + dragAmount).coerceIn(-150f, 150f)
                     if (swipeOffset < -swipeThreshold) {
                         onToggleFavorite()
                         swipeOffset = 0f
@@ -179,53 +285,41 @@ fun ArticleRow(
                 )
             }
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(72.dp)
-                .align(Alignment.CenterStart),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            if (swipeOffset > 0) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .align(Alignment.CenterEnd)
-                        .fillMaxWidth(swipeOffset / swipeThreshold),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = stringResource(R.string.rss_mark_as_read),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+        if (swipeOffset > 0) {
+            val progress = (swipeOffset / swipeThreshold).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp)
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth(progress)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = stringResource(R.string.rss_mark_as_read),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
             }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(72.dp)
-                .align(Alignment.CenterStart),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            if (swipeOffset < 0) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .align(Alignment.CenterStart)
-                        .fillMaxWidth((-swipeOffset) / swipeThreshold),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Filled.Star,
-                        contentDescription = stringResource(R.string.rss_favorite),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+        } else if (swipeOffset < 0) {
+            val progress = ((-swipeOffset) / swipeThreshold).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp)
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth(progress)
+                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = stringResource(R.string.rss_favorite),
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
 
@@ -251,16 +345,13 @@ fun ArticleRow(
                     )
                 } else {
                     Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                        if (article.isFavorite) {
-                            Icon(Icons.Filled.Star, null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                        if (!article.isRead) {
-                            Box(Modifier.size(10.dp).padding(top = 4.dp)) {
-                                Icon(Icons.Default.RssFeed, null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                        } else {
-                            Icon(Icons.Default.RssFeed, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        val iconColor = if (article.isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+                        Icon(
+                            if (article.isFavorite) Icons.Filled.Star else Icons.Default.RssFeed,
+                            null,
+                            tint = iconColor,
+                            modifier = Modifier.size(if (article.isFavorite) 24.dp else 20.dp)
+                        )
                     }
                 }
             },
