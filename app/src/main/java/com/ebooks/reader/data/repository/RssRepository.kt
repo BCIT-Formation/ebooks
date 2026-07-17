@@ -257,11 +257,11 @@ class RssRepository(context: Context) {
             append("# Annotations - ").append(safeTitle).append("\n\n")
 
             annotations.forEach { annotation ->
-                if (!annotation.selectedText.isNullOrBlank()) {
-                    append("> ").append(annotation.selectedText?.replace("\n", "\n> ")).append("\n\n")
+                if (!annotation.textContent.isNullOrBlank()) {
+                    append("> ").append(annotation.textContent.replace("\n", "\n> ")).append("\n\n")
                 }
-                if (!annotation.note.isNullOrBlank()) {
-                    append("**Note:** ").append(annotation.note).append("\n\n")
+                if (!annotation.metadata.isNullOrBlank()) {
+                    append("**Note:** ").append(annotation.metadata).append("\n\n")
                 }
                 append("---\n\n")
             }
