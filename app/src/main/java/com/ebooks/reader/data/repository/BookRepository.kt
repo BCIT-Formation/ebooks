@@ -444,7 +444,7 @@ class BookRepository(private val context: Context) {
         safeTitle: String,
         shareDir: File
     ): File? = withContext(Dispatchers.IO) {
-        val bookmarks = dao.getBookmarksByBook(book.id)
+        val bookmarks = dao.getHighlightsSnapshot(book.id)
         val highlights = bookmarks.filter { !it.selectedText.isNullOrBlank() }
         if (highlights.isEmpty()) return@withContext null
 
