@@ -9,6 +9,14 @@ import java.io.File
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
+// HTML5 void elements — the only tags Chromium's HTML parser treats as
+// self-closing. Any other self-closing XHTML tag (e.g. `<a id="x"/>`) is
+// parsed as an unclosed opening tag instead.
+private val VOID_ELEMENTS = setOf(
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr"
+)
+
 /**
  * Pure Kotlin/Android EPUB parser — no external library dependencies.
  * EPUB is a ZIP archive containing HTML, CSS, images and OPF/NCX XML files.
@@ -358,7 +366,22 @@ class EpubParser(private val context: Context) {
         processed = processed.replace(Regex("""<link[^>]+rel=["']stylesheet["'][^>]*>"""), "")
         processed = processed.replace(Regex("""<link[^>]+stylesheet[^>]*>"""), "")
 
+        // XHTML allows self-closing non-void elements (e.g. `<a id="x"/>` for an
+        // anchor target), but this is loaded into the WebView as text/html, where
+        // Chromium's HTML5 parser only honors self-closing syntax on void elements.
+        // Left as-is, `<a .../>` would be treated as an unclosed opening tag,
+        // silently swallowing the rest of the chapter into the link's styling.
+        processed = closeSelfClosingNonVoidTags(processed)
+
         return processed
+    }
+
+    private fun closeSelfClosingNonVoidTags(html: String): String {
+        return Regex("""<([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^<>]*)?)/>""").replace(html) { match ->
+            val tag = match.groupValues[1]
+            val attrs = match.groupValues[2]
+            if (tag.lowercase() in VOID_ELEMENTS) match.value else "<$tag$attrs></$tag>"
+        }
     }
 
     private fun injectReaderStyles(html: String, theme: ReaderTheme): String {
