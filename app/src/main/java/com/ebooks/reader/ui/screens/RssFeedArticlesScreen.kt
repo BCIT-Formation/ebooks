@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,7 @@ fun RssFeedArticlesScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showMenu by remember { mutableStateOf(false) }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     LaunchedEffect(uiState.message) {
         val msg = uiState.message ?: return@LaunchedEffect
@@ -105,7 +107,8 @@ fun RssFeedArticlesScreen(
                     },
                     actions = {
                         TooltipIconButton(Icons.Default.Refresh, stringResource(R.string.rss_refresh), { viewModel.refresh() })
-                    }
+                    },
+                    scrollBehavior = scrollBehavior
                 )
             }
         }
