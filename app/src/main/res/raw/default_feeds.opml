@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>EbookReader Default Feeds</title>
+    <dateCreated>2026-07-17</dateCreated>
+  </head>
+  <body>
+    <outline text="Books &amp; Publishing" title="Books &amp; Publishing">
+      <outline type="rss" text="Project Gutenberg News" title="Project Gutenberg News" xmlUrl="https://www.gutenberg.org/ebooks/search/?query=new&amp;sort_order=-release_date&amp;start_index=1&amp;rss" />
+      <outline type="rss" text="Open Library Blog" title="Open Library Blog" xmlUrl="https://blog.openlibrary.org/feed/" />
+    </outline>
+    <outline text="Technology" title="Technology">
+      <outline type="rss" text="Hacker News" title="Hacker News" xmlUrl="https://news.ycombinator.com/rss" />
+    </outline>
+  </body>
+</opml>
