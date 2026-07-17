@@ -27,7 +27,12 @@ class AppDatabaseTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
-            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
+            .addMigrations(
+                AppDatabase.MIGRATION_1_2,
+                AppDatabase.MIGRATION_2_3,
+                AppDatabase.MIGRATION_3_4,
+                AppDatabase.MIGRATION_4_5
+            )
             .build()
     }
 
@@ -36,21 +41,26 @@ class AppDatabaseTest {
         db.close()
     }
 
+    private fun testBook(
+        title: String = "Test Book",
+        author: String = "Test Author",
+        filePath: String = "file:///test.epub",
+        lastReadAt: Long? = System.currentTimeMillis()
+    ) = Book(
+        id = UUID.randomUUID().toString(),
+        title = title,
+        author = author,
+        filePath = filePath,
+        fileType = "epub",
+        coverPath = null,
+        lastReadAt = lastReadAt
+    )
+
     @Test
     fun databaseCreatesAndInsertsBook() = runBlocking {
-        val book = Book(
-            id = UUID.randomUUID().toString(),
-            title = "Test Book",
-            author = "Test Author",
-            filePath = "file:///test.epub",
-            format = "EPUB",
-            coverImage = null,
-            lastReadTime = System.currentTimeMillis(),
-            screenOrientationLock = "UNSPECIFIED",
-            tiltScrollEnabled = false
-        )
+        val book = testBook()
 
-        db.bookDao().insertOrUpdateBook(book)
+        db.bookDao().insertBook(book)
         val retrieved = db.bookDao().getBookById(book.id)
 
         assert(retrieved != null) { "Book should be retrievable after insert" }
@@ -61,18 +71,8 @@ class AppDatabaseTest {
     @Test
     fun migrationCreatesReadingSessionsTable() = runBlocking {
         // After migration, reading_sessions table should exist
-        val book = Book(
-            id = UUID.randomUUID().toString(),
-            title = "Test Book",
-            author = "Test Author",
-            filePath = "file:///test.epub",
-            format = "EPUB",
-            coverImage = null,
-            lastReadTime = System.currentTimeMillis(),
-            screenOrientationLock = "UNSPECIFIED",
-            tiltScrollEnabled = false
-        )
-        db.bookDao().insertOrUpdateBook(book)
+        val book = testBook()
+        db.bookDao().insertBook(book)
 
         val session = ReadingSession(
             id = UUID.randomUUID().toString(),
@@ -83,7 +83,7 @@ class AppDatabaseTest {
         )
 
         db.bookDao().insertReadingSession(session)
-        val retrieved = db.bookDao().getReadingSessionsForBook(book.id)
+        val retrieved = db.bookDao().getRecentSessions(book.id)
 
         assert(retrieved.isNotEmpty()) { "Reading session should be retrievable" }
         assert(retrieved[0].bookId == book.id) { "Session should reference correct book" }
@@ -98,32 +98,17 @@ class AppDatabaseTest {
 
     @Test
     fun insertedBooksAreRetriever() = runBlocking {
-        val book1 = Book(
-            id = UUID.randomUUID().toString(),
-            title = "Book One",
-            author = "Author One",
-            filePath = "file:///book1.epub",
-            format = "EPUB",
-            coverImage = null,
-            lastReadTime = System.currentTimeMillis(),
-            screenOrientationLock = "UNSPECIFIED",
-            tiltScrollEnabled = false
-        )
-        val book2 = Book(
-            id = UUID.randomUUID().toString(),
+        val book1 = testBook(title = "Book One", author = "Author One", filePath = "file:///book1.epub")
+        val book2 = testBook(
             title = "Book Two",
             author = "Author Two",
             filePath = "file:///book2.epub",
-            format = "EPUB",
-            coverImage = null,
-            lastReadTime = System.currentTimeMillis() - 1000,
-            screenOrientationLock = "UNSPECIFIED",
-            tiltScrollEnabled = false
+            lastReadAt = System.currentTimeMillis() - 1000
         )
 
-        db.bookDao().insertOrUpdateBook(book1)
-        db.bookDao().insertOrUpdateBook(book2)
-        val allBooks = db.bookDao().getAllBooks()
+        db.bookDao().insertBook(book1)
+        db.bookDao().insertBook(book2)
+        val allBooks = db.bookDao().getAllBooksSnapshot()
 
         assert(allBooks.size >= 2) { "Should have at least 2 books" }
         assert(allBooks.any { it.title == "Book One" }) { "Should find Book One" }
