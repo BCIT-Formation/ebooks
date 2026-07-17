@@ -53,6 +53,18 @@ interface RssDao {
     @Query("UPDATE rss_articles SET isRead = 1 WHERE id = :id")
     suspend fun markArticleRead(id: String)
 
+    @Query("UPDATE rss_articles SET isRead = 1 WHERE id IN (:ids)")
+    suspend fun markArticlesRead(ids: List<String>)
+
+    @Query("UPDATE rss_articles SET isRead = 0 WHERE id IN (:ids)")
+    suspend fun markArticlesUnread(ids: List<String>)
+
+    @Query("UPDATE rss_articles SET isFavorite = CASE WHEN isFavorite = 1 THEN 0 ELSE 1 END WHERE id = :id")
+    suspend fun toggleArticleFavorite(id: String)
+
+    @Query("UPDATE rss_articles SET isRead = CASE WHEN isRead = 1 THEN 0 ELSE 1 END WHERE id = :id")
+    suspend fun toggleArticleRead(id: String)
+
     @Query("SELECT COUNT(*) FROM rss_articles WHERE feedId = :feedId AND isRead = 0")
     suspend fun unreadCount(feedId: String): Int
 }

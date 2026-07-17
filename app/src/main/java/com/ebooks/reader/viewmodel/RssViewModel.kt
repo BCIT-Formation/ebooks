@@ -21,7 +21,9 @@ data class RssUiState(
     val feeds: List<RssFeed> = emptyList(),
     val articles: List<RssArticle> = emptyList(),
     val isBusy: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val selectedArticleIds: Set<String> = emptySet(),
+    val isSelectionMode: Boolean = false
 )
 
 class RssViewModel(application: Application) : AndroidViewModel(application) {
@@ -30,14 +32,25 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _busy = MutableStateFlow(false)
     private val _message = MutableStateFlow<String?>(null)
+    private val _selectedArticleIds = MutableStateFlow<Set<String>>(emptySet())
+    private val _isSelectionMode = MutableStateFlow(false)
 
     val uiState: StateFlow<RssUiState> = combine(
         repository.getFeeds(),
         repository.getAllArticles(),
         _busy,
-        _message
-    ) { feeds, articles, busy, message ->
-        RssUiState(feeds = feeds, articles = articles, isBusy = busy, message = message)
+        _message,
+        _selectedArticleIds,
+        _isSelectionMode
+    ) { feeds, articles, busy, message, selectedIds, selectionMode ->
+        RssUiState(
+            feeds = feeds,
+            articles = articles,
+            isBusy = busy,
+            message = message,
+            selectedArticleIds = selectedIds,
+            isSelectionMode = selectionMode
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RssUiState())
 
     fun addFeed(url: String) {
@@ -78,6 +91,48 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun consumeMessage() { _message.value = null }
+
+    // ── Selection & bulk operations ────────────────────────────────────────────
+
+    fun setSelectionMode(enabled: Boolean) {
+        _isSelectionMode.value = enabled
+        if (!enabled) _selectedArticleIds.value = emptySet()
+    }
+
+    fun toggleArticleSelection(articleId: String) {
+        val current = _selectedArticleIds.value.toMutableSet()
+        if (current.contains(articleId)) current.remove(articleId) else current.add(articleId)
+        _selectedArticleIds.value = current
+    }
+
+    fun selectAll(articleIds: List<String>) {
+        _selectedArticleIds.value = articleIds.toSet()
+        _isSelectionMode.value = true
+    }
+
+    fun clearSelection() {
+        _selectedArticleIds.value = emptySet()
+    }
+
+    fun markSelectedAsRead() = runBusy {
+        repository.markArticlesAsRead(_selectedArticleIds.value.toList())
+        clearSelection()
+        setSelectionMode(false)
+    }
+
+    fun markSelectedAsUnread() = runBusy {
+        repository.markArticlesAsUnread(_selectedArticleIds.value.toList())
+        clearSelection()
+        setSelectionMode(false)
+    }
+
+    fun toggleFavorite(articleId: String) = runBusy {
+        repository.toggleFavorite(articleId)
+    }
+
+    fun toggleRead(articleId: String) = runBusy {
+        repository.toggleRead(articleId)
+    }
 
     private fun runBusy(block: suspend () -> Unit) {
         if (_busy.value) return
