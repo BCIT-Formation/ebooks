@@ -48,7 +48,7 @@ object BionicReading {
         if (word.length <= 3) return word
 
         // Find where the actual word ends (no punctuation)
-        val wordEnd = word.indexOfAny(charArrayOf(',', '.', '!', '?', ':', ';', '"', '\''))
+        val wordEnd = word.indexOfAny(charArrayOf(',', '.', '!', '?', ':', ';', '"', ''', '"', '"'))
             .let { if (it > 0) it else word.length }
 
         val actualWord = word.substring(0, wordEnd)
@@ -74,7 +74,7 @@ object BionicReading {
         val segments = mutableListOf<TextSegment>()
 
         // Find punctuation
-        val wordEnd = word.indexOfAny(charArrayOf(',', '.', '!', '?', ':', ';', '"', '\''))
+        val wordEnd = word.indexOfAny(charArrayOf(',', '.', '!', '?', ':', ';', '"', ''', '"', '"'))
             .let { if (it > 0) it else word.length }
 
         val actualWord = word.substring(0, wordEnd)

@@ -42,14 +42,14 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
         _message,
         _selectedArticleIds,
         _isSelectionMode
-    ) { values ->
+    ) { feeds, articles, busy, message, selectedIds, selectionMode ->
         RssUiState(
-            feeds = values[0] as List<RssFeed>,
-            articles = values[1] as List<RssArticle>,
-            isBusy = values[2] as Boolean,
-            message = values[3] as String?,
-            selectedArticleIds = values[4] as Set<String>,
-            isSelectionMode = values[5] as Boolean
+            feeds = feeds,
+            articles = articles,
+            isBusy = busy,
+            message = message,
+            selectedArticleIds = selectedIds,
+            isSelectionMode = selectionMode
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RssUiState())
 
