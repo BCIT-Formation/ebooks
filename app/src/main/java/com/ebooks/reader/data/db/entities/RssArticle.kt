@@ -34,5 +34,6 @@ data class RssArticle(
     val summary: String? = null,
     val publishedAt: Long = 0L,
     val fetchedAt: Long = System.currentTimeMillis(),
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val isFavorite: Boolean = false
 )

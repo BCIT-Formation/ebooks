@@ -20,7 +20,7 @@ import com.ebooks.reader.data.db.entities.RssFeed
         Book::class, ReadingProgress::class, Bookmark::class, ReadingSession::class,
         Annotation::class, RssFeed::class, RssArticle::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -170,6 +170,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds the `isFavorite` column to `rss_articles` for starring articles. */
+        internal val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE rss_articles ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -177,7 +184,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "ebook_reader.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     // Safety net: if a future schema change has no migration, wipe rather than crash.
                     .fallbackToDestructiveMigration()
                     .build().also { INSTANCE = it }

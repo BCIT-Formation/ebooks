@@ -28,6 +28,24 @@ class RssRepository(context: Context) {
     suspend fun getArticle(id: String): RssArticle? = withContext(Dispatchers.IO) { rssDao.getArticle(id) }
     suspend fun markRead(id: String) = withContext(Dispatchers.IO) { rssDao.markArticleRead(id) }
 
+    // ── Article operations ─────────────────────────────────────────────────────────
+
+    suspend fun markArticlesAsRead(ids: List<String>) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) rssDao.markArticlesRead(ids)
+    }
+
+    suspend fun markArticlesAsUnread(ids: List<String>) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) rssDao.markArticlesUnread(ids)
+    }
+
+    suspend fun toggleFavorite(articleId: String) = withContext(Dispatchers.IO) {
+        rssDao.toggleArticleFavorite(articleId)
+    }
+
+    suspend fun toggleRead(articleId: String) = withContext(Dispatchers.IO) {
+        rssDao.toggleArticleRead(articleId)
+    }
+
     // ── Feed management ─────────────────────────────────────────────────────────
 
     sealed class AddResult {
