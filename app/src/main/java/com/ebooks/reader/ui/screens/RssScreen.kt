@@ -41,8 +41,6 @@ import com.ebooks.reader.data.db.entities.RssArticle
 import com.ebooks.reader.data.db.entities.RssFeed
 import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.viewmodel.RssViewModel
-import java.text.DateFormat
-import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

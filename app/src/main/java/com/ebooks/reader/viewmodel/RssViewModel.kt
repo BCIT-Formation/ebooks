@@ -42,15 +42,15 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
         _message,
         _selectedArticleIds,
         _isSelectionMode
-    ) { feeds, articles, busy, message, selectedIds, selectionMode ->
+    ) { values ->
         @Suppress("UNCHECKED_CAST")
         RssUiState(
-            feeds = feeds as List<RssFeed>,
-            articles = articles as List<RssArticle>,
-            isBusy = busy as Boolean,
-            message = message as String?,
-            selectedArticleIds = selectedIds as Set<String>,
-            isSelectionMode = selectionMode as Boolean
+            feeds = values[0] as List<RssFeed>,
+            articles = values[1] as List<RssArticle>,
+            isBusy = values[2] as Boolean,
+            message = values[3] as String?,
+            selectedArticleIds = values[4] as Set<String>,
+            isSelectionMode = values[5] as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RssUiState())
 
