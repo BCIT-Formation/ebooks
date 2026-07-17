@@ -30,12 +30,15 @@
 - [x] Text-to-speech integration (`TtsSpeaker` — EPUB reader + TXT reader, chunked chapter speech)
 - [x] Share book excerpt feature (share WebView selection with title/author attribution)
 - [x] Custom fonts — user can add TTF/OTF files (imported to app storage, embedded as `@font-face` in the reader)
-- [x] Comic book (CBZ) reader — basic vertical page reader (`CbzReaderScreen`); CBR and pinch-to-zoom still open
+- [x] Comic book (CBZ) reader — basic vertical page reader (`CbzReaderScreen`)
+- [x] Pinch-to-zoom for the comic reader (two-finger scale/pan per page; single-finger scroll
+      is left untouched so it doesn't fight the page list)
+- [ ] CBR support (needs a RAR-decoding library decision — see network follow-ups below for
+      the shape of that kind of call)
 - [x] Night light / warm color filter overlay
 - [x] Widget for current reading book (Glance app widget showing the most recently read book)
 - [x] Android 13+ per-app language preferences (`localeConfig` + en/fr resources for the main screens)
 - [x] Finish string extraction for full localization (ViewModel error messages, PDF/FB2/CBZ reader labels, chapter panel, drawing toolbar; font family names and Markdown-export fallbacks intentionally left as-is)
-- [ ] CBR support + pinch-to-zoom for the comic reader
 - [x] Cloud sync (reading progress across devices) — via a user-picked cloud folder
       (Google Drive / OneDrive document providers through SAF) and via WebDAV;
       newer-wins merge keyed by title+author (`data/sync/`, ADR-006)
