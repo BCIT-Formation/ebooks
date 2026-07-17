@@ -42,6 +42,13 @@
 - [x] OPDS catalog support (browse catalogs, download books into the library —
       `data/opds/` + `OpdsScreen`, ADR-006)
 
+## ✨ Advanced Features (New)
+
+- [x] Offline dictionary (StarDict format: `.ifo`, `.idx`, `.dict`) — word lookup on selected text in readers (`data/dictionary/StarDictParser`, `DictionaryRepository`)
+- [x] Bionic Reading algorithm — automatic bold formatting of word fragments for improved speed-reading (`util/BionicReading` with HTML + Compose support)
+- [x] E-Ink mode enhancements — volume key pagination without scroll, animation disable for e-readers (Boox, Kobo, etc.) (`ui/theme/EInkMode`, `data/settings/EInkSettings`)
+- [x] Smooth scrolling optimization — `remember`, `key`, `contentType` for LazyColumn/BookshelfView (reduce recompositions) — ready for integration
+
 ## 🌐 Network follow-ups (ADR-006)
 
 Approved by the repository owner; each needs a library or credential decision first:
