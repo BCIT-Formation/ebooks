@@ -215,14 +215,14 @@
     <string name="rss_refreshed">%1$s new article(s)</string>
     <string name="rss_opml_imported">Imported %1$s feed(s)</string>
     <string name="rss_opml_exported">Feeds exported</string>
-    <string name=”rss_delete_feed_message”>Unsubscribe from “%1$s” and remove its articles?</string>
-    <string name=”rss_select_all”>Select all</string>
-    <string name=”rss_mark_as_read”>Mark as read</string>
-    <string name=”rss_mark_as_unread”>Mark as unread</string>
-    <string name=”rss_deselect_all”>Deselect all</string>
-    <string name=”rss_favorite”>Favorite</string>
-    <string name=”rss_unfavorite”>Unfavorite</string>
-    <string name=”rss_articles_selected”>%1$d selected</string>
+    <string name="rss_delete_feed_message">Unsubscribe from "%1$s" and remove its articles?</string>
+    <string name="rss_select_all">Select all</string>
+    <string name="rss_mark_as_read">Mark as read</string>
+    <string name="rss_mark_as_unread">Mark as unread</string>
+    <string name="rss_deselect_all">Deselect all</string>
+    <string name="rss_favorite">Favorite</string>
+    <string name="rss_unfavorite">Unfavorite</string>
+    <string name="rss_articles_selected">%1$d selected</string>
 
     <!-- Widget -->
     <string name="widget_label">Currently reading</string>
