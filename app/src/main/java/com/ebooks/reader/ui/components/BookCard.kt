@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ fun BookGridCard(
 ) {
     Card(
         modifier = modifier
+            .testTag("book_card")
             .shadow(4.dp, RoundedCornerShape(8.dp))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(8.dp),
@@ -106,7 +108,7 @@ fun BookListItem(
                 else -> {}
             }
         },
-        modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        modifier = modifier.testTag("book_card").combinedClickable(onClick = onClick, onLongClick = onLongClick)
     )
 }
 
