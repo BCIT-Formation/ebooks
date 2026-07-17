@@ -39,7 +39,8 @@ import com.ebooks.reader.ui.screens.OpdsScreen
 import com.ebooks.reader.ui.screens.PdfReaderScreen
 import com.ebooks.reader.ui.screens.ReaderScreen
 import com.ebooks.reader.ui.screens.RssReaderScreen
-import com.ebooks.reader.ui.screens.RssScreen
+import com.ebooks.reader.ui.screens.RssFeedsScreen
+import com.ebooks.reader.ui.screens.RssFeedArticlesScreen
 import com.ebooks.reader.ui.screens.SyncScreen
 import com.ebooks.reader.ui.screens.TxtReaderScreen
 import com.ebooks.reader.ui.screens.Fb2ReaderScreen
@@ -73,7 +74,7 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val backStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = backStackEntry?.destination?.route
-                    val showTabs = currentRoute == "library" || currentRoute == "rss"
+                    val showTabs = currentRoute == "library" || currentRoute == "rss_feeds"
 
                     Scaffold(
                         bottomBar = {
@@ -91,9 +92,9 @@ class MainActivity : ComponentActivity() {
                                         label = { Text(stringResource(R.string.tab_library)) }
                                     )
                                     NavigationBarItem(
-                                        selected = currentRoute == "rss",
+                                        selected = currentRoute == "rss_feeds",
                                         onClick = {
-                                            navController.navigate("rss") {
+                                            navController.navigate("rss_feeds") {
                                                 popUpTo("library") { inclusive = false }
                                                 launchSingleTop = true
                                             }
@@ -139,9 +140,21 @@ class MainActivity : ComponentActivity() {
                             SyncScreen(onBack = { navController.popBackStack() })
                         }
 
-                        composable("rss") {
-                            RssScreen(
-                                onOpenArticle = { articleId -> navController.navigate("rss_reader/$articleId") }
+                        composable("rss_feeds") {
+                            RssFeedsScreen(
+                                onOpenFeed = { feedId -> navController.navigate("rss_articles/$feedId") }
+                            )
+                        }
+
+                        composable(
+                            route = "rss_articles/{feedId}",
+                            arguments = listOf(navArgument("feedId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val feedId = backStackEntry.arguments?.getString("feedId") ?: return@composable
+                            RssFeedArticlesScreen(
+                                feedId = feedId,
+                                onOpenArticle = { articleId -> navController.navigate("rss_reader/$articleId") },
+                                onBack = { navController.popBackStack() }
                             )
                         }
 
