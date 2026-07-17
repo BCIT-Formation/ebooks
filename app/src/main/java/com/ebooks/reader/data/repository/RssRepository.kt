@@ -1,6 +1,7 @@
 package com.ebooks.reader.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.ebooks.reader.data.db.AppDatabase
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.RssArticle
@@ -10,7 +11,11 @@ import com.ebooks.reader.data.rss.RssClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class RssRepository(context: Context) {
@@ -147,6 +152,121 @@ class RssRepository(context: Context) {
 
     suspend fun clearArticleAnnotations(articleId: String) =
         withContext(Dispatchers.IO) { bookDao.deletePageAnnotations(annotationKey(articleId), pageId) }
+
+    // ── Sharing RSS Articles ────────────────────────────────────────────────────
+
+    data class ShareArticleBundle(
+        val articleMarkdown: File,
+        val articleAnnotations: File?
+    )
+
+    /**
+     * Prepares an RSS article for sharing. Creates a markdown file with:
+     * - Article title, author, publish date
+     * - Full article content
+     * - All annotations (highlights + notes)
+     */
+    suspend fun prepareShareArticle(articleId: String, context: Context): ShareArticleBundle? =
+        withContext(Dispatchers.IO) {
+            val article = getArticle(articleId) ?: return@withContext null
+            val shareDir = File(context.cacheDir, "share").also { it.mkdirs() }
+
+            val safeTitle = article.title.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+                .trim().ifBlank { "article" }.take(50)
+
+            // Create markdown file with article content
+            val markdown = buildString {
+                append("# ").append(article.title).append("\n\n")
+
+                if (!article.author.isNullOrBlank()) {
+                    append("**Auteur:** ").append(article.author).append("\n\n")
+                }
+
+                if (article.publishedAt > 0) {
+                    val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+                    append("**Date:** ").append(dateFormat.format(Date(article.publishedAt))).append("\n\n")
+                }
+
+                if (!article.link.isNullOrBlank()) {
+                    append("[Lien original](").append(article.link).append(")\n\n")
+                }
+
+                append("---\n\n")
+
+                // Article content (HTML to Markdown conversion)
+                val content = article.contentHtml?.let { htmlToMarkdown(it) } ?: article.summary
+                if (!content.isNullOrBlank()) {
+                    append(content).append("\n\n")
+                }
+            }
+
+            val articleMarkdownFile = try {
+                File(shareDir, "${safeTitle}_article.md").apply {
+                    writeText(markdown)
+                }
+            } catch (e: Exception) {
+                Log.e("RssRepository", "Error creating article markdown", e)
+                return@withContext null
+            }
+
+            // Add annotations if any exist
+            val annotations = getArticleAnnotations(articleId)
+            val annotationsFile = if (annotations.isNotEmpty()) {
+                try {
+                    val annotationsMarkdown = buildAnnotationsMarkdown(annotations, safeTitle)
+                    File(shareDir, "${safeTitle}_annotations.md").apply {
+                        writeText(annotationsMarkdown)
+                    }
+                } catch (e: Exception) {
+                    Log.e("RssRepository", "Error creating annotations markdown", e)
+                    null
+                }
+            } else {
+                null
+            }
+
+            ShareArticleBundle(articleMarkdownFile, annotationsFile)
+        }
+
+    private fun htmlToMarkdown(html: String): String {
+        return html
+            .replace(Regex("<h[1-6][^>]*>"), "## ")
+            .replace(Regex("</h[1-6]>"), "\n\n")
+            .replace(Regex("<p[^>]*>"), "")
+            .replace(Regex("</p>"), "\n\n")
+            .replace(Regex("<br\\s*/?\\s*>"), "\n")
+            .replace(Regex("<strong[^>]*>"), "**")
+            .replace(Regex("</strong>"), "**")
+            .replace(Regex("<em[^>]*>"), "*")
+            .replace(Regex("</em>"), "*")
+            .replace(Regex("<b[^>]*>"), "**")
+            .replace(Regex("</b>"), "**")
+            .replace(Regex("<i[^>]*>"), "*")
+            .replace(Regex("</i>"), "*")
+            .replace(Regex("<a[^>]*href=\"([^\"]+)\"[^>]*>([^<]*)</a>"), "[$2]($1)")
+            .replace(Regex("<[^>]+>"), "")
+            .replace(Regex("&nbsp;"), " ")
+            .replace(Regex("&amp;"), "&")
+            .replace(Regex("&quot;"), "\"")
+            .replace(Regex("&#39;"), "'")
+            .trim()
+    }
+
+    private fun buildAnnotationsMarkdown(annotations: List<Annotation>, safeTitle: String): String {
+        return buildString {
+            append("# Annotations - ").append(safeTitle).append("\n\n")
+
+            annotations.forEach { annotation ->
+                if (!annotation.textContent.isNullOrBlank()) {
+                    append("> ").append(annotation.textContent.replace("\n", "\n> ")).append("\n\n")
+                }
+                if (!annotation.metadata.isNullOrBlank()) {
+                    append("**Note:** ").append(annotation.metadata).append("\n\n")
+                }
+                append("---\n\n")
+            }
+        }
+    }
 
     private fun deterministicId(seed: String): String =
         UUID.nameUUIDFromBytes(seed.toByteArray()).toString()
