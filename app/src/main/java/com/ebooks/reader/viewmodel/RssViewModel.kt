@@ -1,6 +1,7 @@
 package com.ebooks.reader.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -91,6 +92,13 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
         message(R.string.rss_opml_exported)
     }
 
+    fun importDefaultFeeds(context: Context) = runBusy {
+        val added = context.resources.openRawResource(R.raw.default_feeds).use {
+            repository.importOpml(it)
+        }
+        message(R.string.rss_opml_imported, added.toString())
+    }
+
     fun consumeMessage() { _message.value = null }
 
     // ── Selection & bulk operations ────────────────────────────────────────────
@@ -115,6 +123,14 @@ class RssViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearSelection() {
         _selectedArticleIds.value = emptySet()
+    }
+
+    fun markArticlesAsRead(articleIds: List<String>) = runBusy {
+        repository.markArticlesAsRead(articleIds)
+    }
+
+    fun markArticlesAsUnread(articleIds: List<String>) = runBusy {
+        repository.markArticlesAsUnread(articleIds)
     }
 
     fun markSelectedAsRead() = runBusy {

@@ -53,12 +53,7 @@ object BionicReading {
         val isProcessed: Boolean
     )
 
-    /**
-     * Parse a word into bold and normal segments (first half bolded for words > 3 chars)
-     */
     private fun parseWord(word: String): WordParts {
-        if (word.length <= 3) return WordParts("", "", "", isProcessed = false)
-
         // Find where the actual word ends (no punctuation)
         val wordEnd = word.indexOfAny(PUNCTUATION_CHARS)
             .let { if (it > 0) it else word.length }

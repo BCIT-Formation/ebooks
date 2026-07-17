@@ -270,6 +270,14 @@
     <string name="rss_articles_selected">%1$d selected</string>
     <string name="rss_articles">articles</string>
     <string name="rss_unread">unread</string>
+    <string name="rss_search_articles">Search articles…</string>
+    <string name="rss_no_results">No results found</string>
+    <string name="rss_sort_newest">Newest First</string>
+    <string name="rss_sort_oldest">Oldest First</string>
+    <string name="rss_sort_unread_first">Unread First</string>
+    <string name="rss_select_multiple">Select Multiple</string>
+    <string name="rss_marked_favorite">Marked as favorite</string>
+    <string name="rss_marked_read">Marked as read</string>
 
     <!-- App Theme Mode (light/dark/system) -->
     <string name="theme_system">System</string>
