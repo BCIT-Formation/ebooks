@@ -14,6 +14,7 @@ import com.ebooks.reader.data.db.entities.FileType
 import com.ebooks.reader.data.db.entities.ReadingProgress
 import com.ebooks.reader.data.db.entities.ReadingSession
 import com.ebooks.reader.data.db.entities.ReadingStatus
+import com.ebooks.reader.data.opds.OpdsClient
 import com.ebooks.reader.data.parser.EpubBook
 import com.ebooks.reader.data.parser.EpubChapter
 import com.ebooks.reader.data.parser.EpubParser
@@ -37,6 +38,7 @@ class BookRepository(private val context: Context) {
     private val db = AppDatabase.getInstance(context)
     private val dao = db.bookDao()
     private val epubParser = EpubParser(context)
+    private val opdsClient = OpdsClient()
 
     // ── Book Queries ──────────────────────────────────────────────────────────
 
@@ -573,6 +575,41 @@ class BookRepository(private val context: Context) {
         )
         dao.insertBook(book)
     }
+
+    /** Downloads and imports the most popular books from Project Gutenberg on first app install. */
+    suspend fun downloadGutenbergPopularBooks(count: Int = 20): List<ImportResult> =
+        withContext(Dispatchers.IO) {
+            val results = mutableListOf<ImportResult>()
+            val gutenbergUrl = "https://gutenberg.org/ebooks/opds/most-downloaded/"
+
+            try {
+                val feed = opdsClient.fetchFeed(gutenbergUrl)
+                val acquisitions = feed.entries.filter { !it.acquisitionHref.isNullOrBlank() }
+                    .take(count)
+
+                val downloadDir = File(context.filesDir, "gutenberg_download").also { it.mkdirs() }
+
+                for (entry in acquisitions) {
+                    val href = entry.acquisitionHref ?: continue
+                    val mimeType = entry.acquisitionType
+                    val safeTitle = entry.title.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                        .take(50).ifBlank { "book" }
+
+                    try {
+                        val downloadedFile = opdsClient.download(href, downloadDir, safeTitle, mimeType)
+                        val fileUri = Uri.fromFile(downloadedFile)
+                        results.add(importBook(fileUri))
+                    } catch (e: Exception) {
+                        Log.e("BookRepository", "Failed to download Gutenberg book: ${entry.title}", e)
+                        results.add(ImportResult.Unreadable(entry.title))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("BookRepository", "Failed to fetch Gutenberg catalog", e)
+            }
+
+            results
+        }
 
     // ── File Utilities ────────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ package com.ebooks.reader.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.ebooks.reader.R
 import com.ebooks.reader.data.db.AppDatabase
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.RssArticle
@@ -149,6 +150,12 @@ class RssRepository(context: Context) {
             if (addFeed(entry.xmlUrl) is AddResult.Success) added++
         }
         added
+    }
+
+    /** Imports the bundled default feeds from res/raw/default_feeds.opml on first app install. */
+    suspend fun importDefaultFeeds(context: Context): Int = withContext(Dispatchers.IO) {
+        val input = context.resources.openRawResource(R.raw.default_feeds)
+        importOpml(input)
     }
 
     suspend fun exportOpml(): String = withContext(Dispatchers.IO) {

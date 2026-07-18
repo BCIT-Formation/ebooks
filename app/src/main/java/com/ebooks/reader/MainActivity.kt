@@ -1,6 +1,7 @@
 package com.ebooks.reader
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -49,6 +50,9 @@ import com.ebooks.reader.ui.theme.EbookReaderTheme
 import com.ebooks.reader.widget.CurrentBookWidget
 import com.ebooks.reader.data.settings.ThemeSettings
 import com.ebooks.reader.data.settings.AppTheme
+import com.ebooks.reader.data.settings.FirstRunManager
+import com.ebooks.reader.data.repository.BookRepository
+import com.ebooks.reader.data.repository.RssRepository
 
 class MainActivity : ComponentActivity() {
 
@@ -63,6 +67,32 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Auto-import default RSS feeds and download popular Gutenberg books on first install
+        lifecycleScope.launch {
+            val firstRunManager = FirstRunManager.getInstance(this@MainActivity)
+            if (firstRunManager.isFirstRun()) {
+                try {
+                    val rssRepo = RssRepository(this@MainActivity)
+                    val bookRepo = BookRepository(this@MainActivity)
+
+                    Log.d("FirstRun", "Importing default RSS feeds...")
+                    val feedsAdded = rssRepo.importDefaultFeeds(this@MainActivity)
+                    Log.d("FirstRun", "Added $feedsAdded default RSS feeds")
+
+                    Log.d("FirstRun", "Downloading popular Gutenberg books...")
+                    val booksAdded = bookRepo.downloadGutenbergPopularBooks(20)
+                    Log.d("FirstRun", "Downloaded ${booksAdded.count { it is BookRepository.ImportResult.Success }} Gutenberg books")
+
+                    firstRunManager.markFirstRunComplete()
+                    Log.d("FirstRun", "First-run setup complete")
+                } catch (e: Exception) {
+                    Log.e("FirstRun", "Error during first-run setup", e)
+                    // Mark as complete anyway to prevent re-triggering on every launch
+                    FirstRunManager.getInstance(this@MainActivity).markFirstRunComplete()
+                }
+            }
+        }
 
         setContent {
             val context = LocalContext.current
