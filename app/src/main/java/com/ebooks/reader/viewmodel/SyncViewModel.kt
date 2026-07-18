@@ -3,7 +3,7 @@ package com.ebooks.reader.viewmodel
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
+import android.provider.DocumentsContract
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ebooks.reader.R
@@ -82,30 +82,61 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun exportToCloudFolder() = runBusy {
-        val treeUri = _uiState.value.cloudFolderUri ?: return@runBusy message(R.string.sync_no_folder)
-        val tree = DocumentFile.fromTreeUri(context(), Uri.parse(treeUri))
-            ?: return@runBusy message(R.string.sync_folder_unavailable)
+        val treeUri = _uiState.value.cloudFolderUri?.let(Uri::parse)
+            ?: return@runBusy message(R.string.sync_no_folder)
         val json = repository.buildProgressSnapshot().toJson()
-        val target = tree.findFile(PROGRESS_SNAPSHOT_FILE_NAME)
-            ?: tree.createFile("application/json", PROGRESS_SNAPSHOT_FILE_NAME)
+        val target = findSnapshotInTree(treeUri)
+            ?: createSnapshotInTree(treeUri)
             ?: return@runBusy message(R.string.sync_folder_unavailable)
-        context().contentResolver.openOutputStream(target.uri, "wt")?.use { output ->
+        context().contentResolver.openOutputStream(target, "wt")?.use { output ->
             output.write(json.toByteArray())
         } ?: return@runBusy message(R.string.sync_folder_unavailable)
         message(R.string.sync_export_done)
     }
 
     fun importFromCloudFolder() = runBusy {
-        val treeUri = _uiState.value.cloudFolderUri ?: return@runBusy message(R.string.sync_no_folder)
-        val tree = DocumentFile.fromTreeUri(context(), Uri.parse(treeUri))
-            ?: return@runBusy message(R.string.sync_folder_unavailable)
-        val file = tree.findFile(PROGRESS_SNAPSHOT_FILE_NAME)
+        val treeUri = _uiState.value.cloudFolderUri?.let(Uri::parse)
+            ?: return@runBusy message(R.string.sync_no_folder)
+        val file = findSnapshotInTree(treeUri)
             ?: return@runBusy message(R.string.sync_no_snapshot)
-        val json = context().contentResolver.openInputStream(file.uri)?.use { input ->
+        val json = context().contentResolver.openInputStream(file)?.use { input ->
             input.bufferedReader().readText()
         } ?: return@runBusy message(R.string.sync_folder_unavailable)
         applySnapshotJson(json)
     }
+
+    /** Looks up [PROGRESS_SNAPSHOT_FILE_NAME] among the picked tree's children. */
+    private fun findSnapshotInTree(treeUri: Uri): Uri? {
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+            treeUri, DocumentsContract.getTreeDocumentId(treeUri)
+        )
+        context().contentResolver.query(
+            childrenUri,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME
+            ),
+            null, null, null
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                if (cursor.getString(1) == PROGRESS_SNAPSHOT_FILE_NAME) {
+                    return DocumentsContract.buildDocumentUriUsingTree(treeUri, cursor.getString(0))
+                }
+            }
+        }
+        return null
+    }
+
+    private fun createSnapshotInTree(treeUri: Uri): Uri? = runCatching {
+        DocumentsContract.createDocument(
+            context().contentResolver,
+            DocumentsContract.buildDocumentUriUsingTree(
+                treeUri, DocumentsContract.getTreeDocumentId(treeUri)
+            ),
+            "application/json",
+            PROGRESS_SNAPSHOT_FILE_NAME
+        )
+    }.getOrNull()
 
     // ── WebDAV ────────────────────────────────────────────────────────────────
 

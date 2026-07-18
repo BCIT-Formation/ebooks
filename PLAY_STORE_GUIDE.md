@@ -129,9 +129,8 @@ Features:
 • Reading progress sync (cloud, WebDAV)
 • Text-to-speech (read aloud)
 • Highlights, notes, bookmarks
-• Offline dictionary (StarDict)
-• Bionic Reading for speed reading
-• E-reader optimized (Boox, Kobo, etc.)
+• Dictionary lookup on selected text
+• E-ink display profile for e-readers
 • RSS feeds with offline articles
 • OPDS catalog support
 • Import custom fonts
@@ -303,16 +302,15 @@ adb shell settings get secure android_id
 2. Create release with APK
 3. Add **release notes:**
    ```markdown
-   ## v1.1.0 - Offline Dictionary & E-Ink Mode
+   ## v1.1.0 - Dictionary Lookup & E-Ink Profile
 
    ### New Features
-   - StarDict offline dictionary support
-   - E-Ink mode optimizations for e-readers
+   - Dictionary lookup on selected text
+   - E-ink display profile for e-readers
    - Enhanced file sharing (ebook + annotations)
 
    ### Improvements
    - Better performance on LazyColumn scrolling
-   - Bionic Reading algorithm for faster reading
 
    ### Fixes
    - Fixed crash when switching themes rapidly
