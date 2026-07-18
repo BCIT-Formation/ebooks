@@ -2,15 +2,26 @@
 <opml version="2.0">
   <head>
     <title>EbookReader Default Feeds</title>
-    <dateCreated>2026-07-17</dateCreated>
+    <dateCreated>2026-07-18</dateCreated>
   </head>
   <body>
     <outline text="Books &amp; Publishing" title="Books &amp; Publishing">
-      <outline type="rss" text="Project Gutenberg News" title="Project Gutenberg News" xmlUrl="https://www.gutenberg.org/ebooks/search/?query=new&amp;sort_order=-release_date&amp;start_index=1&amp;rss" />
+      <outline type="rss" text="Project Gutenberg - Recently Added" title="Project Gutenberg - Recently Added" xmlUrl="https://www.gutenberg.org/ebooks/search/?query=&amp;sort_order=-release_date&amp;start_index=1&amp;rss" />
+      <outline type="rss" text="Standard Ebooks Releases" title="Standard Ebooks Releases" xmlUrl="https://standardebooks.org/rss/all-ebooks.xml" />
+      <outline type="rss" text="LibriVox - New Audiobooks" title="LibriVox - New Audiobooks" xmlUrl="https://feeds.librivox.org/rss_catalog.php?format=rss" />
       <outline type="rss" text="Open Library Blog" title="Open Library Blog" xmlUrl="https://blog.openlibrary.org/feed/" />
+      <outline type="rss" text="Internet Archive News" title="Internet Archive News" xmlUrl="https://blog.archive.org/feed/" />
+      <outline type="rss" text="Tor.com - Science Fiction &amp; Fantasy" title="Tor.com - Science Fiction &amp; Fantasy" xmlUrl="https://www.tor.com/feed/" />
+      <outline type="rss" text="The Conversation - Books &amp; Culture" title="The Conversation - Books &amp; Culture" xmlUrl="https://feeds.theconversation.com/books-culture-39.xml" />
     </outline>
-    <outline text="Technology" title="Technology">
+    <outline text="Publishing Industry" title="Publishing Industry">
+      <outline type="rss" text="Publishers Weekly" title="Publishers Weekly" xmlUrl="https://www.publishersweekly.com/rss.xml" />
+      <outline type="rss" text="The Bookseller News" title="The Bookseller News" xmlUrl="https://www.thebookseller.com/rss/news.xml" />
+      <outline type="rss" text="The Author's Guild Blog" title="The Author's Guild Blog" xmlUrl="https://www.authorsguild.org/news-and-views/feed/" />
+    </outline>
+    <outline text="Technology &amp; Writing" title="Technology &amp; Writing">
       <outline type="rss" text="Hacker News" title="Hacker News" xmlUrl="https://news.ycombinator.com/rss" />
+      <outline type="rss" text="Medium - Writing" title="Medium - Writing" xmlUrl="https://medium.com/feed/tag/writing" />
     </outline>
   </body>
 </opml>
