@@ -379,13 +379,10 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
 
 | Workflow | Trigger | Jobs |
 |----------|---------|------|
-| `ci.yml` | push to `master`/`main`/`develop`/`claude/**`; PR to `master`/`main`/`develop` | `lint`, `test`, `build-debug` (parallel) |
-| `pr-check.yml` | PR to `main` or `develop` | `validate-title`, `required-checks` |
-| `auto-merge.yml` | `workflow_run`: CI completed **successfully** | squash-merge open PRs whose head commit passed CI |
-| `auto-merge-all-prs.yml` | manual `workflow_dispatch` (supports dry-run) | merge all open PRs **with green checks** |
-| `auto-release.yml` | push to `main`; manual | `release` (tag → build → publish) |
-| `release.yml` | manual `workflow_dispatch` | `build-release` |
-| `security.yml` | every Monday 08:00 UTC; push to `main` | `dependency-audit`, `secret-scan` |
+| `ci.yml` | push/PR to `main`, `develop`, `claude/**` | `validate-title` (PR only), `required-checks`, `lint`, `test`, `build-debug` (parallel) |
+| `auto-merge.yml` | `workflow_run`: CI completed successfully; manual `workflow_dispatch` | auto: squash-merge PRs whose head commit passed CI; manual: merge all open PRs with green checks (dry-run mode available) |
+| `auto-release.yml` | push to `main`; manual `workflow_dispatch` | auto-detect version → tag → build APK → publish release (dry-run + custom version input available) |
+| `security.yml` | every Monday 08:00 UTC | `dependency-audit`, `secret-scan` |
 
 **Auto-merge is gated on CI, not on branch protection.** The repo has no branch protection
 rules requiring status checks, so enabling GitHub auto-merge at PR-open time merges
@@ -400,7 +397,7 @@ The PR's own CI run is the quality signal; trigger `auto-release.yml` manually
 
 ### PR title — conventional commits required
 
-`pr-check.yml` enforces the conventional commits format via `amannn/action-semantic-pull-request@v6`.
+`ci.yml` enforces the conventional commits format via `amannn/action-semantic-pull-request@v6` in the `validate-title` job.
 
 Valid prefixes: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `build`, `perf`
 
