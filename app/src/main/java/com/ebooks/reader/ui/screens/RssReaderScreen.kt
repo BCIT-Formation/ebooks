@@ -11,6 +11,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,15 +27,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ebooks.reader.R
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.RssArticle
+import com.ebooks.reader.data.dict.DictionaryClient
 import com.ebooks.reader.data.repository.RssRepository
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingSettings
 import com.ebooks.reader.ui.components.DrawingToolbar
 import com.ebooks.reader.ui.components.TooltipIconButton
+import com.ebooks.reader.ui.components.rememberTtsSpeaker
+import com.ebooks.reader.util.htmlToPlainText
 import com.ebooks.reader.util.renderAnnotationsToBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONTokener
 import java.io.File
 import java.io.FileOutputStream
 
@@ -60,6 +66,10 @@ fun RssReaderScreen(
     var drawingSettings by remember { mutableStateOf(DrawingSettings()) }
     var annotations by remember { mutableStateOf<List<Annotation>>(emptyList()) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var dictWord by remember { mutableStateOf<String?>(null) }
+    var dictDefinition by remember { mutableStateOf<String?>(null) }
+    var isDictLoading by remember { mutableStateOf(false) }
+    val ttsSpeaker = rememberTtsSpeaker()
 
     LaunchedEffect(articleId) {
         withContext(Dispatchers.IO) {
@@ -71,6 +81,30 @@ fun RssReaderScreen(
                 repository.markRead(articleId)
             }
             isLoading = false
+        }
+    }
+
+    val defineSelection: () -> Unit = defineSelection@{
+        val webView = webViewRef.value ?: return@defineSelection
+        webView.evaluateJavascript("window.getSelection().toString()") { value ->
+            val selection = runCatching { JSONTokener(value).nextValue() as? String }.getOrNull().orEmpty()
+            val word = selection.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
+                .replace(Regex("[^\\p{L}''-]"), "")
+            if (word.isNotBlank()) {
+                dictWord = word
+                isDictLoading = true
+                scope.launch {
+                    val def = withContext(Dispatchers.IO) {
+                        runCatching {
+                            DictionaryClient().lookup(word)
+                        }.getOrNull()
+                    }
+                    dictDefinition = def
+                    isDictLoading = false
+                }
+            } else {
+                scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.dict_select_word)) }
+            }
         }
     }
 
@@ -126,6 +160,17 @@ fun RssReaderScreen(
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
                 actions = {
+                    TooltipIconButton(Icons.Default.Translate, stringResource(R.string.dict_define), defineSelection)
+                    TooltipIconButton(
+                        Icons.Default.VolumeUp,
+                        stringResource(R.string.read_aloud),
+                        {
+                            if (article != null) {
+                                val plainText = htmlToPlainText(article.contentHtml)
+                                ttsSpeaker.toggle(plainText)
+                            }
+                        }
+                    )
                     TooltipIconButton(Icons.Default.Share, stringResource(R.string.share_book), shareArticle)
                     TooltipIconButton(Icons.Default.Edit, stringResource(R.string.draw_annotations), { isDrawingMode = !isDrawingMode })
                     if (article?.link != null) {
@@ -183,6 +228,12 @@ fun RssReaderScreen(
                                     repository.addArticleAnnotation(articleId, annotation)
                                     annotations = repository.getArticleAnnotations(articleId)
                                 }
+                            },
+                            onAnnotationDeleted = { annotation ->
+                                scope.launch {
+                                    repository.deleteAnnotation(annotation.id)
+                                    annotations = repository.getArticleAnnotations(articleId)
+                                }
                             }
                         )
                     }
@@ -214,6 +265,29 @@ fun RssReaderScreen(
                 }
             }
         }
+    }
+
+    if (dictWord != null) {
+        AlertDialog(
+            onDismissRequest = { dictWord = null; dictDefinition = null },
+            title = { Text(dictWord ?: "") },
+            text = {
+                if (isDictLoading) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (dictDefinition != null) {
+                    Text(dictDefinition ?: "", modifier = Modifier.fillMaxWidth())
+                } else {
+                    Text(stringResource(R.string.dict_not_found), modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { dictWord = null; dictDefinition = null }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
     }
 }
 
