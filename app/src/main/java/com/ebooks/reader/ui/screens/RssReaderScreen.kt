@@ -6,6 +6,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -19,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -28,6 +31,7 @@ import com.ebooks.reader.R
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.RssArticle
 import com.ebooks.reader.data.dict.DictionaryClient
+import com.ebooks.reader.data.dict.WordDefinition
 import com.ebooks.reader.data.repository.RssRepository
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingSettings
@@ -67,7 +71,7 @@ fun RssReaderScreen(
     var annotations by remember { mutableStateOf<List<Annotation>>(emptyList()) }
     val snackbarHostState = remember { SnackbarHostState() }
     var dictWord by remember { mutableStateOf<String?>(null) }
-    var dictDefinition by remember { mutableStateOf<String?>(null) }
+    var dictDefinition by remember { mutableStateOf<WordDefinition?>(null) }
     var isDictLoading by remember { mutableStateOf(false) }
     val ttsSpeaker = rememberTtsSpeaker()
 
@@ -165,8 +169,9 @@ fun RssReaderScreen(
                         Icons.Default.VolumeUp,
                         stringResource(R.string.read_aloud),
                         {
-                            if (article != null) {
-                                val plainText = htmlToPlainText(article.contentHtml)
+                            val currentArticle = article
+                            if (currentArticle != null) {
+                                val plainText = htmlToPlainText(currentArticle.contentHtml)
                                 ttsSpeaker.toggle(plainText)
                             }
                         }
@@ -277,7 +282,18 @@ fun RssReaderScreen(
                         CircularProgressIndicator()
                     }
                 } else if (dictDefinition != null) {
-                    Text(dictDefinition ?: "", modifier = Modifier.fillMaxWidth())
+                    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                        val def = dictDefinition
+                        if (def != null && def.phonetic != null) {
+                            Text("/${def.phonetic}/", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 8.dp))
+                        }
+                        def?.meanings?.forEach { meaning ->
+                            Text("${meaning.partOfSpeech}:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+                            meaning.definitions.forEach { defText ->
+                                Text("• $defText", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 8.dp, bottom = 4.dp))
+                            }
+                        }
+                    }
                 } else {
                     Text(stringResource(R.string.dict_not_found), modifier = Modifier.fillMaxWidth())
                 }
