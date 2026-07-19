@@ -20,10 +20,18 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.Filter
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +46,8 @@ import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.viewmodel.RssViewModel
 
 enum class ArticleSortOrder { NEWEST, OLDEST, UNREAD_FIRST }
+enum class ArticleViewMode { LIST, GRID, SHELF_3D }
+enum class ArticleFilter { ALL, UNREAD, FAVORITES }
 data class UndoAction(val articleId: String, val actionType: String, val previousValue: Boolean)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,8 +62,12 @@ fun RssFeedArticlesScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var showMenu by remember { mutableStateOf(false) }
+    var showFilterMenu by remember { mutableStateOf(false) }
+    var showViewModeMenu by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var sortOrder by remember { mutableStateOf(ArticleSortOrder.NEWEST) }
+    var viewMode by remember { mutableStateOf(ArticleViewMode.LIST) }
+    var filter by remember { mutableStateOf(ArticleFilter.ALL) }
     var lastUndoAction by remember { mutableStateOf<UndoAction?>(null) }
     var showSearchBar by remember { mutableStateOf(false) }
 
@@ -66,11 +80,18 @@ fun RssFeedArticlesScreen(
     val feed = uiState.feeds.firstOrNull { it.id == feedId }
     val allArticles = uiState.articles.filter { it.feedId == feedId }
 
+    // Apply filter by status (all, unread, favorites)
+    val filteredByStatus = when (filter) {
+        ArticleFilter.ALL -> allArticles
+        ArticleFilter.UNREAD -> allArticles.filter { !it.isRead }
+        ArticleFilter.FAVORITES -> allArticles.filter { it.isFavorite }
+    }
+
     // Filter articles by search query
     val filteredArticles = if (searchQuery.isBlank()) {
-        allArticles
+        filteredByStatus
     } else {
-        allArticles.filter { article ->
+        filteredByStatus.filter { article ->
             article.title.contains(searchQuery, ignoreCase = true) ||
             article.summary?.contains(searchQuery, ignoreCase = true) == true
         }
@@ -155,6 +176,49 @@ fun RssFeedArticlesScreen(
                     actions = {
                         TooltipIconButton(Icons.Default.Search, stringResource(R.string.rss_search_articles), { showSearchBar = true })
                         Box {
+                            TooltipIconButton(Icons.Default.Filter, stringResource(R.string.filter), { showFilterMenu = true })
+                            DropdownMenu(expanded = showFilterMenu, onDismissRequest = { showFilterMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("All") },
+                                    onClick = { showFilterMenu = false; filter = ArticleFilter.ALL }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Unread") },
+                                    onClick = { showFilterMenu = false; filter = ArticleFilter.UNREAD }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Favorites") },
+                                    onClick = { showFilterMenu = false; filter = ArticleFilter.FAVORITES }
+                                )
+                            }
+                        }
+                        Box {
+                            IconButton(onClick = { showViewModeMenu = true }) {
+                                Icon(when(viewMode) {
+                                    ArticleViewMode.LIST -> Icons.Default.ViewList
+                                    ArticleViewMode.GRID -> Icons.Default.GridView
+                                    ArticleViewMode.SHELF_3D -> Icons.Default.ViewAgenda
+                                }, "View mode")
+                            }
+                            DropdownMenu(expanded = showViewModeMenu, onDismissRequest = { showViewModeMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("List") },
+                                    leadingIcon = { Icon(Icons.Default.ViewList, null) },
+                                    onClick = { showViewModeMenu = false; viewMode = ArticleViewMode.LIST }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Grid") },
+                                    leadingIcon = { Icon(Icons.Default.GridView, null) },
+                                    onClick = { showViewModeMenu = false; viewMode = ArticleViewMode.GRID }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Shelf") },
+                                    leadingIcon = { Icon(Icons.Default.ViewAgenda, null) },
+                                    onClick = { showViewModeMenu = false; viewMode = ArticleViewMode.SHELF_3D }
+                                )
+                            }
+                        }
+                        Box {
                             TooltipIconButton(Icons.Default.MoreVert, stringResource(R.string.settings), { showMenu = true })
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
@@ -200,26 +264,62 @@ fun RssFeedArticlesScreen(
                     }
                     Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(sortedArticles, key = { it.id }) { article ->
-                        ArticleRow(
-                            article = article,
-                            feedTitle = feed?.title.orEmpty(),
-                            isSelectionMode = uiState.isSelectionMode,
-                            isSelected = article.id in uiState.selectedArticleIds,
-                            onToggleSelection = { viewModel.toggleArticleSelection(article.id) },
-                            onToggleFavorite = {
-                                lastUndoAction = UndoAction(article.id, "favorite", article.isFavorite)
-                                viewModel.toggleFavorite(article.id)
-                            },
-                            onToggleRead = {
-                                lastUndoAction = UndoAction(article.id, "read", article.isRead)
-                                viewModel.toggleRead(article.id)
-                            },
-                            onLongPress = { viewModel.setSelectionMode(true); viewModel.toggleArticleSelection(article.id) },
-                            onOpenArticle = { if (!uiState.isSelectionMode) onOpenArticle(article.id) else viewModel.toggleArticleSelection(article.id) }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                else -> when (viewMode) {
+                    ArticleViewMode.LIST -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(sortedArticles, key = { it.id }) { article ->
+                            ArticleRow(
+                                article = article,
+                                feedTitle = feed?.title.orEmpty(),
+                                isSelectionMode = uiState.isSelectionMode,
+                                isSelected = article.id in uiState.selectedArticleIds,
+                                onToggleSelection = { viewModel.toggleArticleSelection(article.id) },
+                                onToggleFavorite = {
+                                    lastUndoAction = UndoAction(article.id, "favorite", article.isFavorite)
+                                    viewModel.toggleFavorite(article.id)
+                                },
+                                onToggleRead = {
+                                    lastUndoAction = UndoAction(article.id, "read", article.isRead)
+                                    viewModel.toggleRead(article.id)
+                                },
+                                onLongPress = { viewModel.setSelectionMode(true); viewModel.toggleArticleSelection(article.id) },
+                                onOpenArticle = { if (!uiState.isSelectionMode) onOpenArticle(article.id) else viewModel.toggleArticleSelection(article.id) }
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
+                    ArticleViewMode.GRID -> LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(sortedArticles, key = { it.id }) { article ->
+                            ArticleCard(
+                                article = article,
+                                isSelectionMode = uiState.isSelectionMode,
+                                isSelected = article.id in uiState.selectedArticleIds,
+                                onToggleSelection = { viewModel.toggleArticleSelection(article.id) },
+                                onOpenArticle = { if (!uiState.isSelectionMode) onOpenArticle(article.id) else viewModel.toggleArticleSelection(article.id) }
+                            )
+                        }
+                    }
+                    ArticleViewMode.SHELF_3D -> LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(sortedArticles, key = { it.id }) { article ->
+                            ArticleShelfItem(
+                                article = article,
+                                isSelectionMode = uiState.isSelectionMode,
+                                isSelected = article.id in uiState.selectedArticleIds,
+                                onToggleSelection = { viewModel.toggleArticleSelection(article.id) },
+                                onOpenArticle = { if (!uiState.isSelectionMode) onOpenArticle(article.id) else viewModel.toggleArticleSelection(article.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -243,6 +343,145 @@ fun RssFeedArticlesScreen(
                 }
             }
             lastUndoAction = null
+        }
+    }
+}
+
+@Composable
+fun ArticleCard(
+    article: RssArticle,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    onToggleSelection: () -> Unit,
+    onOpenArticle: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpenArticle)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { onToggleSelection() }
+                )
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        article.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = if (article.isRead) FontWeight.Normal else FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (isSelectionMode) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = { onToggleSelection() },
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else if (article.isFavorite) {
+                        Icon(
+                            Icons.Filled.Star,
+                            null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                val dateFormatter = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+                val date = if (article.publishedAt > 0) dateFormatter.format(Date(article.publishedAt)) else ""
+                Text(
+                    date,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ArticleShelfItem(
+    article: RssArticle,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    onToggleSelection: () -> Unit,
+    onOpenArticle: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .height(180.dp)
+            .clickable(onClick = onOpenArticle)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { onToggleSelection() }
+                )
+            }
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    rotationZ = -8f + (if (isSelected) 0f else 0f)
+                    shadowElevation = 8f
+                },
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        article.title,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (article.isRead) FontWeight.Normal else FontWeight.Bold,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    if (article.isFavorite) {
+                        Icon(
+                            Icons.Filled.Star,
+                            null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+        if (isSelectionMode && isSelected) {
+            Icon(
+                Icons.Default.Check,
+                null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+            )
         }
     }
 }

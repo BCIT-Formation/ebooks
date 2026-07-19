@@ -190,6 +190,13 @@ fun ReaderScreen(
         }
     }
 
+    // Restore scroll position when navigating to a bookmark
+    LaunchedEffect(Unit) {
+        viewModel.scrollToPosition.collect { position ->
+            webViewRef.value?.evaluateJavascript("window.scrollTo(0, $position)", null)
+        }
+    }
+
     // In-page search: sync query to WebView's native find API
     LaunchedEffect(uiState.searchQuery, uiState.isSearchVisible) {
         val webView = webViewRef.value ?: return@LaunchedEffect

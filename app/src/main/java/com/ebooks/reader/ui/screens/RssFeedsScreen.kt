@@ -3,16 +3,24 @@ package com.ebooks.reader.ui.screens
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,7 +46,10 @@ fun RssFeedsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var showViewModeMenu by remember { mutableStateOf(false) }
     var feedToDelete by remember { mutableStateOf<RssFeed?>(null) }
+    var viewMode by remember { mutableStateOf(ArticleViewMode.LIST) }
+    var sortByUnread by remember { mutableStateOf(false) }
 
     val opmlImport = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let(viewModel::importOpml)
@@ -62,8 +73,39 @@ fun RssFeedsScreen(
                     TooltipIconButton(Icons.Default.Refresh, stringResource(R.string.rss_refresh), { viewModel.refresh() })
                     TooltipIconButton(Icons.Default.Add, stringResource(R.string.rss_add_feed), { showAddDialog = true })
                     Box {
+                        IconButton(onClick = { showViewModeMenu = true }) {
+                            Icon(when(viewMode) {
+                                ArticleViewMode.LIST -> Icons.Default.ViewList
+                                ArticleViewMode.GRID -> Icons.Default.GridView
+                                ArticleViewMode.SHELF_3D -> Icons.Default.ViewAgenda
+                            }, "View mode")
+                        }
+                        DropdownMenu(expanded = showViewModeMenu, onDismissRequest = { showViewModeMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("List") },
+                                leadingIcon = { Icon(Icons.Default.ViewList, null) },
+                                onClick = { showViewModeMenu = false; viewMode = ArticleViewMode.LIST }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Grid") },
+                                leadingIcon = { Icon(Icons.Default.GridView, null) },
+                                onClick = { showViewModeMenu = false; viewMode = ArticleViewMode.GRID }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Shelf") },
+                                leadingIcon = { Icon(Icons.Default.ViewAgenda, null) },
+                                onClick = { showViewModeMenu = false; viewMode = ArticleViewMode.SHELF_3D }
+                            )
+                        }
+                    }
+                    Box {
                         TooltipIconButton(Icons.Default.MoreVert, stringResource(R.string.settings), { showMenu = true })
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Sort by unread count") },
+                                onClick = { showMenu = false; sortByUnread = !sortByUnread }
+                            )
+                            Divider()
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.rss_import_opml)) },
                                 onClick = { showMenu = false; opmlImport.launch(arrayOf("*/*")) }
@@ -88,18 +130,59 @@ fun RssFeedsScreen(
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             if (uiState.isBusy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 
+            val sortedFeeds = if (sortByUnread) {
+                uiState.feeds.sortedByDescending { feed ->
+                    uiState.articles.count { it.feedId == feed.id && !it.isRead }
+                }
+            } else {
+                uiState.feeds
+            }
+
             when {
-                uiState.feeds.isEmpty() -> EmptyRss(onAdd = { showAddDialog = true })
-                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(uiState.feeds, key = { it.id }) { feed ->
-                        FeedListItem(
-                            feed = feed,
-                            articleCount = uiState.articles.count { it.feedId == feed.id },
-                            unreadCount = uiState.articles.count { it.feedId == feed.id && !it.isRead },
-                            onClick = { onOpenFeed(feed.id) },
-                            onDeleteRequest = { feedToDelete = it }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                sortedFeeds.isEmpty() -> EmptyRss(onAdd = { showAddDialog = true })
+                else -> when (viewMode) {
+                    ArticleViewMode.LIST -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(sortedFeeds, key = { it.id }) { feed ->
+                            FeedListItem(
+                                feed = feed,
+                                articleCount = uiState.articles.count { it.feedId == feed.id },
+                                unreadCount = uiState.articles.count { it.feedId == feed.id && !it.isRead },
+                                onClick = { onOpenFeed(feed.id) },
+                                onDeleteRequest = { feedToDelete = it }
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
+                    ArticleViewMode.GRID -> LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(sortedFeeds, key = { it.id }) { feed ->
+                            FeedCard(
+                                feed = feed,
+                                unreadCount = uiState.articles.count { it.feedId == feed.id && !it.isRead },
+                                onClick = { onOpenFeed(feed.id) },
+                                onDeleteRequest = { feedToDelete = it }
+                            )
+                        }
+                    }
+                    ArticleViewMode.SHELF_3D -> LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(sortedFeeds, key = { it.id }) { feed ->
+                            FeedShelfItem(
+                                feed = feed,
+                                unreadCount = uiState.articles.count { it.feedId == feed.id && !it.isRead },
+                                onClick = { onOpenFeed(feed.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -162,6 +245,103 @@ private fun FeedListItem(
             .clickable(onClick = onClick)
             .padding(horizontal = 0.dp, vertical = 8.dp)
     )
+}
+
+@Composable
+private fun FeedCard(
+    feed: RssFeed,
+    unreadCount: Int,
+    onClick: () -> Unit,
+    onDeleteRequest: (RssFeed) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    feed.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { onDeleteRequest(feed) }, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Delete, stringResource(R.string.rss_delete_feed), modifier = Modifier.size(18.dp))
+                }
+            }
+            if (unreadCount > 0) {
+                Badge(modifier = Modifier.align(Alignment.Start)) {
+                    Text("$unreadCount unread")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeedShelfItem(
+    feed: RssFeed,
+    unreadCount: Int,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .height(160.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    rotationZ = -12f
+                    shadowElevation = 8f
+                },
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        feed.title,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    if (unreadCount > 0) {
+                        Badge {
+                            Text(unreadCount.toString())
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

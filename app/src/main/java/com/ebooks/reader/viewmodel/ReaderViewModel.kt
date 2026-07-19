@@ -109,6 +109,10 @@ class ReaderViewModel(
     // object on every scroll event (which can fire hundreds of times per second).
     private val scrollEvents = MutableSharedFlow<Int>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
+    // Target scroll position to restore (e.g., when navigating to a bookmark)
+    private val _scrollToPosition = MutableSharedFlow<Int>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val scrollToPosition: SharedFlow<Int> = _scrollToPosition.asSharedFlow()
+
     init {
         if (bookId.isNotBlank()) {
             loadBook()
@@ -392,10 +396,20 @@ class ReaderViewModel(
     }
 
     fun navigateToBookmark(bookmark: Bookmark) {
-        if (bookmark.chapterIndex != _uiState.value.currentChapterIndex) {
-            loadChapter(bookmark.chapterIndex)
+        val currentState = _uiState.value
+        if (bookmark.chapterIndex != currentState.currentChapterIndex) {
+            viewModelScope.launch {
+                loadChapter(bookmark.chapterIndex)
+                delay(300)  // Wait for chapter to load
+                _scrollToPosition.emit(bookmark.position)
+                persistProgress(bookmark.position)
+            }
+        } else {
+            viewModelScope.launch {
+                _scrollToPosition.emit(bookmark.position)
+                persistProgress(bookmark.position)
+            }
         }
-        // Scroll position handled by WebView
     }
 
     // ── Highlights (a bookmark that carries selected text + colour + note) ──────
