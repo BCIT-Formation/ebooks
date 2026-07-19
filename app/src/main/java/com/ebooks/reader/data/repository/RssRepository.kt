@@ -179,6 +179,9 @@ class RssRepository(context: Context) {
     suspend fun clearArticleAnnotations(articleId: String) =
         withContext(Dispatchers.IO) { bookDao.deletePageAnnotations(annotationKey(articleId), pageId) }
 
+    suspend fun deleteAnnotation(id: String) =
+        withContext(Dispatchers.IO) { bookDao.softDeleteAnnotation(id) }
+
     // ── Sharing RSS Articles ────────────────────────────────────────────────────
 
     data class ShareArticleBundle(
