@@ -261,6 +261,29 @@
     <string name="rss_opml_imported">%1$s flux importé(s)</string>
     <string name="rss_opml_exported">Flux exportés</string>
     <string name="rss_delete_feed_message">Se désabonner de « %1$s » et supprimer ses articles ?</string>
+    <string name="rss_select_all">Tout sélectionner</string>
+    <string name="rss_mark_as_read">Marquer comme lu</string>
+    <string name="rss_mark_as_unread">Marquer comme non lu</string>
+    <string name="rss_deselect_all">Tout désélectionner</string>
+    <string name="rss_favorite">Favori</string>
+    <string name="rss_unfavorite">Retirer des favoris</string>
+    <string name="rss_articles_selected">%1$d sélectionné(s)</string>
+    <string name="rss_articles">articles</string>
+    <string name="rss_unread">non lu</string>
+    <string name="rss_search_articles">Rechercher des articles…</string>
+    <string name="rss_no_results">Aucun résultat</string>
+    <string name="rss_sort_newest">Plus récents</string>
+    <string name="rss_sort_oldest">Plus anciens</string>
+    <string name="rss_sort_unread_first">Non lus en premier</string>
+    <string name="rss_select_multiple">Sélection multiple</string>
+    <string name="rss_marked_favorite">Ajouté aux favoris</string>
+    <string name="rss_marked_read">Marqué comme lu</string>
+
+    <!-- App Theme Mode (light/dark/system) -->
+    <string name="theme_system">Système</string>
+    <string name="theme_setting">Thème de l\'application</string>
+    <string name="theme_light_mode">Mode clair (jour)</string>
+    <string name="theme_dark_mode">Mode sombre (nuit)</string>
 
     <!-- Widget -->
     <string name="widget_label">Lecture en cours</string>
