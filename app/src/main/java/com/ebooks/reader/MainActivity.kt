@@ -1,5 +1,7 @@
 package com.ebooks.reader
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -16,6 +18,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +71,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Opening a book from a file manager / share sheet ("Open with EbookReader") delivers
+        // it here as an ACTION_VIEW intent; only honour it on a fresh launch, not on a
+        // config-change recreate, otherwise a rotation would re-trigger the import/navigate.
+        val viewIntentUri: Uri? = if (savedInstanceState == null && intent?.action == Intent.ACTION_VIEW) {
+            intent?.data
+        } else null
+
         // Auto-import default RSS feeds and download popular Gutenberg books on first install
         lifecycleScope.launch {
             val firstRunManager = FirstRunManager.getInstance(this@MainActivity)
@@ -105,6 +115,28 @@ class MainActivity : ComponentActivity() {
                     val backStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = backStackEntry?.destination?.route
                     val showTabs = currentRoute == "library" || currentRoute == "rss_feeds"
+
+                    var pendingViewUri by remember { mutableStateOf(viewIntentUri) }
+                    LaunchedEffect(pendingViewUri) {
+                        val uri = pendingViewUri ?: return@LaunchedEffect
+                        pendingViewUri = null
+                        val repository = BookRepository(context)
+                        val book = when (val result = repository.importBook(uri)) {
+                            is BookRepository.ImportResult.Success -> result.book
+                            is BookRepository.ImportResult.AlreadyExists -> result.book
+                            else -> null
+                        }
+                        if (book != null) {
+                            val route = when (book.fileType) {
+                                "pdf" -> "pdf_reader/${book.id}"
+                                "txt" -> "txt_reader/${book.id}"
+                                "fb2" -> "fb2_reader/${book.id}"
+                                "cbz" -> "cbz_reader/${book.id}"
+                                else -> "reader/${book.id}"
+                            }
+                            navController.navigate(route)
+                        }
+                    }
 
                     Scaffold(
                         bottomBar = {

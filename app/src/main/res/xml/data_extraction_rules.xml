@@ -2,12 +2,14 @@
 <data-extraction-rules>
     <cloud-backup>
         <include domain="file" path="covers/" />
+        <include domain="sharedpref" path="." />
         <!-- Keep Keystore-encrypted WebDAV credentials on-device only. -->
         <exclude domain="sharedpref" path="sync_prefs.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="file" path="covers/" />
         <include domain="database" path="ebook_reader.db" />
+        <include domain="sharedpref" path="." />
         <exclude domain="sharedpref" path="sync_prefs.xml" />
     </device-transfer>
 </data-extraction-rules>

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <include domain="file" path="covers/" />
+    <include domain="database" path="." />
+    <!-- WAL/SHM are transient SQLite sidecar files; restoring them without the
+         exact matching main db file risks a corrupt database. -->
     <exclude domain="database" path="ebook_reader.db-wal" />
     <exclude domain="database" path="ebook_reader.db-shm" />
+    <include domain="sharedpref" path="." />
     <!-- WebDAV credentials: the AES-GCM key lives in the Android Keystore and is
          never backed up, so backing up the ciphertext is both useless and an
          unnecessary exposure. Keep sync secrets on-device only. -->
