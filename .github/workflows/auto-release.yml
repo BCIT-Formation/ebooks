@@ -40,7 +40,7 @@ permissions:
 jobs:
   release:
     name: Tag → Build APK → Publish Release
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     env:
       SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
