@@ -40,7 +40,7 @@ permissions:
 jobs:
   merge-green-prs-auto:
     name: Merge PRs with green CI (automatic)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Merge open PRs whose head commit passed CI
@@ -60,7 +60,7 @@ jobs:
 
   merge-all-prs-manual:
     name: Auto-merge all open PRs (manual)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Enable auto-merge on all non-draft PRs with green checks
