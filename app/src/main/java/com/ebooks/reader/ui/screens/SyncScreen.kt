@@ -38,6 +38,8 @@ import com.ebooks.reader.viewmodel.SyncViewModel
  *    (ADR-008); plain FTP stays banned.
  *  - SFTP: same operations over SSH (ADR-009), password auth with
  *    trust-on-first-use host-key pinning.
+ *  - SMB: same operations against Windows / NAS / macOS network shares
+ *    (ADR-010); SMB2+ only, the legacy SMB1 dialect is never negotiated.
  */
 /** Renders a short, pre-numbered list of instructions under a card title. */
 @Composable
@@ -441,6 +443,108 @@ fun SyncScreen(
                                         CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                                     } else {
                                         IconButton(onClick = { viewModel.downloadSftpBook(file) }) {
+                                            Icon(Icons.Default.Download, stringResource(R.string.opds_download))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── SMB (ADR-010) ─────────────────────────────────────────────────
+            Card {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        stringResource(R.string.sync_smb_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    NumberedSteps(
+                        listOf(
+                            stringResource(R.string.sync_smb_step1),
+                            stringResource(R.string.sync_smb_step2),
+                            stringResource(R.string.sync_smb_step3)
+                        )
+                    )
+                    OutlinedTextField(
+                        value = uiState.smbUrl,
+                        onValueChange = viewModel::setSmbUrl,
+                        label = { Text(stringResource(R.string.sync_webdav_url)) },
+                        placeholder = { Text("smb://server/share/…") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uiState.smbUser,
+                            onValueChange = viewModel::setSmbUser,
+                            label = { Text(stringResource(R.string.sync_webdav_user)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = uiState.smbPassword,
+                            onValueChange = viewModel::setSmbPassword,
+                            label = { Text(stringResource(R.string.sync_webdav_password)) },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Button(
+                        onClick = { viewModel.connectSmb() },
+                        enabled = !uiState.isBusy && uiState.smbUrl.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Link, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.sync_connect))
+                    }
+                    if (uiState.isSmbConnected) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { viewModel.uploadProgressToSmb() },
+                                enabled = !uiState.isBusy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.CloudUpload, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.sync_export))
+                            }
+                            OutlinedButton(
+                                onClick = { viewModel.downloadProgressFromSmb() },
+                                enabled = !uiState.isBusy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.sync_import))
+                            }
+                        }
+                        if (uiState.smbFiles.isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.sync_books_on_server),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            uiState.smbFiles.forEach { file ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        file.name,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    if (uiState.downloadingSmbName == file.name) {
+                                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        IconButton(onClick = { viewModel.downloadSmbBook(file) }) {
                                             Icon(Icons.Default.Download, stringResource(R.string.opds_download))
                                         }
                                     }

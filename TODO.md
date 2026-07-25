@@ -69,7 +69,8 @@ Approved by the repository owner; each needs a library or credential decision fi
       browse/download/progress-sync card as WebDAV/FTPS
 - [ ] SFTP key-based auth: needs private-key import + management UI (ADR-009
       ships password auth only)
-- [ ] SMB/Windows network shares (e.g. `jcifs-ng`); AFP has no maintained Java client —
+- [x] SMB/Windows network shares: `jcifs-ng`, SMB2/3 only (ADR-010); browse/download
+      books and sync progress from the Sync screen. AFP has no maintained Java client —
       macOS shares are reachable over SMB
 - [ ] Native Google Drive / OneDrive API sync — requires the owner to register OAuth
       client IDs (Google Cloud Console / Azure AD); the SAF cloud-folder sync already

@@ -15,12 +15,15 @@ import com.ebooks.reader.data.sync.SftpClient
 import com.ebooks.reader.data.sync.SftpFile
 import com.ebooks.reader.data.sync.SftpHostKeyStore
 import com.ebooks.reader.data.sync.ShareCredentials
+import com.ebooks.reader.data.sync.SmbClient
+import com.ebooks.reader.data.sync.SmbEntry
 import com.ebooks.reader.data.sync.SyncCredentialStore
 import com.ebooks.reader.data.sync.WebDavClient
 import com.ebooks.reader.data.sync.WebDavFile
 import com.ebooks.reader.data.sync.parseFtpsUrl
 import com.ebooks.reader.data.sync.parseProgressSnapshot
 import com.ebooks.reader.data.sync.parseSftpUrl
+import com.ebooks.reader.data.sync.parseSmbUrl
 import com.ebooks.reader.data.sync.toJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,10 +59,17 @@ data class SyncUiState(
     val sftpPassword: String = "",
     val sftpFiles: List<SftpFile> = emptyList(),
     val isSftpConnected: Boolean = false,
+    // SMB (ADR-010)
+    val smbUrl: String = "",
+    val smbUser: String = "",
+    val smbPassword: String = "",
+    val smbFiles: List<SmbEntry> = emptyList(),
+    val isSmbConnected: Boolean = false,
     val isBusy: Boolean = false,
     val downloadingHref: String? = null,
     val downloadingFtpsName: String? = null,
     val downloadingSftpName: String? = null,
+    val downloadingSmbName: String? = null,
     /** One-shot snackbar message. */
     val message: String? = null
 )
@@ -76,6 +86,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         val saved = credentialStore.load()
         val savedFtps = credentialStore.loadFtps()
         val savedSftp = credentialStore.loadSftp()
+        val savedSmb = credentialStore.loadSmb()
         _uiState.update {
             it.copy(
                 cloudFolderUri = credentialStore.loadCloudFolder(),
@@ -87,7 +98,10 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 ftpsPassword = savedFtps?.password.orEmpty(),
                 sftpUrl = savedSftp?.url.orEmpty(),
                 sftpUser = savedSftp?.username.orEmpty(),
-                sftpPassword = savedSftp?.password.orEmpty()
+                sftpPassword = savedSftp?.password.orEmpty(),
+                smbUrl = savedSmb?.url.orEmpty(),
+                smbUser = savedSmb?.username.orEmpty(),
+                smbPassword = savedSmb?.password.orEmpty()
             )
         }
     }
@@ -101,6 +115,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     fun setSftpUrl(value: String) = _uiState.update { it.copy(sftpUrl = value) }
     fun setSftpUser(value: String) = _uiState.update { it.copy(sftpUser = value) }
     fun setSftpPassword(value: String) = _uiState.update { it.copy(sftpPassword = value) }
+    fun setSmbUrl(value: String) = _uiState.update { it.copy(smbUrl = value) }
+    fun setSmbUser(value: String) = _uiState.update { it.copy(smbUser = value) }
+    fun setSmbPassword(value: String) = _uiState.update { it.copy(smbPassword = value) }
     fun consumeMessage() = _uiState.update { it.copy(message = null) }
 
     // ── Cloud folder sync (SAF — works with Google Drive / OneDrive providers) ──
@@ -332,6 +349,59 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         applySnapshotJson(json)
     }
 
+    // ── SMB (ADR-010) ─────────────────────────────────────────────────────────
+
+    fun connectSmb() = runBusy {
+        val client = smbClient() ?: return@runBusy
+        credentialStore.saveSmb(
+            ShareCredentials(
+                url = _uiState.value.smbUrl.trim(),
+                username = _uiState.value.smbUser.trim(),
+                password = _uiState.value.smbPassword
+            )
+        )
+        val files = client.listFiles()
+            .filter { !it.isDirectory && it.name.substringAfterLast(".").lowercase() in BOOK_EXTENSIONS }
+        _uiState.update { it.copy(smbFiles = files, isSmbConnected = true) }
+        message(R.string.sync_connected, files.size.toString())
+    }
+
+    fun downloadSmbBook(file: SmbEntry) {
+        if (_uiState.value.downloadingSmbName != null) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(downloadingSmbName = file.name) }
+            val text = withContext(Dispatchers.IO) {
+                runCatching {
+                    val client = requireNotNull(smbClient())
+                    val downloaded = client.download(file.name, File(context().filesDir, "downloads"))
+                    when (val result = repository.importBook(Uri.fromFile(downloaded))) {
+                        is BookRepository.ImportResult.Success ->
+                            context().getString(R.string.opds_download_success, result.book.title)
+                        is BookRepository.ImportResult.AlreadyExists ->
+                            context().getString(R.string.already_in_library, result.book.title)
+                        else -> context().getString(R.string.opds_import_failed, file.name)
+                    }
+                }.getOrElse { failure ->
+                    context().getString(R.string.sync_failed, failure.message.orEmpty())
+                }
+            }
+            _uiState.update { it.copy(downloadingSmbName = null, message = text) }
+        }
+    }
+
+    fun uploadProgressToSmb() = runBusy {
+        val client = smbClient() ?: return@runBusy
+        client.uploadText(PROGRESS_SNAPSHOT_FILE_NAME, repository.buildProgressSnapshot().toJson())
+        message(R.string.sync_export_done)
+    }
+
+    fun downloadProgressFromSmb() = runBusy {
+        val client = smbClient() ?: return@runBusy
+        val json = client.downloadText(PROGRESS_SNAPSHOT_FILE_NAME)
+            ?: return@runBusy message(R.string.sync_no_snapshot)
+        applySnapshotJson(json)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private suspend fun applySnapshotJson(json: String) {
@@ -380,6 +450,17 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
             return null
         }
         return SftpClient(url, state.sftpUser.trim(), state.sftpPassword, sftpHostKeyStore)
+    }
+
+    /** Builds an SMB client from the current form fields; posts an error message when invalid. */
+    private fun smbClient(): SmbClient? {
+        val state = _uiState.value
+        val url = state.smbUrl.trim()
+        if (parseSmbUrl(url) == null) {
+            message(R.string.sync_smb_required)
+            return null
+        }
+        return SmbClient(url, state.smbUser.trim(), state.smbPassword)
     }
 
     /** Runs [block] on IO with the busy flag set; surfaces IOExceptions as messages. */

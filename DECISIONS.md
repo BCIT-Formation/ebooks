@@ -251,3 +251,51 @@ behind the same Sync-screen card pattern. Scope decisions:
 - ✅ Credentials reuse the Keystore-encrypted store (new `sftp_*` keys)
 - ⚠️ Noticeably larger release APK (BouncyCastle); acceptable per owner-approved backlog
 - ⚠️ SSH key auth and SMB remain open TODO items
+  (SMB resolved by ADR-010)
+
+---
+
+## ADR-010: jcifs-ng for SMB Network Shares
+
+**Status:** Accepted
+**Date:** 2026-07-25
+
+### Context
+The last share protocol approved by ADR-006 without a library decision. SMB is
+what Windows, most NAS boxes, and macOS (since AFP's deprecation) actually
+serve on home networks. Java SMB client options:
+
+- **`jcifs-ng`** (`eu.agno3.jcifs:jcifs-ng`): actively maintained fork of the
+  original jCIFS with SMB2/SMB3 support. Transitive deps: `slf4j-api` and
+  BouncyCastle `bcprov` — both already in the dependency graph via junrar
+  (ADR-007) and sshj (ADR-009), so the marginal APK cost is small.
+  The servlet integration is a `provided` dependency and never ships.
+- **`smbj`**: SMB2/3-only alternative, but also depends on BouncyCastle and has
+  a smaller community; no dependency advantage.
+- Original `jcifs`: unmaintained, SMB1-only — insecure, rejected outright.
+
+### Decision
+Implement **SMB with jcifs-ng** (`data/sync/SmbClient.kt`) mirroring the
+`WebDavClient`/`FtpsClient` contract (list, download book, up/download the
+progress snapshot). Security posture:
+
+- **SMB1 is disabled** (`jcifs.smb.client.minVersion=SMB202`, max `SMB311`),
+  so connections negotiate SMB2/3 or fail — never the legacy dialect.
+- `smb://host[:port]/share[/path]` enforced at the URL boundary; the share
+  segment is required. As with FTPS, the platform cleartext ban does not cover
+  raw sockets — the dialect floor plus SMB2/3 signing/encryption negotiation is
+  what upholds ADR-006 rule 2 here.
+- Credentials reuse the Keystore-encrypted `SyncCredentialStore` (`smb_*`
+  keys); `DOMAIN\user` names are supported and a blank username maps to
+  anonymous/guest access.
+- Downloads are size-capped via `data/net/DownloadLimits.kt` like every other
+  network path.
+
+### Consequences
+- ✅ Windows / NAS / macOS shares get the same browse / download / progress-sync
+  features as WebDAV, FTPS and SFTP — the ADR-006 network-share backlog is done
+- ✅ SMB1 can never be negotiated, silently or otherwise
+- ✅ No new heavyweight transitive dependencies (BouncyCastle and slf4j-api were
+  already present via ADR-009 / ADR-007)
+- ⚠️ jcifs-ng's kerberos/JGSS and servlet code paths are unused on Android and
+  are suppressed with `-dontwarn` rules in `proguard-rules.pro`

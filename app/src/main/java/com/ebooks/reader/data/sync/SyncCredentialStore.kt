@@ -18,7 +18,7 @@ private const val GCM_TAG_BITS = 128
 data class ShareCredentials(val url: String, val username: String, val password: String)
 
 /**
- * Stores network-share credentials (WebDAV, FTPS, SFTP) with the password
+ * Stores network-share credentials (WebDAV, FTPS, SFTP, SMB) with the password
  * encrypted by an AES-GCM key held in the Android Keystore (ADR-006:
  * credentials encrypted at rest). No external crypto library needed.
  */
@@ -43,6 +43,9 @@ class SyncCredentialStore(context: Context) {
     fun rememberHostFingerprint(host: String, port: Int, fingerprint: String) {
         prefs.edit().putString("sftp_hostkey_${host}_$port", fingerprint).apply()
     }
+
+    fun saveSmb(credentials: ShareCredentials) = saveServer("smb", credentials)
+    fun loadSmb(): ShareCredentials? = loadServer("smb")
 
     private fun saveServer(prefix: String, credentials: ShareCredentials) {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")

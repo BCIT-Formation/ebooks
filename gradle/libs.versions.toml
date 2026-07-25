@@ -21,6 +21,7 @@ composeUiTest = "1.11.4"
 junrar = "7.5.5"
 commonsNet = "3.11.1"
 sshj = "0.40.0"
+jcifsNg = "2.1.10"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +45,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 junrar = { group = "com.github.junrar", name = "junrar", version.ref = "junrar" }
 commons-net = { group = "commons-net", name = "commons-net", version.ref = "commonsNet" }
 sshj = { group = "com.hierynomus", name = "sshj", version.ref = "sshj" }
+jcifs-ng = { group = "eu.agno3.jcifs", name = "jcifs-ng", version.ref = "jcifsNg" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4", version.ref = "composeUiTest" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest", version.ref = "composeUiTest" }
 
