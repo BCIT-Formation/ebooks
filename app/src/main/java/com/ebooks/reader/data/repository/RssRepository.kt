@@ -20,6 +20,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+/**
+ * Single source of truth for RSS feeds and articles: wraps the RSS DAO,
+ * [RssClient] fetches, and OPML import/export (the regexes below convert
+ * stored article HTML to Markdown for the share feature). Article
+ * annotations reuse the shared `annotations` table under an
+ * `rss:<articleId>` key; that table has no FK to RSS rows, so deletions
+ * here must clean up their own annotations.
+ */
 class RssRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context)

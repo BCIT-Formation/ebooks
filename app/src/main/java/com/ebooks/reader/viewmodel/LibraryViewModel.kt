@@ -44,6 +44,12 @@ sealed class ImportState {
     data class Error(val message: String) : ImportState()
 }
 
+/**
+ * Drives [com.ebooks.reader.ui.screens.LibraryScreen]: combines the sorted
+ * book flow with filter/search/view-mode state into a single [LibraryUiState],
+ * and maps [BookRepository.ImportResult] to [ImportState] so the UI can show
+ * a specific message per import outcome rather than a generic error.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModel(application: Application) : AndroidViewModel(application) {
 

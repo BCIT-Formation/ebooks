@@ -57,6 +57,13 @@ import com.ebooks.reader.data.settings.FirstRunManager
 import com.ebooks.reader.data.repository.BookRepository
 import com.ebooks.reader.data.repository.RssRepository
 
+/**
+ * The app's single activity (ADR-004: Compose only, no XML layouts).
+ * Hosts the NavHost with plain-string routes and the two-tab bottom bar
+ * (Library / RSS); navigation stays co-located here by convention rather
+ * than in a separate graph file. Also handles ACTION_VIEW deep links so
+ * "Open with EbookReader" imports and opens the picked file.
+ */
 class MainActivity : ComponentActivity() {
 
     override fun onStop() {
