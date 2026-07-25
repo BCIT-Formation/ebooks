@@ -8,11 +8,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ebooks.reader.R
 import com.ebooks.reader.data.repository.BookRepository
+import com.ebooks.reader.data.sync.FtpsClient
+import com.ebooks.reader.data.sync.FtpsFile
 import com.ebooks.reader.data.sync.PROGRESS_SNAPSHOT_FILE_NAME
+import com.ebooks.reader.data.sync.ShareCredentials
 import com.ebooks.reader.data.sync.SyncCredentialStore
 import com.ebooks.reader.data.sync.WebDavClient
-import com.ebooks.reader.data.sync.WebDavCredentials
 import com.ebooks.reader.data.sync.WebDavFile
+import com.ebooks.reader.data.sync.parseFtpsUrl
 import com.ebooks.reader.data.sync.parseProgressSnapshot
 import com.ebooks.reader.data.sync.toJson
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +28,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
-/** File extensions the WebDAV browser offers to download. */
-private val BOOK_EXTENSIONS = setOf("epub", "pdf", "txt", "fb2", "cbz")
+/** File extensions the WebDAV / FTPS browsers offer to download. */
+private val BOOK_EXTENSIONS = setOf("epub", "pdf", "txt", "fb2", "cbz", "cbr")
 
 data class SyncUiState(
     // Cloud folder (Google Drive / OneDrive via SAF)
@@ -37,8 +40,15 @@ data class SyncUiState(
     val webdavPassword: String = "",
     val webdavFiles: List<WebDavFile> = emptyList(),
     val isConnected: Boolean = false,
+    // FTPS (ADR-008)
+    val ftpsUrl: String = "",
+    val ftpsUser: String = "",
+    val ftpsPassword: String = "",
+    val ftpsFiles: List<FtpsFile> = emptyList(),
+    val isFtpsConnected: Boolean = false,
     val isBusy: Boolean = false,
     val downloadingHref: String? = null,
+    val downloadingFtpsName: String? = null,
     /** One-shot snackbar message. */
     val message: String? = null
 )
@@ -53,12 +63,16 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         val saved = credentialStore.load()
+        val savedFtps = credentialStore.loadFtps()
         _uiState.update {
             it.copy(
                 cloudFolderUri = credentialStore.loadCloudFolder(),
                 webdavUrl = saved?.url.orEmpty(),
                 webdavUser = saved?.username.orEmpty(),
-                webdavPassword = saved?.password.orEmpty()
+                webdavPassword = saved?.password.orEmpty(),
+                ftpsUrl = savedFtps?.url.orEmpty(),
+                ftpsUser = savedFtps?.username.orEmpty(),
+                ftpsPassword = savedFtps?.password.orEmpty()
             )
         }
     }
@@ -66,6 +80,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     fun setWebdavUrl(value: String) = _uiState.update { it.copy(webdavUrl = value) }
     fun setWebdavUser(value: String) = _uiState.update { it.copy(webdavUser = value) }
     fun setWebdavPassword(value: String) = _uiState.update { it.copy(webdavPassword = value) }
+    fun setFtpsUrl(value: String) = _uiState.update { it.copy(ftpsUrl = value) }
+    fun setFtpsUser(value: String) = _uiState.update { it.copy(ftpsUser = value) }
+    fun setFtpsPassword(value: String) = _uiState.update { it.copy(ftpsPassword = value) }
     fun consumeMessage() = _uiState.update { it.copy(message = null) }
 
     // ── Cloud folder sync (SAF — works with Google Drive / OneDrive providers) ──
@@ -143,7 +160,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     fun connectWebdav() = runBusy {
         val client = webdavClient() ?: return@runBusy
         credentialStore.save(
-            WebDavCredentials(
+            ShareCredentials(
                 url = _uiState.value.webdavUrl.trim(),
                 username = _uiState.value.webdavUser.trim(),
                 password = _uiState.value.webdavPassword
@@ -191,6 +208,59 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         applySnapshotJson(json)
     }
 
+    // ── FTPS (ADR-008) ────────────────────────────────────────────────────────
+
+    fun connectFtps() = runBusy {
+        val client = ftpsClient() ?: return@runBusy
+        credentialStore.saveFtps(
+            ShareCredentials(
+                url = _uiState.value.ftpsUrl.trim(),
+                username = _uiState.value.ftpsUser.trim(),
+                password = _uiState.value.ftpsPassword
+            )
+        )
+        val files = client.listFiles()
+            .filter { !it.isDirectory && it.name.substringAfterLast(".").lowercase() in BOOK_EXTENSIONS }
+        _uiState.update { it.copy(ftpsFiles = files, isFtpsConnected = true) }
+        message(R.string.sync_connected, files.size.toString())
+    }
+
+    fun downloadFtpsBook(file: FtpsFile) {
+        if (_uiState.value.downloadingFtpsName != null) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(downloadingFtpsName = file.name) }
+            val text = withContext(Dispatchers.IO) {
+                runCatching {
+                    val client = requireNotNull(ftpsClient())
+                    val downloaded = client.download(file.name, File(context().filesDir, "downloads"))
+                    when (val result = repository.importBook(Uri.fromFile(downloaded))) {
+                        is BookRepository.ImportResult.Success ->
+                            context().getString(R.string.opds_download_success, result.book.title)
+                        is BookRepository.ImportResult.AlreadyExists ->
+                            context().getString(R.string.already_in_library, result.book.title)
+                        else -> context().getString(R.string.opds_import_failed, file.name)
+                    }
+                }.getOrElse { failure ->
+                    context().getString(R.string.sync_failed, failure.message.orEmpty())
+                }
+            }
+            _uiState.update { it.copy(downloadingFtpsName = null, message = text) }
+        }
+    }
+
+    fun uploadProgressToFtps() = runBusy {
+        val client = ftpsClient() ?: return@runBusy
+        client.uploadText(PROGRESS_SNAPSHOT_FILE_NAME, repository.buildProgressSnapshot().toJson())
+        message(R.string.sync_export_done)
+    }
+
+    fun downloadProgressFromFtps() = runBusy {
+        val client = ftpsClient() ?: return@runBusy
+        val json = client.downloadText(PROGRESS_SNAPSHOT_FILE_NAME)
+            ?: return@runBusy message(R.string.sync_no_snapshot)
+        applySnapshotJson(json)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private suspend fun applySnapshotJson(json: String) {
@@ -208,6 +278,17 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
             return null
         }
         return WebDavClient(url, state.webdavUser.trim(), state.webdavPassword)
+    }
+
+    /** Builds an FTPS client from the current form fields; posts an error message when invalid. */
+    private fun ftpsClient(): FtpsClient? {
+        val state = _uiState.value
+        val url = state.ftpsUrl.trim()
+        if (parseFtpsUrl(url) == null) {
+            message(R.string.sync_ftps_required)
+            return null
+        }
+        return FtpsClient(url, state.ftpsUser.trim(), state.ftpsPassword)
     }
 
     /** Runs [block] on IO with the busy flag set; surfaces IOExceptions as messages. */

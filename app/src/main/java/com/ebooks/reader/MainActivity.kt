@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
                                 "pdf" -> "pdf_reader/${book.id}"
                                 "txt" -> "txt_reader/${book.id}"
                                 "fb2" -> "fb2_reader/${book.id}"
-                                "cbz" -> "cbz_reader/${book.id}"
+                                "cbz", "cbr" -> "cbz_reader/${book.id}"
                                 else -> "reader/${book.id}"
                             }
                             navController.navigate(route)
@@ -185,7 +185,7 @@ class MainActivity : ComponentActivity() {
                                         "pdf" -> navController.navigate("pdf_reader/$bookId")
                                         "txt" -> navController.navigate("txt_reader/$bookId")
                                         "fb2" -> navController.navigate("fb2_reader/$bookId")
-                                        "cbz" -> navController.navigate("cbz_reader/$bookId")
+                                        "cbz", "cbr" -> navController.navigate("cbz_reader/$bookId")
                                         else  -> navController.navigate("reader/$bookId")
                                     }
                                 },

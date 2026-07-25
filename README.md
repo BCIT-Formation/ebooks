@@ -4,7 +4,7 @@
 [![Security](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml/badge.svg)](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A clean, fast, and fully-featured Android ebook reader built with **Jetpack Compose** and **Material Design 3**. Supports EPUB, PDF, TXT, FB2 and CBZ files. Local-first: your data stays on your device, with optional user-initiated sync (cloud folder / WebDAV) and OPDS catalog downloads — no accounts, no telemetry.
+A clean, fast, and fully-featured Android ebook reader built with **Jetpack Compose** and **Material Design 3**. Supports EPUB, PDF, TXT, FB2, CBZ and CBR files. Local-first: your data stays on your device, with optional user-initiated sync (cloud folder / WebDAV) and OPDS catalog downloads — no accounts, no telemetry.
 
 ---
 
@@ -16,7 +16,7 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | PDF reading | ✅ |
 | TXT reading | ✅ |
 | FB2 reading | ✅ |
-| CBZ comics | ✅ |
+| CBZ &amp; CBR comics (with pinch-to-zoom) | ✅ |
 | Library with sort & filter | ✅ |
 | Grid / List / 3D Bookshelf view | ✅ |
 | Display modes: LCD / AMOLED / E-reader (high contrast) | ✅ |
@@ -40,6 +40,7 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | OPDS catalogs (browse & download books) | ✅ |
 | Progress sync via cloud folder (Google Drive / OneDrive) | ✅ |
 | WebDAV (browse books + progress sync) | ✅ |
+| FTPS (browse books + progress sync, explicit TLS) | ✅ |
 | RSS reader tab (OPML import/export, offline articles) | ✅ |
 | Annotate & share RSS articles (same drawing tools) | ✅ |
 | Material You dynamic colors | ✅ |
@@ -264,5 +265,5 @@ See [TODO.md](TODO.md) for the full prioritized backlog, organized by:
 
 - 🔴 **Critical** — essential fixes and features (all done)
 - 🟠 **Important** — next-tier enhancements (all done)
-- 🟢 **Nice to Have** — polish and advanced features (remaining: full localization coverage, CBR + pinch-to-zoom)
-- 🌐 **Network follow-ups** — FTPS / SFTP / SMB shares and native Drive/OneDrive API sync (see ADR-006)
+- 🟢 **Nice to Have** — polish and advanced features (all done)
+- 🌐 **Network follow-ups** — SFTP / SMB shares and native Drive/OneDrive API sync (see ADR-006/ADR-008)

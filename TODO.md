@@ -33,8 +33,9 @@
 - [x] Comic book (CBZ) reader — basic vertical page reader (`CbzReaderScreen`)
 - [x] Pinch-to-zoom for the comic reader (two-finger scale/pan per page; single-finger scroll
       is left untouched so it doesn't fight the page list)
-- [ ] CBR support (needs a RAR-decoding library decision — see network follow-ups below for
-      the shape of that kind of call)
+- [x] CBR support: junrar RAR decoder (ADR-007); CBZ/CBR share the `ComicArchive`
+      page extractor and the same comic reader (RAR5/encrypted archives are not
+      supported by junrar and surface as a reader error)
 - [x] Night light / warm color filter overlay
 - [x] Widget for current reading book (Glance app widget showing the most recently read book)
 - [x] Android 13+ per-app language preferences (`localeConfig` + en/fr resources for the main screens)
@@ -62,8 +63,11 @@
 
 Approved by the repository owner; each needs a library or credential decision first:
 
-- [ ] FTPS support (e.g. Apache `commons-net`) — plain FTP stays banned (cleartext)
-- [ ] SFTP support (e.g. `sshj`) — SSH key or password auth
+- [x] FTPS support: Apache `commons-net`, explicit TLS + `PROT P` (ADR-008);
+      browse/download books and sync progress from the Sync screen, plain FTP
+      (`ftp://`) is rejected at the URL boundary
+- [ ] SFTP support (e.g. `sshj`) — SSH key or password auth; deferred in ADR-008
+      (sshj drags in BouncyCastle, a multi-MB APK impact, and needs key-management UI)
 - [ ] SMB/Windows network shares (e.g. `jcifs-ng`); AFP has no maintained Java client —
       macOS shares are reachable over SMB
 - [ ] Native Google Drive / OneDrive API sync — requires the owner to register OAuth

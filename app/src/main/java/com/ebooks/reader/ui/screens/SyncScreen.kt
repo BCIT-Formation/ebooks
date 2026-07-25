@@ -34,6 +34,8 @@ import com.ebooks.reader.viewmodel.SyncViewModel
  *    exported/imported as a JSON snapshot there.
  *  - WebDAV — browse and download books from a server, and exchange the same
  *    progress snapshot over HTTPS with Basic auth.
+ *  - FTPS: same browse/download/sync operations over explicit-TLS FTP
+ *    (ADR-008); plain FTP stays banned.
  */
 /** Renders a short, pre-numbered list of instructions under a card title. */
 @Composable
@@ -233,6 +235,108 @@ fun SyncScreen(
                                         CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                                     } else {
                                         IconButton(onClick = { viewModel.downloadWebdavBook(file) }) {
+                                            Icon(Icons.Default.Download, stringResource(R.string.opds_download))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── FTPS (ADR-008) ────────────────────────────────────────────────
+            Card {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        stringResource(R.string.sync_ftps_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    NumberedSteps(
+                        listOf(
+                            stringResource(R.string.sync_ftps_step1),
+                            stringResource(R.string.sync_ftps_step2),
+                            stringResource(R.string.sync_ftps_step3)
+                        )
+                    )
+                    OutlinedTextField(
+                        value = uiState.ftpsUrl,
+                        onValueChange = viewModel::setFtpsUrl,
+                        label = { Text(stringResource(R.string.sync_webdav_url)) },
+                        placeholder = { Text("ftps://…") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uiState.ftpsUser,
+                            onValueChange = viewModel::setFtpsUser,
+                            label = { Text(stringResource(R.string.sync_webdav_user)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = uiState.ftpsPassword,
+                            onValueChange = viewModel::setFtpsPassword,
+                            label = { Text(stringResource(R.string.sync_webdav_password)) },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Button(
+                        onClick = { viewModel.connectFtps() },
+                        enabled = !uiState.isBusy && uiState.ftpsUrl.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Link, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.sync_connect))
+                    }
+                    if (uiState.isFtpsConnected) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { viewModel.uploadProgressToFtps() },
+                                enabled = !uiState.isBusy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.CloudUpload, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.sync_export))
+                            }
+                            OutlinedButton(
+                                onClick = { viewModel.downloadProgressFromFtps() },
+                                enabled = !uiState.isBusy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.sync_import))
+                            }
+                        }
+                        if (uiState.ftpsFiles.isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.sync_books_on_server),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            uiState.ftpsFiles.forEach { file ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        file.name,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    if (uiState.downloadingFtpsName == file.name) {
+                                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        IconButton(onClick = { viewModel.downloadFtpsBook(file) }) {
                                             Icon(Icons.Default.Download, stringResource(R.string.opds_download))
                                         }
                                     }

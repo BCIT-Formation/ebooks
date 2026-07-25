@@ -10,7 +10,8 @@ private val DOWNLOADABLE_TYPES = listOf(
     "application/pdf",
     "text/plain",
     "application/x-fictionbook+xml",
-    "application/x-cbz"
+    "application/x-cbz",
+    "application/x-cbr"
 )
 
 /**

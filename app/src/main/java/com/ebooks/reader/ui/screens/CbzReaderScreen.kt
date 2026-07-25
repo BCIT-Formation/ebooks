@@ -33,24 +33,24 @@ import coil.compose.AsyncImage
 import com.ebooks.reader.R
 import com.ebooks.reader.data.db.AppDatabase
 import com.ebooks.reader.data.db.entities.Annotation
+import com.ebooks.reader.data.db.entities.FileType
 import com.ebooks.reader.data.db.entities.ReadingProgress
+import com.ebooks.reader.data.parser.ComicArchive
 import com.ebooks.reader.ui.components.DrawingCanvas
 import com.ebooks.reader.ui.components.DrawingSettings
 import com.ebooks.reader.ui.components.DrawingToolbar
-import java.io.BufferedInputStream
 import java.io.File
-import java.io.FileOutputStream
-import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * A screen that renders CBZ (comic book archive) files. A CBZ is a ZIP of
- * images; pages are extracted once to the cache directory (pure-Kotlin
- * [ZipInputStream], per ADR-001) and displayed full-width in reading order.
- * Reading progress (last visible page) is persisted like the PDF reader.
+ * A screen that renders CBZ and CBR (comic book archive) files. Pages are
+ * extracted once to the cache directory ([ComicArchive]: ZipInputStream for
+ * CBZ per ADR-001, junrar for CBR per ADR-007) and displayed full-width in
+ * reading order. Reading progress (last visible page) is persisted like the
+ * PDF reader.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +78,7 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
             }
             title = book.title
             try {
-                val extracted = extractCbzPages(context, bookId, Uri.parse(book.filePath))
+                val extracted = extractComicPages(context, bookId, Uri.parse(book.filePath), book.fileType)
                 if (extracted.isEmpty()) {
                     error = context.getString(R.string.cbz_no_images)
                 } else {
@@ -296,45 +296,23 @@ fun CbzReaderScreen(bookId: String, onBack: () -> Unit) {
     }
 }
 
-private val CBZ_IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "gif", "webp", "bmp")
-
 /**
- * Extracts all image entries of the CBZ at [uri] into `cache/cbz/<bookId>/`,
- * named `page_00000.ext` … in reading order (zip entry names sorted
- * case-insensitively, the de-facto CBZ page order). Returns the cached files
- * directly when the book was already extracted.
+ * Extracts all image entries of the comic archive at [uri] into
+ * `cache/cbz/<bookId>/` via [ComicArchive] (ZIP for CBZ, RAR for CBR).
+ * Returns the cached files directly when the book was already extracted.
  */
-private fun extractCbzPages(context: Context, bookId: String, uri: Uri): List<File> {
+private fun extractComicPages(context: Context, bookId: String, uri: Uri, fileType: String): List<File> {
     val dir = File(context.cacheDir, "cbz/$bookId")
     dir.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.let {
         if (it.isNotEmpty()) return it
     }
-    dir.mkdirs()
 
-    // Single pass: extract to temp names (zip order), remember the entry name.
-    val extracted = mutableListOf<Pair<String, File>>()
     context.contentResolver.openInputStream(uri)?.use { input ->
-        ZipInputStream(BufferedInputStream(input)).use { zip ->
-            var entry = zip.nextEntry
-            while (entry != null) {
-                val ext = entry.name.substringAfterLast('.', "").lowercase()
-                if (!entry.isDirectory && ext in CBZ_IMAGE_EXTENSIONS) {
-                    // Indexed file name: avoids zip path traversal and name clashes.
-                    val tmp = File(dir, "tmp_%05d.%s".format(extracted.size, ext))
-                    FileOutputStream(tmp).use { out -> zip.copyTo(out) }
-                    extracted += entry.name to tmp
-                }
-                zip.closeEntry()
-                entry = zip.nextEntry
-            }
+        return if (fileType == FileType.CBR.extension) {
+            ComicArchive.extractCbrPages(input, dir)
+        } else {
+            ComicArchive.extractCbzPages(input, dir)
         }
     }
-
-    // Rename into reading order so the cached listing above stays consistent.
-    return extracted
-        .sortedBy { (name, _) -> name.lowercase() }
-        .mapIndexed { index, (_, tmp) ->
-            val target = File(dir, "page_%05d.%s".format(index, tmp.extension))
-            if (tmp.renameTo(target)) target else tmp
-        }
+    return emptyList()
 }

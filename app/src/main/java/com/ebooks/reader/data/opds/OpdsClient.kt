@@ -23,8 +23,10 @@ private val MIME_TO_EXTENSION = mapOf(
     "application/x-fictionbook" to "fb2",
     "application/x-cbz" to "cbz",
     "application/vnd.comicbook+zip" to "cbz",
+    "application/x-cbr" to "cbr",
+    "application/vnd.comicbook-rar" to "cbr",
 )
-private val SUPPORTED_EXTENSIONS = setOf("epub", "pdf", "txt", "fb2", "cbz")
+private val SUPPORTED_EXTENSIONS = setOf("epub", "pdf", "txt", "fb2", "cbz", "cbr")
 
 /**
  * Minimal HTTPS client for OPDS catalogs (ADR-006: user-initiated only,

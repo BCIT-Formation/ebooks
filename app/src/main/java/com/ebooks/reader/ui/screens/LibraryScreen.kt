@@ -443,7 +443,7 @@ private fun FilterSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(selected = currentFileType == null, onClick = { onFileTypeSelected(null) }, label = { Text(stringResource(R.string.all)) })
-                listOf("epub", "pdf", "txt", "fb2", "cbz").forEach { type ->
+                listOf("epub", "pdf", "txt", "fb2", "cbz", "cbr").forEach { type ->
                     FilterChip(selected = currentFileType == type, onClick = { onFileTypeSelected(type) }, label = { Text(type.uppercase()) })
                 }
             }
