@@ -109,6 +109,10 @@
     <string name="dict_not_found">No definition found. Try Translate or Search.</string>
     <string name="dict_translate">Translate</string>
     <string name="dict_search">Search</string>
+    <string name="dict_offline_count">Offline dictionaries: %1$d</string>
+    <string name="dict_add_offline">Add dictionary…</string>
+    <string name="dict_import_success">Dictionary “%1$s” installed</string>
+    <string name="dict_import_failed">Could not import dictionary. Pick the .ifo, .idx and .dict files of a StarDict dictionary together.</string>
     <string name="more">More</string>
     <string name="hl_highlight">Highlight selection</string>
     <string name="hl_select_text">Select text in the page first</string>
@@ -172,6 +176,8 @@
     <string name="font">Font</string>
     <string name="add_font">Add font…</string>
     <string name="paragraph_indent">Paragraph Indent</string>
+    <string name="bionic_reading">Bionic Reading</string>
+    <string name="volume_key_page_turn">Volume Keys Turn Pages</string>
     <string name="keep_screen_on">Keep Screen On</string>
     <string name="screen_orientation">Screen Orientation</string>
     <string name="orientation_auto">Auto</string>

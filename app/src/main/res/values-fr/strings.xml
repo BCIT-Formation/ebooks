@@ -109,6 +109,10 @@
     <string name="dict_not_found">Aucune définition trouvée. Essayez Traduire ou Rechercher.</string>
     <string name="dict_translate">Traduire</string>
     <string name="dict_search">Rechercher</string>
+    <string name="dict_offline_count">Dictionnaires hors ligne : %1$d</string>
+    <string name="dict_add_offline">Ajouter un dictionnaire…</string>
+    <string name="dict_import_success">Dictionnaire « %1$s » installé</string>
+    <string name="dict_import_failed">Impossible d\'importer le dictionnaire. Choisissez ensemble les fichiers .ifo, .idx et .dict d\'un dictionnaire StarDict.</string>
     <string name="more">Plus</string>
     <string name="hl_highlight">Surligner la sélection</string>
     <string name="hl_select_text">Sélectionnez d\'abord du texte dans la page</string>
@@ -172,6 +176,8 @@
     <string name="font">Police</string>
     <string name="add_font">Ajouter une police…</string>
     <string name="paragraph_indent">Alinéa de paragraphe</string>
+    <string name="bionic_reading">Lecture bionique</string>
+    <string name="volume_key_page_turn">Touches de volume pour tourner les pages</string>
     <string name="keep_screen_on">Garder l\'écran allumé</string>
     <string name="screen_orientation">Orientation de l\'écran</string>
     <string name="orientation_auto">Auto</string>

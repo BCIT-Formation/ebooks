@@ -55,6 +55,9 @@ app/src/main/java/com/ebooks/reader/
       Opml.kt               # OPML import (parse) + export (serialize) for feed lists
     dict/
       DictionaryClient.kt   # HTTPS word lookup via dictionaryapi.dev (ADR-006, keyless)
+      StarDict.kt           # Pure-Kotlin StarDict (.ifo/.idx/.dict) parser + lookup
+      StarDictManager.kt    # Import (SAF, .gz/.dz inflated) + storage of offline dictionaries
+      DictionaryLookup.kt   # Offline-first lookup: StarDict dictionaries, then DictionaryClient
     backup/
       BackupManager.kt      # Export/restore library (DB + covers) as a .zip via SAF
     parser/
@@ -100,6 +103,8 @@ app/src/main/java/com/ebooks/reader/
       Type.kt
   util/
     HtmlText.kt             # htmlToPlainText — chapter HTML → plain text (TTS/share)
+    BionicReading.kt        # bionicHtml — bolds leading word fragments (Bionic Reading mode)
+    VolumeKeyPager.kt       # Routes volume keys from MainActivity to the reader (E-ink extra)
   viewmodel/
     LibraryViewModel.kt     # SortOrder, ViewMode, LibraryUiState, ImportState sealed class
     ReaderViewModel.kt
@@ -114,6 +119,8 @@ app/src/test/java/com/ebooks/reader/        # JVM unit tests (no emulator)
   HtmlTextTest.kt           # htmlToPlainText (TTS text extraction)
   LibraryViewModelTest.kt   # filtering/sorting logic
   ProgressSyncMergeTest.kt  # newer-wins sync merge (selectNewerEntries)
+  BionicReadingTest.kt      # bionicHtml word-bolding converter
+  StarDictTest.kt           # StarDict .ifo/.idx parsing + record rendering
 
 app/src/androidTest/java/com/ebooks/reader/ # Instrumented tests (emulator/device)
   data/db/AppDatabaseTest.kt          # Room + MIGRATION_1_2

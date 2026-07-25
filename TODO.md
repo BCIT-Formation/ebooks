@@ -49,15 +49,13 @@
 ## ✨ Advanced Features (New)
 
 - [x] Smooth scrolling optimization — `remember`, `key`, `contentType` for LazyColumn/BookshelfView (reduce recompositions) — ready for integration
-- [ ] Offline dictionary (StarDict format) — word lookup on selected text in readers.
-      A parser/repository scaffold existed but was never reachable from any screen and was
-      removed as dead code; re-implementing needs the parser plus real UI integration
-      (the online `DictionaryClient` lookup is what ships today)
-- [ ] Bionic Reading mode (auto-bold word fragments) — a converter existed but was never
-      wired into any reader; removed as dead code, needs reader-settings integration to ship
-- [ ] E-Ink device extras (volume-key pagination, animation disable for Boox/Kobo) — a
-      settings scaffold existed but was never reachable; removed as dead code. The shipping
-      E-ink support is the `DisplayMode.EINK` display profile
+- [x] Offline dictionary (StarDict format) — pure-Kotlin `.ifo`/`.idx`/`.dict(.dz)` parser
+      (`data/dict/StarDict*`), imported from the reader's Define sheet via SAF; lookups are
+      offline-first with the online `DictionaryClient` as fallback (both EPUB and RSS readers)
+- [x] Bionic Reading mode (auto-bold word fragments) — `util/BionicReading.kt` converter
+      (tag/entity-aware), wired into the EPUB reader via a reader-settings toggle
+- [x] E-Ink device extras (volume-key pagination toggle in reader settings; reader control
+      animations are disabled in the `DisplayMode.EINK` display profile)
 
 ## 🌐 Network follow-ups (ADR-006)
 
