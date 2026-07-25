@@ -1,41 +1,43 @@
 version: 2
 updates:
-  # Gradle dependencies
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "gradle"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    # The whole toolchain is mutually pinned to AGP 8.4.2 / compileSdk 34 /
-    # Gradle 8.7 (see gradle/libs.versions.toml and CLAUDE.md). Recent AndroidX
-    # minors require AGP 8.6–9.x + compileSdk 35/36, and Kotlin must move in
-    # lockstep with KSP — even "patch" bumps have broken the build (Kotlin
-    # 2.0.0 → 2.0.21 with a stale KSP, core-ktx 1.19, lifecycle 2.11, …).
-    # Only allow patch updates; majors/minors need a manual, coordinated bump.
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: "org.jetbrains.kotlin*"
-      - dependency-name: "com.google.devtools.ksp"
-      - dependency-name: "com.android.application"
-      - dependency-name: "gradle"
-
-  # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "ci"
+- package-ecosystem: gradle
+  directory: /
+  schedule:
+    interval: weekly
+    day: monday
+    time: 09:00
+  open-pull-requests-limit: 10
+  labels:
+  - dependencies
+  - gradle
+  commit-message:
+    prefix: chore
+    include: scope
+  ignore:
+  - dependency-name: '*'
+    update-types:
+    - version-update:semver-major
+    - version-update:semver-minor
+  - dependency-name: org.jetbrains.kotlin*
+  - dependency-name: com.google.devtools.ksp
+  - dependency-name: com.android.application
+  - dependency-name: gradle
+  groups:
+    minor-and-patch:
+      update-types:
+      - minor
+      - patch
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly
+    day: monday
+  labels:
+  - dependencies
+  - github-actions
+  commit-message:
+    prefix: ci
+  groups:
+    github-actions:
+      patterns:
+      - '*'
