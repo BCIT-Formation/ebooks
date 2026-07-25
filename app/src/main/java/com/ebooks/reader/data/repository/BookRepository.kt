@@ -33,6 +33,13 @@ import java.util.UUID
 private const val BUNDLED_ALICE_ASSET = "alice_wonderland.epub"
 private const val BUNDLED_ALICE_SENTINEL = "bundled:alice_wonderland"
 
+/**
+ * Single source of truth for the book library: the only layer allowed to talk
+ * to the Room DAO and the format parsers (MVVM + Repository convention).
+ * Import returns a typed [ImportResult] instead of throwing so ViewModels can
+ * map each outcome (duplicate, unsupported, unreadable, parse failure) to a
+ * distinct user-facing message.
+ */
 class BookRepository(private val context: Context) {
 
     private val db = AppDatabase.getInstance(context)

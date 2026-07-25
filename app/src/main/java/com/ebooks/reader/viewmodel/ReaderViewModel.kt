@@ -83,6 +83,15 @@ data class ReaderUiState(
     val chapterError: String? = null
 )
 
+/**
+ * Drives the EPUB reader ([com.ebooks.reader.ui.screens.ReaderScreen]): loads
+ * the book through [BookRepository], holds chapter/settings/bookmark state,
+ * and records the reading session. Progress saves are debounced through a
+ * SharedFlow because WebView scroll events fire far too often to persist
+ * directly. One ViewModel instance lives per opened book (keyed by the nav
+ * route), so `onCleared` is the reliable "book closed" hook used to release
+ * the parser cache and persist the session.
+ */
 class ReaderViewModel(
     application: Application,
     savedStateHandle: SavedStateHandle

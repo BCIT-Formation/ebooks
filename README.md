@@ -43,17 +43,11 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | FTPS (browse books + progress sync, explicit TLS) | ✅ |
 | RSS reader tab (OPML import/export, offline articles) | ✅ |
 | Annotate & share RSS articles (same drawing tools) | ✅ |
-| Material You dynamic colors | ✅ |
+| Material You dynamic colors | ❌ by design (fixed high-contrast schemes, see DECISIONS.md) |
 | Dictionary lookup on selected text (online, dictionaryapi.dev) | ✅ |
 | E-Ink display profile (high-contrast scheme via DisplayMode) | ✅ |
 | Smooth scrolling optimization (LazyColumn, BookshelfView) | ✅ |
 | Offline-first — network only for opt-in sync/catalogs, HTTPS-only, no telemetry | ✅ |
-
----
-
-## Screenshots
-
-> See `WhatsApp Image *.jpeg` files in the repo root for the original design reference.
 
 ---
 
@@ -64,13 +58,17 @@ app/
 └── src/main/java/com/ebooks/reader/
     ├── data/
     │   ├── db/              # Room database, DAO, entities
-    │   ├── parser/          # EPUB parser (zero external deps)
-    │   └── repository/      # BookRepository (single source of truth)
+    │   ├── parser/          # EPUB, FB2 and CBZ/CBR parsers (pure Kotlin, junrar for CBR)
+    │   ├── opds/, rss/      # OPDS catalog + RSS/Atom feed parsers and HTTPS clients
+    │   ├── sync/            # Progress sync: cloud folder (SAF), WebDAV, FTPS
+    │   ├── backup/, dict/   # Library backup/restore (.zip), dictionary lookup
+    │   └── repository/      # BookRepository, RssRepository (single source of truth)
     ├── ui/
-    │   ├── screens/         # LibraryScreen, ReaderScreen
-    │   ├── components/      # BookCard, ChapterPanel, SettingsSheet
-    │   └── theme/           # Material3 theme, colors, typography
-    ├── viewmodel/           # LibraryViewModel, ReaderViewModel
+    │   ├── screens/         # Library, per-format readers, OPDS, RSS, Sync
+    │   ├── components/      # BookCard, ChapterPanel, drawing tools, TTS, SettingsSheet
+    │   └── theme/           # Material3 theme, DisplayMode profiles, typography
+    ├── viewmodel/           # Library, Reader, Opds, Sync, Rss ViewModels
+    ├── widget/              # Glance home-screen widget (currently reading)
     └── MainActivity.kt      # Single-activity, Compose NavHost
 ```
 
@@ -204,7 +202,7 @@ Or open in Android Studio and click **Run**.
 
 ## Usage
 
-1. **Add books** — tap the **+** button, select an EPUB, PDF, or TXT file
+1. **Add books** — tap the **+** button, select an EPUB, PDF, TXT, FB2, CBZ or CBR file
 2. **Open a book** — tap any book cover in the library
 3. **Navigate** — tap the left/right edge to turn chapters, or tap center for controls
 4. **Customize** — tap the **Aa** icon in the reader toolbar to change font, size, and theme

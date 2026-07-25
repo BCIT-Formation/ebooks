@@ -85,7 +85,8 @@ app/src/main/java/com/ebooks/reader/
       LibraryScreen.kt
       OpdsScreen.kt          # OPDS catalog browser (browse feeds, download books)
       SyncScreen.kt          # Sync & backup (cloud folder via SAF + WebDAV)
-      RssScreen.kt           # RSS tab: feeds + article timeline, add feed, OPML import/export
+      RssFeedsScreen.kt      # RSS tab: feed list, add feed, OPML import/export
+      RssFeedArticlesScreen.kt # Article timeline for one feed
       RssReaderScreen.kt     # Offline RSS article reader (WebView) + drawing tools + share
       ReaderScreen.kt        # EPUB reader (WebView)
       PdfReaderScreen.kt     # PDF reader (PdfRenderer)
@@ -281,11 +282,12 @@ Routes are plain strings in `MainActivity.kt`:
 - `"txt_reader/{bookId}"` — `TxtReaderScreen`
 - `"fb2_reader/{bookId}"` — `Fb2ReaderScreen`
 - `"cbz_reader/{bookId}"` — `CbzReaderScreen`
-- `"rss"` — `RssScreen` (second bottom-nav tab)
+- `"rss_feeds"` — `RssFeedsScreen` (second bottom-nav tab)
+- `"rss_articles/{feedId}"` — `RssFeedArticlesScreen`
 - `"rss_reader/{articleId}"` — `RssReaderScreen`
 
 `MainActivity` hosts a two-tab `NavigationBar` (Library / RSS) shown only on the `library`
-and `rss` routes; all reader/opds/sync/rss_reader routes are full-screen.
+and `rss_feeds` routes; all reader/opds/sync/rss article routes are full-screen.
 
 Do not add a navigation graph file. Keep navigation simple and co-located in `MainActivity`.
 
@@ -312,7 +314,7 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
 ## Room database
 
 - **DB name:** `ebook_reader.db`
-- **Version:** 5
+- **Version:** 6
 - **Tables:** `books` (incl. a `tags` column for collections), `reading_progress`, `bookmarks`,
   `reading_sessions`, `annotations`, `rss_feeds`, `rss_articles`
 - `exportSchema = false` — schema JSONs are **not** generated. (Was `true`, but no schemas
@@ -323,7 +325,8 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
   `MIGRATION_3_4` adds the RSS tables (`rss_feeds`, `rss_articles`) and **rebuilds `annotations`
   without its `books` FK** so RSS articles can be annotated (annotation `bookId` holds a book id
   or an `rss:<articleId>` key; owners clean up their own annotations on delete since there is no
-  cascade). `MIGRATION_4_5` adds the `books.tags` column (collections/tags). When you bump the DB
+  cascade). `MIGRATION_4_5` adds the `books.tags` column (collections/tags). `MIGRATION_5_6`
+  adds `rss_articles.isFavorite` (starred articles). When you bump the DB
   version you MUST add a corresponding `Migration` object (and ideally a migration test).
 - `fallbackToDestructiveMigration()` is configured as a *safety net only* so an un-migrated
   schema bump wipes rather than crashes. **Do not rely on it** — always write a real `Migration`.
