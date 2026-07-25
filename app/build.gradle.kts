@@ -12,12 +12,12 @@ ksp {
 
 android {
     namespace = "com.ebooks.reader"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ebooks.reader"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         // Supplied by CI via -PVERSION_CODE / VERSION_NAME env vars; falls back to dev defaults.
         versionCode = (System.getenv("VERSION_CODE") ?: findProperty("VERSION_CODE"))
             ?.toString()?.toIntOrNull() ?: 1

@@ -29,8 +29,8 @@ RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
 # Accept Android licenses and install SDK components
 RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses && \
     ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
-      "platforms;android-34" \
-      "build-tools;34.0.0" \
+      "platforms;android-36" \
+      "build-tools;36.0.0" \
       "platform-tools"
 
 # Copy project
