@@ -11,8 +11,8 @@ TXT, FB2, CBZ. Local-first: all data lives on-device; network access exists only
 user-initiated OPDS catalogs, WebDAV, and cloud-folder progress sync (ADR-006).
 
 - **Min SDK:** 26 (Android 8.0)
-- **Compile SDK:** 34 / **Target SDK:** 34
-- **Language:** Kotlin 2.0.0
+- **Compile SDK:** 36 / **Target SDK:** 36
+- **Language:** Kotlin 2.4.10
 - **UI:** Jetpack Compose (no XML layouts)
 - **Architecture:** MVVM + Repository + Kotlin Flow
 
@@ -122,7 +122,7 @@ gradle/
   libs.versions.toml        # Version catalog — single source for all dependency versions
   wrapper/
     gradle-wrapper.jar      # Committed to repo (required for CI)
-    gradle-wrapper.properties  # gradle-8.7-bin
+    gradle-wrapper.properties  # gradle-8.14.3-bin
 
 scripts/
   build-apk-docker.sh       # Dockerised release APK build (recommended)
@@ -136,7 +136,7 @@ SECURITY.md    # Security policy
 README.md      # User/developer overview
 APK_BUILD.md   # Detailed APK build instructions
 RELEASES.md    # Release process and history
-Dockerfile     # eclipse-temurin:17 + Android SDK 34 build image
+Dockerfile     # eclipse-temurin:17 + Android SDK 36 build image
 setup.sh       # One-shot build+install. BUILD=auto|docker|local (auto-falls back to local Gradle)
 ```
 
@@ -203,10 +203,10 @@ install paths, and need JDK 17+. The APK is copied to `~/.ebooks-apk/`.
 
 ---
 
-Gradle 8.7 is pinned via the wrapper. **Do not upgrade** without updating
+Gradle 8.14.3 is pinned via the wrapper. **Do not upgrade** without updating
 `gradle-wrapper.properties` and verifying AGP compatibility.
 
-Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-installed.
+Docker builds use `eclipse-temurin:17` base image with Android SDK 36 pre-installed.
 
 ---
 
@@ -214,18 +214,18 @@ Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-instal
 
 | Library | Version | Purpose |
 |---------|---------|---------|
-| AGP | 8.4.2 | Android Gradle Plugin |
-| Kotlin | 2.0.0 | Language + compose compiler |
-| KSP | 2.0.0-1.0.22 | Annotation processor for Room |
-| Compose BOM | 2024.08.00 | Compose library versions |
-| Material Icons Extended | 1.6.8 | Extended icon set |
-| Room | 2.6.1 | Local SQLite database |
+| AGP | 8.13.2 | Android Gradle Plugin |
+| Kotlin | 2.4.10 | Language + compose compiler |
+| KSP | 2.3.10 | Annotation processor for Room |
+| Compose BOM | 2026.06.01 | Compose library versions |
+| Material Icons Extended | 1.7.8 | Extended icon set |
+| Room | 2.8.4 | Local SQLite database |
 | Coil | 2.7.0 | Compose-native image loading |
-| Glance | 1.1.0 | Home screen app widget (Compose-style RemoteViews) |
-| Navigation Compose | 2.8.0 | In-app navigation |
-| Coroutines Test | 1.8.1 | Unit test utilities |
-| Compose UI Test | 1.6.8 | Instrumented Compose UI tests |
-| AndroidX JUnit | 1.2.1 | Instrumented test runner |
+| Glance | 1.1.1 | Home screen app widget (Compose-style RemoteViews) |
+| Navigation Compose | 2.9.8 | In-app navigation |
+| Coroutines Test | 1.11.0 | Unit test utilities |
+| Compose UI Test | 1.11.4 | Instrumented Compose UI tests |
+| AndroidX JUnit | 1.3.0 | Instrumented test runner |
 
 **Dependency updates go in `gradle/libs.versions.toml` only.** Never hardcode versions
 in `build.gradle.kts`. Dependabot opens update PRs automatically.

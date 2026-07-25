@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -12,12 +14,12 @@ ksp {
 
 android {
     namespace = "com.ebooks.reader"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ebooks.reader"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         // Supplied by CI via -PVERSION_CODE / VERSION_NAME env vars; falls back to dev defaults.
         versionCode = (System.getenv("VERSION_CODE") ?: findProperty("VERSION_CODE"))
             ?.toString()?.toIntOrNull() ?: 1
@@ -53,10 +55,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -79,6 +77,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
     }
 }
 
