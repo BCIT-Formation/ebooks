@@ -1,4 +1,4 @@
-# CLAUDE.md — EbookReader
+# CLAUDE.md — ReadIt
 
 Guidance for AI assistants working on this repository.
 

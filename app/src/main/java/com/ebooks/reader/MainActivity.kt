@@ -49,7 +49,7 @@ import com.ebooks.reader.ui.screens.SyncScreen
 import com.ebooks.reader.ui.screens.TxtReaderScreen
 import com.ebooks.reader.ui.screens.Fb2ReaderScreen
 import com.ebooks.reader.ui.theme.DisplayMode
-import com.ebooks.reader.ui.theme.EbookReaderTheme
+import com.ebooks.reader.ui.theme.ReadItTheme
 import com.ebooks.reader.widget.CurrentBookWidget
 import com.ebooks.reader.data.settings.ThemeSettings
 import com.ebooks.reader.data.settings.AppTheme
@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Opening a book from a file manager / share sheet ("Open with EbookReader") delivers
+        // Opening a book from a file manager / share sheet ("Open with ReadIt") delivers
         // it here as an ACTION_VIEW intent; only honour it on a fresh launch, not on a
         // config-change recreate, otherwise a rotation would re-trigger the import/navigate.
         val viewIntentUri: Uri? = if (savedInstanceState == null && intent?.action == Intent.ACTION_VIEW) {
@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
             var displayMode by remember { mutableStateOf(DisplayMode.load(context)) }
             val themeSettings = remember { ThemeSettings.getInstance(context) }
             val appTheme by themeSettings.currentTheme.collectAsStateWithLifecycle(initialValue = AppTheme.LIGHT)
-            EbookReaderTheme(displayMode = displayMode, appTheme = appTheme) {
+            ReadItTheme(displayMode = displayMode, appTheme = appTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
                     val backStackEntry by navController.currentBackStackEntryAsState()

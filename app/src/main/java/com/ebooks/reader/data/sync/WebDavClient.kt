@@ -129,7 +129,7 @@ class WebDavClient(
         connection.requestMethod = method
         connection.connectTimeout = CONNECT_TIMEOUT_MS
         connection.readTimeout = READ_TIMEOUT_MS
-        connection.setRequestProperty("User-Agent", "EbookReader")
+        connection.setRequestProperty("User-Agent", "ReadIt")
         if (username.isNotBlank()) {
             val token = Base64.encodeToString("$username:$password".toByteArray(), Base64.NO_WRAP)
             connection.setRequestProperty("Authorization", "Basic $token")

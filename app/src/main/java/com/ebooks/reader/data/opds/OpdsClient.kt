@@ -10,7 +10,7 @@ import java.net.URL
 
 private const val CONNECT_TIMEOUT_MS = 15_000
 private const val READ_TIMEOUT_MS = 30_000
-private const val USER_AGENT = "EbookReader"
+private const val USER_AGENT = "ReadIt"
 private const val ACCEPT_OPDS =
     "application/atom+xml;profile=opds-catalog, application/atom+xml, application/xml, */*"
 

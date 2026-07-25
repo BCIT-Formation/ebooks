@@ -26,7 +26,7 @@ class DictionaryClient {
             connectTimeout = 12_000
             readTimeout = 12_000
             instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "EbookReader")
+            setRequestProperty("User-Agent", "ReadIt")
             setRequestProperty("Accept", "application/json")
         }
         try {

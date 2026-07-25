@@ -40,6 +40,7 @@ import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.ui.components.rememberTtsSpeaker
 import com.ebooks.reader.util.htmlToPlainText
 import com.ebooks.reader.util.renderAnnotationsToBitmap
+import com.ebooks.reader.util.stripTinyImages
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -327,7 +328,7 @@ private fun buildArticleHtml(article: RssArticle): String {
         </style></head><body>
         <h1>${escapeHtml(article.title)}</h1>
         ${if (meta.isNotBlank()) "<div class=\"meta\">${escapeHtml(meta)}</div>" else ""}
-        ${article.contentHtml.ifBlank { escapeHtml(article.summary ?: "") }}
+        ${stripTinyImages(article.contentHtml).ifBlank { escapeHtml(article.summary ?: "") }}
         </body></html>
     """.trimIndent()
 }

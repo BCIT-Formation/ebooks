@@ -80,7 +80,7 @@ private val EinkColorScheme = lightColorScheme(
  * - SYSTEM: follow system dark theme preference (default)
  */
 @Composable
-fun EbookReaderTheme(
+fun ReadItTheme(
     displayMode: DisplayMode = DisplayMode.LCD,
     appTheme: AppTheme = AppTheme.LIGHT,
     content: @Composable () -> Unit

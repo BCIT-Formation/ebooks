@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup.sh — Build & install EbookReader APK (one-shot, no questions)
+# setup.sh — Build & install ReadIt APK (one-shot, no questions)
 #
 # Builds the APK either with Docker (reproducible, no local SDK needed) or with
 # a local Gradle build (no Docker needed). By default it auto-detects what is
@@ -140,7 +140,7 @@ detect_android_sdk() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 build_docker() {
-    echo "🐳 Building EbookReader APK ($VERSION_NAME) with Docker…"
+    echo "🐳 Building ReadIt APK ($VERSION_NAME) with Docker…"
     log_info "Docker build starting (this may take a few minutes)…"
 
     if ! command -v docker &> /dev/null; then
@@ -166,14 +166,14 @@ build_docker() {
         docker build \
             --build-arg VERSION_CODE="$VERSION_CODE" \
             --build-arg VERSION_NAME="$VERSION_NAME" \
-            -t ebook-reader:latest \
+            -t readit:latest \
             -f Dockerfile \
             .
     else
         docker build \
             --build-arg VERSION_CODE="$VERSION_CODE" \
             --build-arg VERSION_NAME="$VERSION_NAME" \
-            -t ebook-reader:latest \
+            -t readit:latest \
             -f Dockerfile \
             . > /dev/null 2>&1
     fi
@@ -182,7 +182,7 @@ build_docker() {
 
     log_info "Extracting APK from Docker container…"
     local temp_container
-    temp_container=$(docker run -d ebook-reader:latest sleep 999)
+    temp_container=$(docker run -d readit:latest sleep 999)
     trap "docker rm -f $temp_container > /dev/null 2>&1" EXIT
 
     if [ "$DEBUG" = "1" ]; then
@@ -202,7 +202,7 @@ build_docker() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 build_local() {
-    echo "🔨 Building EbookReader APK ($VERSION_NAME) with local Gradle…"
+    echo "🔨 Building ReadIt APK ($VERSION_NAME) with local Gradle…"
 
     if ! command -v java &> /dev/null; then
         log_error "Java (JDK 17+) is not installed — required for a local build."
@@ -256,7 +256,7 @@ build_local() {
         exit 1
     fi
 
-    local dest="$OUTPUT_DIR/EbookReader-${VERSION_NAME}-debug.apk"
+    local dest="$OUTPUT_DIR/ReadIt-${VERSION_NAME}-debug.apk"
     cp -f "$built_apk" "$dest"
     log_success "APK built and copied to $dest"
 }

@@ -1,6 +1,6 @@
 # Google Play Store Publication Guide
 
-Complete step-by-step guide to publish EbookReader on Google Play Store and automate releases via GitHub.
+Complete step-by-step guide to publish ReadIt on Google Play Store and automate releases via GitHub.
 
 ---
 
@@ -95,7 +95,7 @@ base64 service-account-key.json | tr -d '\n' | pbcopy
 
 1. **Go to Google Play Console** → **Create app**
 2. **App details:**
-   - Name: `EbookReader`
+   - Name: `ReadIt`
    - Default language: English
    - App or game: **App**
    - Category: **Books & Reference**
@@ -120,7 +120,7 @@ Read EPUB, PDF, TXT, FB2, CBZ. Offline-first. No accounts.
 
 **Full description** (4000 chars):
 ```
-EbookReader is a clean, fast Android ebook reader with full offline support.
+ReadIt is a clean, fast Android ebook reader with full offline support.
 
 Features:
 • Support for EPUB, PDF, TXT, FB2, CBZ formats

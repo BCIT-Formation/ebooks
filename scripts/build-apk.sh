@@ -1,5 +1,5 @@
 #!/bin/bash
-# Multi-method APK builder for EbookReader
+# Multi-method APK builder for ReadIt
 #
 # This script attempts to build the APK using multiple methods:
 # 1. Gradle local build
@@ -46,7 +46,7 @@ mkdir -p "$APK_STORAGE"
 print_header() {
     echo -e "${BLUE}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  EbookReader APK Builder"
+    echo "  ReadIt APK Builder"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "${NC}"
 }
@@ -128,7 +128,7 @@ build_docker() {
     if ! docker build \
         --build-arg VERSION_CODE="$VERSION_CODE" \
         --build-arg VERSION_NAME="$VERSION_NAME" \
-        -t ebook-reader:latest \
+        -t readit:latest \
         -f Dockerfile \
         . 2>&1; then
         log_error "Docker build failed"
@@ -137,7 +137,7 @@ build_docker() {
 
     log_info "Extracting APK from Docker image..."
     local temp_container
-    temp_container=$(docker run -d ebook-reader:latest sleep 999)
+    temp_container=$(docker run -d readit:latest sleep 999)
     trap "docker rm -f $temp_container > /dev/null 2>&1" RETURN
 
     if docker cp "$temp_container":/out/. "$APK_STORAGE/" 2>&1; then
@@ -187,7 +187,7 @@ build_gradle_clean() {
 
 # Copy APK from Gradle output to storage
 copy_apk_from_gradle() {
-    local apk_filename="EbookReader-${VERSION_NAME#v}.apk"
+    local apk_filename="ReadIt-${VERSION_NAME#v}.apk"
     local source_apk
     source_apk=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -1)
 

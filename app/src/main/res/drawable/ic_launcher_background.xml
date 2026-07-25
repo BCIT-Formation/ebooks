@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#1565C0"
-        android:pathData="M0,0h108v108h-108z" />
+    <!-- Radial shading (lighter behind the book, darker at the corners) reads as
+         depth once the adaptive-icon system parallaxes this layer under the foreground. -->
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="44"
+                android:gradientRadius="80"
+                android:startColor="#2E7BD6"
+                android:endColor="#0B3C78" />
+        </aapt:attr>
+    </path>
 </vector>

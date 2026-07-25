@@ -162,8 +162,8 @@ jobs:
           echo "📁 Looking for APK in app/build/outputs/apk/release/"
           ls -lah app/build/outputs/apk/release/ || echo "Directory does not exist!"
           find app/build/outputs/apk/release -name "*.apk" \
-            -exec cp {} "release/EbookReader-${VER}.apk" \;
-          if [ ! -f "release/EbookReader-${VER}.apk" ]; then
+            -exec cp {} "release/ReadIt-${VER}.apk" \;
+          if [ ! -f "release/ReadIt-${VER}.apk" ]; then
             echo "❌ ERROR: APK staging failed"
             exit 1
           fi
@@ -175,7 +175,7 @@ jobs:
         if: steps.version.outputs.new_tag != '' && env.apk_found == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: EbookReader-${{ steps.version.outputs.new_tag }}
+          name: ReadIt-${{ steps.version.outputs.new_tag }}
           path: release/*.apk
           retention-days: 90
 
@@ -185,9 +185,9 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.new_tag }}
-          name: EbookReader ${{ steps.version.outputs.new_tag }}
+          name: ReadIt ${{ steps.version.outputs.new_tag }}
           body: |
-            ## EbookReader ${{ steps.version.outputs.new_tag }}
+            ## ReadIt ${{ steps.version.outputs.new_tag }}
 
             Install on any Android device running **API 26 (Android 8.0)+**.
 

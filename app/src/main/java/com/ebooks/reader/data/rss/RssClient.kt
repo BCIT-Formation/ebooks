@@ -46,7 +46,7 @@ class RssClient {
         connection.connectTimeout = CONNECT_TIMEOUT_MS
         connection.readTimeout = READ_TIMEOUT_MS
         connection.instanceFollowRedirects = true
-        connection.setRequestProperty("User-Agent", "EbookReader")
+        connection.setRequestProperty("User-Agent", "ReadIt")
         connection.setRequestProperty("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
         val code = connection.responseCode
         if (code !in 200..299) {

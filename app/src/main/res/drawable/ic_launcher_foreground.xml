@@ -1,16 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Grounding shadow beneath the book -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M36,28 L72,28 Q76,28 76,32 L76,76 Q76,80 72,80 L36,80 Q32,80 32,76 L32,32 Q32,28 36,28 Z" />
+        android:pathData="M20,90 A34,6 0 1,0 88,90 A34,6 0 1,0 20,90 Z"
+        android:fillColor="#400B3C78" />
+
+    <!-- Left page, curved outer edge, shaded lighter at the outside and darker toward the spine -->
+    <path android:pathData="M54,30 L22,38 Q18,64 24,86 L54,92 Q49,64 54,30 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="22"
+                android:startY="42"
+                android:endX="54"
+                android:endY="61"
+                android:startColor="#FFFFFFFF"
+                android:endColor="#FFD8DEE8" />
+        </aapt:attr>
+    </path>
+
+    <!-- Right page, mirrored -->
+    <path android:pathData="M54,30 L86,38 Q90,64 84,86 L54,92 Q59,64 54,30 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="86"
+                android:startY="42"
+                android:endX="54"
+                android:endY="61"
+                android:startColor="#FFFFFFFF"
+                android:endColor="#FFD8DEE8" />
+        </aapt:attr>
+    </path>
+
+    <!-- Gutter shadow where the two pages meet, giving the spread its fold -->
+    <path android:pathData="M54,30 L51,61 L54,92 L57,61 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
+                android:startY="30"
+                android:endX="54"
+                android:endY="92">
+                <item android:color="#000B3C78" android:offset="0.0" />
+                <item android:color="#663C6EA5" android:offset="0.5" />
+                <item android:color="#000B3C78" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Text lines -->
     <path
-        android:fillColor="#1565C0"
-        android:pathData="M40,40 L68,40 M40,48 L68,48 M40,56 L56,56"
-        android:strokeColor="#1565C0"
-        android:strokeWidth="3"
+        android:pathData="M30,52 L47,54 M30,60 L46,62 M30,68 L43,70"
+        android:strokeColor="#809AA7B4"
+        android:strokeWidth="2"
         android:strokeLineCap="round" />
+    <path
+        android:pathData="M78,52 L61,54 M78,60 L62,62 M78,68 L65,70"
+        android:strokeColor="#809AA7B4"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+
+    <!-- Bookmark ribbon draped over the spine, for a warm brand accent and extra layering -->
+    <path android:pathData="M51,24 L57,24 L57,54 L54,48 L51,54 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
+                android:startY="24"
+                android:endX="54"
+                android:endY="54"
+                android:startColor="#FFC947"
+                android:endColor="#E65100" />
+        </aapt:attr>
+    </path>
 </vector>
