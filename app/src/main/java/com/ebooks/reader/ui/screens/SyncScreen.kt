@@ -36,6 +36,8 @@ import com.ebooks.reader.viewmodel.SyncViewModel
  *    progress snapshot over HTTPS with Basic auth.
  *  - FTPS: same browse/download/sync operations over explicit-TLS FTP
  *    (ADR-008); plain FTP stays banned.
+ *  - SFTP: same operations over SSH (ADR-009), password auth with
+ *    trust-on-first-use host-key pinning.
  */
 /** Renders a short, pre-numbered list of instructions under a card title. */
 @Composable
@@ -337,6 +339,108 @@ fun SyncScreen(
                                         CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                                     } else {
                                         IconButton(onClick = { viewModel.downloadFtpsBook(file) }) {
+                                            Icon(Icons.Default.Download, stringResource(R.string.opds_download))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── SFTP (ADR-009) ────────────────────────────────────────────────
+            Card {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        stringResource(R.string.sync_sftp_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    NumberedSteps(
+                        listOf(
+                            stringResource(R.string.sync_sftp_step1),
+                            stringResource(R.string.sync_sftp_step2),
+                            stringResource(R.string.sync_sftp_step3)
+                        )
+                    )
+                    OutlinedTextField(
+                        value = uiState.sftpUrl,
+                        onValueChange = viewModel::setSftpUrl,
+                        label = { Text(stringResource(R.string.sync_webdav_url)) },
+                        placeholder = { Text("sftp://…") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uiState.sftpUser,
+                            onValueChange = viewModel::setSftpUser,
+                            label = { Text(stringResource(R.string.sync_webdav_user)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = uiState.sftpPassword,
+                            onValueChange = viewModel::setSftpPassword,
+                            label = { Text(stringResource(R.string.sync_webdav_password)) },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Button(
+                        onClick = { viewModel.connectSftp() },
+                        enabled = !uiState.isBusy && uiState.sftpUrl.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Link, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.sync_connect))
+                    }
+                    if (uiState.isSftpConnected) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { viewModel.uploadProgressToSftp() },
+                                enabled = !uiState.isBusy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.CloudUpload, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.sync_export))
+                            }
+                            OutlinedButton(
+                                onClick = { viewModel.downloadProgressFromSftp() },
+                                enabled = !uiState.isBusy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.sync_import))
+                            }
+                        }
+                        if (uiState.sftpFiles.isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.sync_books_on_server),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            uiState.sftpFiles.forEach { file ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        file.name,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    if (uiState.downloadingSftpName == file.name) {
+                                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        IconButton(onClick = { viewModel.downloadSftpBook(file) }) {
                                             Icon(Icons.Default.Download, stringResource(R.string.opds_download))
                                         }
                                     }

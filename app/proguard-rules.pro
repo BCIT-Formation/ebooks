@@ -31,6 +31,16 @@
     volatile <fields>;
 }
 
+# ── sshj + BouncyCastle (SFTP shares, ADR-009) ───────────────────────────────
+# sshj discovers algorithm implementations reflectively and BouncyCastle is a
+# JCE provider registered at runtime; R8 cannot see either, so keep them.
+-keep class net.schmizz.** { *; }
+-keep class com.hierynomus.** { *; }
+-keep class org.bouncycastle.** { *; }
+-dontwarn net.schmizz.**
+-dontwarn com.hierynomus.**
+-dontwarn org.bouncycastle.**
+
 # ── Jetpack Compose ───────────────────────────────────────────────────────────
 # Compose (like Room and Coil) ships consumer ProGuard rules; nothing to keep
 # manually. A previous catch-all `-keepclassmembers class * { *** *(...); }`

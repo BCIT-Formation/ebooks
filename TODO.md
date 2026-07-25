@@ -66,8 +66,11 @@ Approved by the repository owner; each needs a library or credential decision fi
 - [x] FTPS support: Apache `commons-net`, explicit TLS + `PROT P` (ADR-008);
       browse/download books and sync progress from the Sync screen, plain FTP
       (`ftp://`) is rejected at the URL boundary
-- [ ] SFTP support (e.g. `sshj`) — SSH key or password auth; deferred in ADR-008
-      (sshj drags in BouncyCastle, a multi-MB APK impact, and needs key-management UI)
+- [x] SFTP support: `sshj` with `AndroidConfig` (ADR-009, supersedes the ADR-008
+      deferral); password auth with trust-on-first-use host-key pinning, same
+      browse/download/progress-sync card as WebDAV/FTPS
+- [ ] SFTP key-based auth: needs private-key import + management UI (ADR-009
+      ships password auth only)
 - [ ] SMB/Windows network shares (e.g. `jcifs-ng`); AFP has no maintained Java client —
       macOS shares are reachable over SMB
 - [ ] Native Google Drive / OneDrive API sync — requires the owner to register OAuth
