@@ -242,6 +242,11 @@
     <string name="sync_sftp_step2">2. Tap “Save &amp; connect” to list the books on your server. The server\'s key is remembered on first connect.</string>
     <string name="sync_sftp_step3">3. Download a book, or use Export / Import to sync reading progress.</string>
     <string name="sync_sftp_required">The server URL must start with sftp://</string>
+    <string name="sync_smb_title">SMB network share</string>
+    <string name="sync_smb_step1">1. Enter your share address (smb://server/share/…), username and password.</string>
+    <string name="sync_smb_step2">2. Tap “Save &amp; connect” to list the books on your share. Leave the username empty for guest access.</string>
+    <string name="sync_smb_step3">3. Download a book, or use Export / Import to sync reading progress.</string>
+    <string name="sync_smb_required">The share URL must look like smb://server/share (the share name is required)</string>
     <string name="sync_failed">Sync failed: %1$s</string>
 
     <!-- Backup &amp; restore -->

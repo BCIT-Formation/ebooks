@@ -8,7 +8,7 @@ Guidance for AI assistants working on this repository.
 
 Android ebook reader app. Kotlin + Jetpack Compose + Material Design 3. Supports EPUB, PDF,
 TXT, FB2, CBZ, CBR. Local-first: all data lives on-device; network access exists only for
-user-initiated OPDS catalogs, WebDAV, FTPS, SFTP, and cloud-folder progress sync (ADR-006).
+user-initiated OPDS catalogs, WebDAV, FTPS, SFTP, SMB, and cloud-folder progress sync (ADR-006).
 
 - **Min SDK:** 26 (Android 8.0)
 - **Compile SDK:** 34 / **Target SDK:** 34
@@ -76,7 +76,8 @@ app/src/main/java/com/ebooks/reader/
       WebDavClient.kt       # HTTPS WebDAV: PROPFIND list, GET download, PUT upload
       FtpsClient.kt         # Explicit-TLS FTPS (commons-net, ADR-008): list, download, upload
       SftpClient.kt         # SFTP over SSH (sshj, ADR-009): list, download, upload; TOFU host keys
-      SyncCredentialStore.kt # Keystore-encrypted WebDAV/FTPS/SFTP credentials + cloud folder pref
+      SmbClient.kt          # SMB2/3 network shares (jcifs-ng, ADR-010): list, download, upload
+      SyncCredentialStore.kt # Keystore-encrypted WebDAV/FTPS/SFTP/SMB credentials + cloud folder pref
   ui/
     components/
       BookCard.kt
@@ -237,6 +238,7 @@ Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-instal
 | junrar | 7.5.5 | CBR (RAR) comic page extraction (ADR-007) |
 | commons-net | 3.11.1 | FTPS network shares (ADR-008) |
 | sshj | 0.40.0 | SFTP network shares (ADR-009) |
+| jcifs-ng | 2.1.10 | SMB2/3 network shares (ADR-010) |
 | Coroutines Test | 1.11.0 | Unit test utilities |
 | Compose UI Test | 1.11.4 | Instrumented Compose UI tests |
 | AndroidX JUnit | 1.3.0 | Instrumented test runner |
@@ -313,7 +315,8 @@ Do not add a navigation graph file. Keep navigation simple and co-located in `Ma
 | ADR-005 | Coil 2 for cover image loading. |
 | ADR-007 | junrar for CBR (RAR) comic archives; CBZ keeps the pure-Kotlin ZIP path. RAR5 unsupported. |
 | ADR-008 | Apache commons-net for FTPS shares (explicit TLS + PROT P). |
-| ADR-009 | sshj for SFTP shares (password auth, TOFU host-key pinning); SMB still open. |
+| ADR-009 | sshj for SFTP shares (password auth, TOFU host-key pinning). |
+| ADR-010 | jcifs-ng for SMB shares (SMB2/3 only — SMB1 is never negotiated). |
 | — | **No Material You dynamic colour.** Wallpaper-derived palettes produced low-contrast, hard-to-read buttons. The app ships fixed high-contrast schemes selected by `DisplayMode` (LCD / AMOLED / E-ink); do not re-enable `dynamicColor`. |
 
 See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-Kotlin approach
@@ -492,9 +495,11 @@ Scope examples: `epub`, `fb2`, `pdf`, `db`, `ui`, `reader`, `library`, `ci`.
   so all endpoints must be HTTPS at both the app and platform layers.
   New networking uses `HttpURLConnection` + `XmlPullParser` (no OkHttp/Retrofit) and no
   vendor cloud SDKs (Drive/OneDrive go through the SAF document picker). The exceptions
-  are FTPS (Apache commons-net over explicit TLS with `PROT P`, ADR-008) and SFTP
-  (sshj over SSH with trust-on-first-use host-key pinning, ADR-009), since
-  `HttpURLConnection` speaks neither protocol; `ftp://` URLs are rejected at the URL boundary.
+  are the network shares: FTPS (Apache commons-net over explicit TLS with `PROT P`,
+  ADR-008), SFTP (sshj over SSH with trust-on-first-use host-key pinning, ADR-009) and
+  SMB (jcifs-ng pinned to SMB2/3 dialects, ADR-010 — SMB1 is never negotiated), since
+  `HttpURLConnection` speaks none of these protocols; `ftp://` URLs are rejected at the
+  URL boundary and `smb://host/share` URLs require the share segment.
 - Downloads are size-capped (`data/net/DownloadLimits.kt`) so a hostile/misconfigured
   server can't fill the disk; partial files are deleted on overrun.
 - WebDAV credentials are encrypted at rest with an Android Keystore AES-GCM key
@@ -525,7 +530,7 @@ Remaining open items (see `TODO.md` for the full prioritised list):
 
 | Priority | Item |
 |----------|------|
-| 🟢 | SMB network shares + SFTP key auth (FTPS/SFTP shipped via ADR-008/009) |
+| 🟢 | SFTP key-based auth (FTPS/SFTP/SMB shipped via ADR-008/009/010) |
 | 🟢 | Native Google Drive / OneDrive API sync (needs owner-registered OAuth client IDs) |
 
 Do not paper over genuine gaps with workarounds — implement or file them in `TODO.md`.

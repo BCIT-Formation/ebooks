@@ -111,6 +111,8 @@ dependencies {
     implementation(libs.commons.net)
     // SFTP network shares (ADR-009)
     implementation(libs.sshj)
+    // SMB network shares (ADR-010)
+    implementation(libs.jcifs.ng)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

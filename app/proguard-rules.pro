@@ -41,6 +41,16 @@
 -dontwarn com.hierynomus.**
 -dontwarn org.bouncycastle.**
 
+# ── jcifs-ng (SMB network shares, ADR-010) ───────────────────────────────────
+# jcifs-ng optionally integrates with servlet containers and JGSS/Kerberos;
+# neither exists on Android and the app never touches those code paths.
+-dontwarn javax.servlet.**
+-dontwarn org.ietf.jgss.**
+-dontwarn javax.security.auth.kerberos.**
+# slf4j 1.x (jcifs-ng's logging facade) looks up a StaticLoggerBinder
+# reflectively; none is bundled, so it falls back to its NOP logger at runtime.
+-dontwarn org.slf4j.impl.StaticLoggerBinder
+
 # ── Jetpack Compose ───────────────────────────────────────────────────────────
 # Compose (like Room and Coil) ships consumer ProGuard rules; nothing to keep
 # manually. A previous catch-all `-keepclassmembers class * { *** *(...); }`

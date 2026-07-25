@@ -242,6 +242,11 @@
     <string name="sync_sftp_step2">2. Appuyez sur « Enregistrer et connecter » pour lister les livres du serveur. La clé du serveur est mémorisée à la première connexion.</string>
     <string name="sync_sftp_step3">3. Téléchargez un livre, ou utilisez Exporter / Importer pour synchroniser la progression.</string>
     <string name="sync_sftp_required">L\'URL du serveur doit commencer par sftp://</string>
+    <string name="sync_smb_title">Partage réseau SMB</string>
+    <string name="sync_smb_step1">1. Saisissez l\'adresse du partage (smb://serveur/partage/…), votre identifiant et votre mot de passe.</string>
+    <string name="sync_smb_step2">2. Appuyez sur « Enregistrer et connecter » pour lister les livres du partage. Laissez l\'identifiant vide pour un accès invité.</string>
+    <string name="sync_smb_step3">3. Téléchargez un livre, ou utilisez Exporter / Importer pour synchroniser la progression.</string>
+    <string name="sync_smb_required">L\'URL du partage doit ressembler à smb://serveur/partage (le nom du partage est obligatoire)</string>
     <string name="sync_failed">Échec de la synchronisation : %1$s</string>
 
     <!-- Backup &amp; restore -->
