@@ -61,7 +61,7 @@ class BackupManager(private val context: Context) {
             }
 
             val restoredDb = File(staging, "database/${AppDatabase.DB_NAME}")
-            if (!restoredDb.exists()) throw IOException("Not a valid EbookReader backup")
+            if (!restoredDb.exists()) throw IOException("Not a valid ReadIt backup")
 
             AppDatabase.resetInstance()
 

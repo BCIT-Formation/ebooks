@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build EbookReader APK using Docker
+# Build ReadIt APK using Docker
 #
 # Usage:
 #   ./scripts/build-apk-docker.sh [version_name] [version_code]
@@ -21,7 +21,7 @@ if [[ ! "$VERSION_NAME" =~ ^v ]]; then
     VERSION_NAME="v${VERSION_NAME}"
 fi
 
-echo "🐳 Building EbookReader APK with Docker"
+echo "🐳 Building ReadIt APK with Docker"
 echo "   Version: $VERSION_NAME"
 echo "   Code: $VERSION_CODE"
 echo "   Output: $OUTPUT_DIR"
@@ -35,13 +35,13 @@ echo "📦 Building Docker image..."
 docker build \
     --build-arg VERSION_CODE="$VERSION_CODE" \
     --build-arg VERSION_NAME="$VERSION_NAME" \
-    -t ebook-reader:latest \
+    -t readit:latest \
     -f Dockerfile \
     .
 
 # Extract APK from image
 echo "🔧 Extracting APK..."
-TEMP_CONTAINER=$(docker run -d ebook-reader:latest sleep 999)
+TEMP_CONTAINER=$(docker run -d readit:latest sleep 999)
 trap "docker rm -f $TEMP_CONTAINER > /dev/null 2>&1" EXIT
 
 docker cp "$TEMP_CONTAINER":/out/. "$OUTPUT_DIR/" || true

@@ -1,6 +1,7 @@
 package com.ebooks.reader
 
 import com.ebooks.reader.util.htmlToPlainText
+import com.ebooks.reader.util.stripTinyImages
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -77,5 +78,62 @@ class HtmlTextTest {
     @Test
     fun `empty input yields empty output`() {
         assertEquals("", htmlToPlainText(""))
+    }
+
+    @Test
+    fun `stripTinyImages removes images sized by width and height attributes`() {
+        val html = """<p>Text</p><img src="icon.png" width="16" height="16">"""
+        val result = stripTinyImages(html)
+        assertFalse(result.contains("<img"))
+        assertTrue(result.contains("<p>Text</p>"))
+    }
+
+    @Test
+    fun `stripTinyImages keeps images with no dimensions`() {
+        val html = """<img src="photo.jpg" alt="A landscape">"""
+        assertEquals(html, stripTinyImages(html))
+    }
+
+    @Test
+    fun `stripTinyImages keeps large content images`() {
+        val html = """<img src="photo.jpg" width="600" height="400">"""
+        assertEquals(html, stripTinyImages(html))
+    }
+
+    @Test
+    fun `stripTinyImages removes images sized via inline style`() {
+        val html = """<img src="badge.png" style="width:20px;height:20px;border:0">"""
+        assertFalse(stripTinyImages(html).contains("<img"))
+    }
+
+    @Test
+    fun `stripTinyImages removes images flagged by decorative markers`() {
+        val html = """<img src="https://example.com/wp-includes/images/smilies/wink.png" class="wp-smiley">"""
+        assertFalse(stripTinyImages(html).contains("<img"))
+    }
+
+    @Test
+    fun `stripTinyImages removes tracking pixels`() {
+        val html = """<img src="https://stats.example.com/pixel.gif" width="1" height="1">"""
+        assertFalse(stripTinyImages(html).contains("<img"))
+    }
+
+    @Test
+    fun `stripTinyImages removes emoji-only alt images without dimensions`() {
+        val html = """<img src="emoji.svg" alt="😀">"""
+        assertFalse(stripTinyImages(html).contains("<img"))
+    }
+
+    @Test
+    fun `stripTinyImages only removes matching tags in mixed content`() {
+        val html = """<p>Intro</p><img src="tracker.gif" width="1" height="1"><img src="photo.jpg" width="800" height="600"><p>Outro</p>"""
+        val result = stripTinyImages(html)
+        assertFalse(result.contains("tracker.gif"))
+        assertTrue(result.contains("photo.jpg"))
+    }
+
+    @Test
+    fun `stripTinyImages on blank input returns input unchanged`() {
+        assertEquals("", stripTinyImages(""))
     }
 }

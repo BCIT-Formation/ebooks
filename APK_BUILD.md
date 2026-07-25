@@ -1,6 +1,6 @@
 # APK Build Guide
 
-Guide complet pour générer l'APK EbookReader avec plusieurs méthodes.
+Guide complet pour générer l'APK ReadIt avec plusieurs méthodes.
 
 ## Structure
 
@@ -204,8 +204,8 @@ All built APKs are stored in `apk/` directory:
 
 ```
 apk/
-├── EbookReader-1.0.0.apk
-├── EbookReader-1.2.3.apk
+├── ReadIt-1.0.0.apk
+├── ReadIt-1.2.3.apk
 └── ...
 ```
 
@@ -220,7 +220,7 @@ After building, transfer APK to Android device:
 
 1. **Via adb (if connected):**
    ```bash
-   adb install apk/EbookReader-1.2.3.apk
+   adb install apk/ReadIt-1.2.3.apk
    ```
 
 2. **Manually:**
@@ -262,7 +262,7 @@ docker build \
   --build-arg VERSION_CODE=99 \
   --build-arg VERSION_NAME=v2.0.0 \
   --build-arg GRADLE_OPTS="-Xmx3072m" \
-  -t ebook-reader:custom \
+  -t readit:custom \
   .
 ```
 

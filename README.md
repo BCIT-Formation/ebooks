@@ -1,4 +1,4 @@
-# EbookReader
+# ReadIt
 
 [![CI](https://github.com/BardinConsulting/ebooks/actions/workflows/ci.yml/badge.svg)](https://github.com/BardinConsulting/ebooks/actions/workflows/ci.yml)
 [![Security](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml/badge.svg)](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml)
@@ -185,13 +185,13 @@ The APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
 
 ```bash
 # From setup.sh (Docker build → release APK)
-adb install ~/.ebooks-apk/EbookReader-v1.0.0.apk
+adb install ~/.ebooks-apk/ReadIt-v1.0.0.apk
 
 # From setup.sh (local Gradle build → debug APK)
-adb install ~/.ebooks-apk/EbookReader-v1.0.0-debug.apk
+adb install ~/.ebooks-apk/ReadIt-v1.0.0-debug.apk
 
 # From Docker build
-adb install ./release/EbookReader-v1.0.0.apk
+adb install ./release/ReadIt-v1.0.0.apk
 
 # From local build
 adb install app/build/outputs/apk/debug/app-debug.apk

@@ -1,6 +1,6 @@
-# Release Process — EbookReader
+# Release Process — ReadIt
 
-Comprehensive guide to the automated APK release workflow for EbookReader.
+Comprehensive guide to the automated APK release workflow for ReadIt.
 
 ---
 
@@ -30,7 +30,7 @@ graph TD
     F -->|Yes| G["🔏 Build signed APK<br/>with credentials"]
     F -->|No| H["📄 Build unsigned APK<br/>fallback"]
     
-    G --> I["📁 Stage APK<br/>release/EbookReader-v1.2.3.apk"]
+    G --> I["📁 Stage APK<br/>release/ReadIt-v1.2.3.apk"]
     H --> I
     
     I --> J["☁️ Upload artifact<br/>Workflow artifact<br/>90-day retention"]
@@ -95,7 +95,7 @@ sequenceDiagram
         end
         
         Build-->>WF: ✓ APK built
-        WF->>WF: Stage APK: EbookReader-v1.2.3.apk
+        WF->>WF: Stage APK: ReadIt-v1.2.3.apk
         WF->>GH: Upload artifact (90-day retention)
         
         alt Dry run requested
@@ -146,7 +146,7 @@ sequenceDiagram
     end
     
     Build-->>WF: ✓ APK built
-    WF->>WF: Stage APK: EbookReader-v1.2.3.apk
+    WF->>WF: Stage APK: ReadIt-v1.2.3.apk
     WF->>GH: Upload artifact (90-day retention)
     WF->>Release: Create GitHub Release
     Release->>Release: Attach APK + auto-generated notes
@@ -175,8 +175,8 @@ sequenceDiagram
 ### APK Naming Convention
 
 ```
-EbookReader-v1.2.3.apk
-├─ Product: EbookReader
+ReadIt-v1.2.3.apk
+├─ Product: ReadIt
 ├─ Version: 1.2.3 (semver)
 └─ Format: Android Release APK
 ```
@@ -268,7 +268,7 @@ git commit -m "random commit message"
 ✅ Release published successfully
 
 Location: https://github.com/azertytr/ebooks/releases/tag/v1.2.3
-Download: EbookReader-v1.2.3.apk (attached to release)
+Download: ReadIt-v1.2.3.apk (attached to release)
 Artifacts: Available on Actions tab (90-day retention)
 ```
 
@@ -400,7 +400,7 @@ Use Docker to build APK in an isolated environment matching the CI/CD pipeline.
 - ✅ Works on any OS with Docker
 - ✅ Clean isolation
 
-**Output:** `./release/EbookReader-v1.2.3.apk`
+**Output:** `./release/ReadIt-v1.2.3.apk`
 
 ### Option 2: Local Gradle
 
@@ -470,7 +470,7 @@ Inside Docker:
 - **Exported APK:** `/out/` (copied to host)
 
 On host:
-- **Host path:** `./release/EbookReader-v*.apk`
+- **Host path:** `./release/ReadIt-v*.apk`
 
 ---
 

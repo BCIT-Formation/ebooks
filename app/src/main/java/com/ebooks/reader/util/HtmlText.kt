@@ -38,3 +38,62 @@ fun htmlToPlainText(html: String): String {
     text = text.replace(Regex("\\n{3,}"), "\n\n")
     return text.trim()
 }
+
+private val IMG_TAG_REGEX = Regex("(?is)<img\\b[^>]*/?>")
+private val WIDTH_ATTR_REGEX = Regex("(?i)\\bwidth\\s*=\\s*[\"']?\\s*(\\d+)")
+private val HEIGHT_ATTR_REGEX = Regex("(?i)\\bheight\\s*=\\s*[\"']?\\s*(\\d+)")
+private val STYLE_WIDTH_REGEX = Regex("(?i)width\\s*:\\s*(\\d+)px")
+private val STYLE_HEIGHT_REGEX = Regex("(?i)height\\s*:\\s*(\\d+)px")
+
+/** src/class/alt fragments that mark an image as decorative rather than content. */
+private val DECORATIVE_MARKERS = listOf(
+    "emoji", "smilie", "smiley", "sticker", "gravatar", "avatar", "badge",
+    "tracking-pixel", "pixel.gif", "spacer.gif", "blank.gif", "beacon", "stat-counter"
+)
+
+/**
+ * Drops <img> tags too small to be real content — emoji glyphs rendered as
+ * images, feed-footer tracking pixels, social share icons — so RSS articles
+ * aren't cluttered by decoration alongside real photos/illustrations. Images
+ * without a detectable size (the common case for real content images) are
+ * always kept.
+ */
+fun stripTinyImages(html: String, minDimensionPx: Int = 40): String {
+    if (html.isBlank()) return html
+    return IMG_TAG_REGEX.replace(html) { match ->
+        if (isDecorativeImage(match.value, minDimensionPx)) "" else match.value
+    }
+}
+
+private fun isDecorativeImage(imgTag: String, minDimensionPx: Int): Boolean {
+    val width = dimension(imgTag, WIDTH_ATTR_REGEX, STYLE_WIDTH_REGEX)
+    val height = dimension(imgTag, HEIGHT_ATTR_REGEX, STYLE_HEIGHT_REGEX)
+    if (width != null && width <= minDimensionPx) return true
+    if (height != null && height <= minDimensionPx) return true
+
+    val haystack = imgTag.lowercase()
+    if (DECORATIVE_MARKERS.any { haystack.contains(it) }) return true
+
+    val alt = attrValue(imgTag, "alt")
+    return !alt.isNullOrBlank() && isEmojiOnly(alt)
+}
+
+private fun dimension(tag: String, attrRegex: Regex, styleRegex: Regex): Int? {
+    attrRegex.find(tag)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
+    val style = attrValue(tag, "style") ?: return null
+    return styleRegex.find(style)?.groupValues?.get(1)?.toIntOrNull()
+}
+
+private fun attrValue(tag: String, name: String): String? {
+    val match = Regex("(?i)\\b$name\\s*=\\s*\"([^\"]*)\"|\\b$name\\s*=\\s*'([^']*)'").find(tag) ?: return null
+    return match.groupValues[1].ifEmpty { match.groupValues[2] }
+}
+
+/** True when [text] is short and made up entirely of emoji/symbol glyphs, e.g. an alt-text emoji. */
+private fun isEmojiOnly(text: String): Boolean {
+    val trimmed = text.trim()
+    if (trimmed.isEmpty() || trimmed.length > 8) return false
+    return trimmed.codePoints().allMatch { cp ->
+        !Character.isLetterOrDigit(cp) && !Character.isWhitespace(cp)
+    }
+}
