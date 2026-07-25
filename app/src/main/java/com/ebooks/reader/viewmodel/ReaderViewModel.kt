@@ -16,6 +16,7 @@ import com.ebooks.reader.data.parser.EpubChapter
 import com.ebooks.reader.data.parser.ReaderTheme
 import com.ebooks.reader.data.repository.BookRepository
 import com.ebooks.reader.ui.components.DrawingSettings
+import com.ebooks.reader.util.bionicHtml
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,7 +53,11 @@ data class ReaderSettings(
     /** Minutes before auto-scroll is automatically stopped. 0 = disabled. */
     val sleepTimerMinutes: Int = 0,
     /** Warm amber overlay intensity [0f = off … 0.5f = full]. */
-    val nightLightAlpha: Float = 0f
+    val nightLightAlpha: Float = 0f,
+    /** Bionic Reading: bold the leading fragment of every word. */
+    val bionicReading: Boolean = false,
+    /** E-ink extra: volume keys page up/down instead of changing volume. */
+    val volumeKeyPagination: Boolean = false
 )
 
 data class ReaderUiState(
@@ -199,8 +204,9 @@ class ReaderViewModel(
                     chapterError = context().getString(R.string.reader_chapter_load_failed)
                 )}
             } else {
+                val rendered = if (_uiState.value.settings.bionicReading) bionicHtml(html) else html
                 _uiState.update { it.copy(
-                    currentChapterHtml = html,
+                    currentChapterHtml = rendered,
                     isChapterLoading = false,
                     showChapterPanel = false,
                     chapterError = null
@@ -273,7 +279,8 @@ class ReaderViewModel(
             settings.lineHeight != old.lineHeight ||
             settings.fontFamily != old.fontFamily ||
             settings.customFontPath != old.customFontPath ||
-            settings.paragraphIndent != old.paragraphIndent
+            settings.paragraphIndent != old.paragraphIndent ||
+            settings.bionicReading != old.bionicReading
         val speedChanged = settings.autoScrollSpeed != old.autoScrollSpeed
         val timerChanged = settings.sleepTimerMinutes != old.sleepTimerMinutes
 

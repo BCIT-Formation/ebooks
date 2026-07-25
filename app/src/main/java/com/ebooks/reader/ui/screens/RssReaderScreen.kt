@@ -30,7 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ebooks.reader.R
 import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.RssArticle
-import com.ebooks.reader.data.dict.DictionaryClient
+import com.ebooks.reader.data.dict.DictionaryLookup
 import com.ebooks.reader.data.dict.WordDefinition
 import com.ebooks.reader.data.repository.RssRepository
 import com.ebooks.reader.ui.components.DrawingCanvas
@@ -101,7 +101,8 @@ fun RssReaderScreen(
                 scope.launch {
                     val def = withContext(Dispatchers.IO) {
                         runCatching {
-                            DictionaryClient().lookup(word)
+                            // Offline-first: user-imported StarDict dictionaries, then online.
+                            DictionaryLookup(context).lookup(word)
                         }.getOrNull()
                     }
                     dictDefinition = def

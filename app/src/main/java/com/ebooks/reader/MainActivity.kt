@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -56,6 +57,7 @@ import com.ebooks.reader.data.settings.AppTheme
 import com.ebooks.reader.data.settings.FirstRunManager
 import com.ebooks.reader.data.repository.BookRepository
 import com.ebooks.reader.data.repository.RssRepository
+import com.ebooks.reader.util.VolumeKeyPager
 
 /**
  * The app's single activity (ADR-004: Compose only, no XML layouts).
@@ -65,6 +67,21 @@ import com.ebooks.reader.data.repository.RssRepository
  * "Open with EbookReader" imports and opens the picked file.
  */
 class MainActivity : ComponentActivity() {
+
+    // E-ink extra: while a reader has volume-key pagination enabled it registers
+    // a handler with VolumeKeyPager; the keys then page instead of changing volume.
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_VOLUME_DOWN -> VolumeKeyPager.dispatch(forward = true) || super.onKeyDown(keyCode, event)
+        KeyEvent.KEYCODE_VOLUME_UP -> VolumeKeyPager.dispatch(forward = false) || super.onKeyDown(keyCode, event)
+        else -> super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean =
+        if ((keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) && VolumeKeyPager.isActive) {
+            true // swallow the up event too so the system volume UI never shows
+        } else {
+            super.onKeyUp(keyCode, event)
+        }
 
     override fun onStop() {
         super.onStop()
