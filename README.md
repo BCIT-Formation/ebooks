@@ -1,5 +1,14 @@
 # ReadIt
 
+<!-- workflow-badges:start -->
+
+[![Auto Merge](https://github.com/BCIT-Formation/ebooks/actions/workflows/auto-merge.yml/badge.svg)](https://github.com/BCIT-Formation/ebooks/actions/workflows/auto-merge.yml)
+[![Release](https://github.com/BCIT-Formation/ebooks/actions/workflows/auto-release.yml/badge.svg)](https://github.com/BCIT-Formation/ebooks/actions/workflows/auto-release.yml)
+[![CI](https://github.com/BCIT-Formation/ebooks/actions/workflows/ci.yml/badge.svg)](https://github.com/BCIT-Formation/ebooks/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/BCIT-Formation/ebooks/actions/workflows/security.yml/badge.svg)](https://github.com/BCIT-Formation/ebooks/actions/workflows/security.yml)
+
+<!-- workflow-badges:end -->
+
 [![CI](https://github.com/BardinConsulting/ebooks/actions/workflows/ci.yml/badge.svg)](https://github.com/BardinConsulting/ebooks/actions/workflows/ci.yml)
 [![Security](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml/badge.svg)](https://github.com/BardinConsulting/ebooks/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
