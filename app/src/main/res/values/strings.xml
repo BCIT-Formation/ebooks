@@ -226,6 +226,11 @@
     <string name="sync_no_snapshot">No progress file found yet — export from the other device first</string>
     <string name="sync_invalid_snapshot">The progress file is not valid</string>
     <string name="sync_https_required">The server URL must start with https://</string>
+    <string name="sync_ftps_title">FTPS server</string>
+    <string name="sync_ftps_step1">1. Enter your server address (ftps://…), username and password.</string>
+    <string name="sync_ftps_step2">2. Tap “Save &amp; connect” to list the books on your server.</string>
+    <string name="sync_ftps_step3">3. Download a book, or use Export / Import to sync reading progress.</string>
+    <string name="sync_ftps_required">The server URL must start with ftps:// (plain FTP is not supported)</string>
     <string name="sync_failed">Sync failed: %1$s</string>
 
     <!-- Backup &amp; restore -->

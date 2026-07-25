@@ -226,6 +226,11 @@
     <string name="sync_no_snapshot">Aucun fichier de progression trouvé — exportez d\'abord depuis l\'autre appareil</string>
     <string name="sync_invalid_snapshot">Le fichier de progression n\'est pas valide</string>
     <string name="sync_https_required">L\'URL du serveur doit commencer par https://</string>
+    <string name="sync_ftps_title">Serveur FTPS</string>
+    <string name="sync_ftps_step1">1. Saisissez l\'adresse du serveur (ftps://…), votre identifiant et votre mot de passe.</string>
+    <string name="sync_ftps_step2">2. Appuyez sur « Enregistrer et connecter » pour lister les livres du serveur.</string>
+    <string name="sync_ftps_step3">3. Téléchargez un livre, ou utilisez Exporter / Importer pour synchroniser la progression.</string>
+    <string name="sync_ftps_required">L\'URL du serveur doit commencer par ftps:// (le FTP non chiffré n\'est pas pris en charge)</string>
     <string name="sync_failed">Échec de la synchronisation : %1$s</string>
 
     <!-- Backup &amp; restore -->

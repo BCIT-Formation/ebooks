@@ -137,3 +137,72 @@ Add the `INTERNET` permission, constrained by these rules:
 - ✅ Privacy posture stays strong: no passive network use, HTTPS-only, no third-party SDKs
 - ⚠️ "No internet permission" can no longer be used as a security claim in docs/store listings
 - ⚠️ FTPS / SFTP / SMB need third-party libraries — tracked in TODO.md as separate decisions
+
+---
+
+## ADR-007: junrar for CBR (RAR) Comic Archives
+
+**Status:** Accepted
+**Date:** 2026-07-25
+
+### Context
+CBZ comics (ZIP of images) are already supported with the built-in `ZipInputStream`
+(ADR-001). CBR comics are the same idea in a RAR archive, but RAR is a proprietary
+format with no published specification and no support in the Android platform, so
+the pure-Kotlin approach of ADR-001 is not practical here. Candidate libraries:
+
+- **junrar** (`com.github.junrar:junrar`): maintained pure-Java port of the unrar
+  code. Small (~150 KB), a single `slf4j-api` transitive dependency, works on
+  Android with no native code.
+- 7-Zip-JBinding and other JNI wrappers: native `.so` binaries per ABI, much
+  larger APK impact, more complex packaging.
+
+### Decision
+Use **junrar** for CBR page extraction. Extraction lives in
+`data/parser/ComicArchive.kt`, which is shared by both comic formats: CBZ keeps
+the built-in `ZipInputStream` path (ADR-001 unaffected); only CBR pays the
+dependency. The reader screen, cache layout, page ordering, and reading-progress
+handling are identical for both formats.
+
+### Consequences
+- ✅ CBR comics open in the existing comic reader (including pinch-to-zoom and drawing)
+- ✅ No native code; one small dependency plus `slf4j-api` (no-op logger on Android)
+- ⚠️ junrar decodes RAR4 archives only: RAR5 and encrypted archives fail with an
+  error surfaced to the reader's existing error state
+- ⚠️ junrar is licensed under the unrar license (source may not be used to
+  re-create the RAR *compression* algorithm), fine for decompression-only use
+
+---
+
+## ADR-008: Apache commons-net for FTPS Network Shares
+
+**Status:** Accepted
+**Date:** 2026-07-25
+
+### Context
+ADR-006 approved FTPS / SFTP / SMB network shares, each pending a library
+decision (plain FTP stays banned: cleartext). The existing share architecture is
+`WebDavClient`'s small contract (list a directory, download a book, and
+up/download the progress-snapshot text file) driven by `SyncViewModel` with
+credentials encrypted at rest by `SyncCredentialStore`.
+
+- **FTPS via Apache `commons-net`**: battle-tested, zero transitive
+  dependencies, ~340 KB, plain-Java sockets. `FTPSClient` maps 1:1 onto the
+  WebDAV contract (list/retrieve/store).
+- **SFTP via `sshj`**: needs BouncyCastle + EdDSA transitive dependencies
+  (multi-MB APK impact) and key-management UI to be genuinely useful.
+
+### Decision
+Implement **FTPS with Apache commons-net** now (`data/sync/FtpsClient.kt`),
+in explicit-TLS mode with `PROT P` so the data channel is encrypted too, and
+`ftps://` enforced at the URL boundary (mirroring `WebDavClient`'s `https://`
+check). The platform cleartext ban does not cover raw sockets, so the scheme
+check plus AUTH TLS + PROT P is what upholds ADR-006 rule 2 here. SFTP stays
+in TODO.md until the dependency weight is justified.
+
+### Consequences
+- ✅ FTPS shares get the same browse / download / progress-sync features as WebDAV
+- ✅ Credentials reuse the existing Keystore-encrypted store (new `ftps_*` keys)
+- ✅ Zero transitive dependencies added
+- ⚠️ Plain `ftp://` URLs are rejected with a user-facing message, by design
+- ⚠️ SFTP / SMB remain open TODO items with separate library decisions

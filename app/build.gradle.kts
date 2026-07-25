@@ -102,6 +102,10 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.coil.compose)
     implementation(libs.androidx.glance.appwidget)
+    // CBR (RAR) comic archives (ADR-007)
+    implementation(libs.junrar)
+    // FTPS network shares (ADR-008)
+    implementation(libs.commons.net)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -11,7 +11,8 @@ enum class FileType(val extension: String, val mimeType: String) {
     PDF("pdf", "application/pdf"),
     TXT("txt", "text/plain"),
     FB2("fb2", "application/x-fictionbook+xml"),
-    CBZ("cbz", "application/x-cbz");
+    CBZ("cbz", "application/x-cbz"),
+    CBR("cbr", "application/x-cbr");
 
     companion object {
         fun fromExtension(ext: String): FileType? =

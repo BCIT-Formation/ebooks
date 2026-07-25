@@ -96,7 +96,7 @@ class BookRepository(private val context: Context) {
             FileType.EPUB -> importEpub(uri, bookId, fileSize)
             FileType.PDF -> importPdf(uri, bookId, fileSize, fileName)
             FileType.TXT, FileType.FB2 -> importTextBook(uri, bookId, fileSize, fileName, fileType)
-            FileType.CBZ -> importCbz(uri, bookId, fileSize, fileName)
+            FileType.CBZ, FileType.CBR -> importComic(uri, bookId, fileSize, fileName, fileType)
         } ?: return@withContext ImportResult.ParseFailed(fileName)
 
         // The freshly-imported book's ZIP is cached by the parser but won't be
@@ -159,14 +159,14 @@ class BookRepository(private val context: Context) {
         return book
     }
 
-    private suspend fun importCbz(uri: Uri, bookId: String, fileSize: Long, fileName: String): Book {
-        val title = fileName.removeSuffix(".cbz")
+    private suspend fun importComic(uri: Uri, bookId: String, fileSize: Long, fileName: String, fileType: FileType): Book {
+        val title = fileName.removeSuffix(".${fileType.extension}")
         val book = Book(
             id = bookId,
             title = title,
             author = "Unknown",
             filePath = uri.toString(),
-            fileType = FileType.CBZ.extension,
+            fileType = fileType.extension,
             fileSize = fileSize
         )
         dao.insertBook(book)
@@ -493,6 +493,7 @@ class BookRepository(private val context: Context) {
         "txt" -> "text/plain"
         "fb2" -> "application/x-fictionbook+xml"
         "cbz" -> "application/x-cbz"
+        "cbr" -> "application/x-cbr"
         else -> "application/octet-stream"
     }
 

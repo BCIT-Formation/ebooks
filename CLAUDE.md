@@ -7,8 +7,8 @@ Guidance for AI assistants working on this repository.
 ## Project overview
 
 Android ebook reader app. Kotlin + Jetpack Compose + Material Design 3. Supports EPUB, PDF,
-TXT, FB2, CBZ. Local-first: all data lives on-device; network access exists only for
-user-initiated OPDS catalogs, WebDAV, and cloud-folder progress sync (ADR-006).
+TXT, FB2, CBZ, CBR. Local-first: all data lives on-device; network access exists only for
+user-initiated OPDS catalogs, WebDAV, FTPS, and cloud-folder progress sync (ADR-006).
 
 - **Min SDK:** 26 (Android 8.0)
 - **Compile SDK:** 34 / **Target SDK:** 34
@@ -61,6 +61,7 @@ app/src/main/java/com/ebooks/reader/
       EpubBook.kt           # EpubBook, EpubChapter, TocItem, ManifestItem, SpineItem
       EpubParser.kt         # Pure-Kotlin EPUB parser + ReaderTheme data class
       Fb2Parser.kt          # Pure-Kotlin FB2 (FictionBook 2.0) parser → HTML
+      ComicArchive.kt       # CBZ (ZipInputStream) + CBR (junrar, ADR-007) page extraction
     net/
       DownloadLimits.kt     # Size-capped download helpers (guards against disk-fill)
     repository/
@@ -70,7 +71,8 @@ app/src/main/java/com/ebooks/reader/
       ProgressSnapshot.kt   # Device-independent progress model + newer-wins merge (pure Kotlin)
       ProgressSnapshotJson.kt # org.json (de)serialization of the snapshot
       WebDavClient.kt       # HTTPS WebDAV: PROPFIND list, GET download, PUT upload
-      SyncCredentialStore.kt # Keystore-encrypted WebDAV credentials + cloud folder pref
+      FtpsClient.kt         # Explicit-TLS FTPS (commons-net, ADR-008): list, download, upload
+      SyncCredentialStore.kt # Keystore-encrypted WebDAV/FTPS credentials + cloud folder pref
   ui/
     components/
       BookCard.kt
@@ -221,11 +223,13 @@ Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-instal
 | Material Icons Extended | 1.6.8 | Extended icon set |
 | Room | 2.6.1 | Local SQLite database |
 | Coil | 2.7.0 | Compose-native image loading |
-| Glance | 1.1.0 | Home screen app widget (Compose-style RemoteViews) |
-| Navigation Compose | 2.8.0 | In-app navigation |
-| Coroutines Test | 1.8.1 | Unit test utilities |
-| Compose UI Test | 1.6.8 | Instrumented Compose UI tests |
-| AndroidX JUnit | 1.2.1 | Instrumented test runner |
+| Glance | 1.1.1 | Home screen app widget (Compose-style RemoteViews) |
+| Navigation Compose | 2.9.8 | In-app navigation |
+| junrar | 7.5.5 | CBR (RAR) comic page extraction (ADR-007) |
+| commons-net | 3.11.1 | FTPS network shares (ADR-008) |
+| Coroutines Test | 1.11.0 | Unit test utilities |
+| Compose UI Test | 1.11.4 | Instrumented Compose UI tests |
+| AndroidX JUnit | 1.3.0 | Instrumented test runner |
 
 **Dependency updates go in `gradle/libs.versions.toml` only.** Never hardcode versions
 in `build.gradle.kts`. Dependabot opens update PRs automatically.
@@ -296,6 +300,8 @@ Do not add a navigation graph file. Keep navigation simple and co-located in `Ma
 | ADR-003 | Room (SQLite) for all persistence — books, bookmarks, reading progress, sessions. |
 | ADR-004 | Jetpack Compose only — no XML layouts. |
 | ADR-005 | Coil 2 for cover image loading. |
+| ADR-007 | junrar for CBR (RAR) comic archives; CBZ keeps the pure-Kotlin ZIP path. RAR5 unsupported. |
+| ADR-008 | Apache commons-net for FTPS shares (explicit TLS + PROT P); SFTP/SMB deferred. |
 | — | **No Material You dynamic colour.** Wallpaper-derived palettes produced low-contrast, hard-to-read buttons. The app ships fixed high-contrast schemes selected by `DisplayMode` (LCD / AMOLED / E-ink); do not re-enable `dynamicColor`. |
 
 See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-Kotlin approach
@@ -472,7 +478,9 @@ Scope examples: `epub`, `fb2`, `pdf`, `db`, `ui`, `reader`, `library`, `ci`.
   forbidden explicitly (`usesCleartextTraffic="false"` + `res/xml/network_security_config.xml`),
   so all endpoints must be HTTPS at both the app and platform layers.
   New networking uses `HttpURLConnection` + `XmlPullParser` (no OkHttp/Retrofit) and no
-  vendor cloud SDKs (Drive/OneDrive go through the SAF document picker).
+  vendor cloud SDKs (Drive/OneDrive go through the SAF document picker). The one exception
+  is FTPS, which uses Apache commons-net over explicit TLS with `PROT P` (ADR-008) since
+  `HttpURLConnection` cannot speak FTP; `ftp://` URLs are rejected at the URL boundary.
 - Downloads are size-capped (`data/net/DownloadLimits.kt`) so a hostile/misconfigured
   server can't fill the disk; partial files are deleted on overrun.
 - WebDAV credentials are encrypted at rest with an Android Keystore AES-GCM key
@@ -503,10 +511,8 @@ Remaining open items (see `TODO.md` for the full prioritised list):
 
 | Priority | Item |
 |----------|------|
-| 🟢 | FTPS / SFTP / SMB network shares (need third-party library decisions) |
+| 🟢 | SFTP / SMB network shares (need third-party library decisions; FTPS shipped via ADR-008) |
 | 🟢 | Native Google Drive / OneDrive API sync (needs owner-registered OAuth client IDs) |
-| 🟢 | Finish string extraction for full localization (ViewModel errors, secondary readers) |
-| 🟢 | CBR support + pinch-to-zoom for comics |
 
 Do not paper over genuine gaps with workarounds — implement or file them in `TODO.md`.
 

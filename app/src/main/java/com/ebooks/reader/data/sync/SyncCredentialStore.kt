@@ -15,34 +15,40 @@ private const val KEY_ALIAS = "ebook_sync_credentials"
 private const val PREFS = "sync_prefs"
 private const val GCM_TAG_BITS = 128
 
-data class WebDavCredentials(val url: String, val username: String, val password: String)
+data class ShareCredentials(val url: String, val username: String, val password: String)
 
 /**
- * Stores WebDAV credentials with the password encrypted by an AES-GCM key
- * held in the Android Keystore (ADR-006: credentials encrypted at rest).
- * No external crypto library needed.
+ * Stores network-share credentials (WebDAV, FTPS) with the password encrypted
+ * by an AES-GCM key held in the Android Keystore (ADR-006: credentials
+ * encrypted at rest). No external crypto library needed.
  */
 class SyncCredentialStore(context: Context) {
 
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun save(credentials: WebDavCredentials) {
+    fun save(credentials: ShareCredentials) = saveServer("webdav", credentials)
+    fun load(): ShareCredentials? = loadServer("webdav")
+
+    fun saveFtps(credentials: ShareCredentials) = saveServer("ftps", credentials)
+    fun loadFtps(): ShareCredentials? = loadServer("ftps")
+
+    private fun saveServer(prefix: String, credentials: ShareCredentials) {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, obtainKey())
         val encrypted = cipher.doFinal(credentials.password.toByteArray())
         prefs.edit()
-            .putString("webdav_url", credentials.url)
-            .putString("webdav_user", credentials.username)
-            .putString("webdav_pass", Base64.encodeToString(encrypted, Base64.NO_WRAP))
-            .putString("webdav_iv", Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+            .putString("${prefix}_url", credentials.url)
+            .putString("${prefix}_user", credentials.username)
+            .putString("${prefix}_pass", Base64.encodeToString(encrypted, Base64.NO_WRAP))
+            .putString("${prefix}_iv", Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
             .apply()
     }
 
-    fun load(): WebDavCredentials? {
-        val url = prefs.getString("webdav_url", null) ?: return null
-        val user = prefs.getString("webdav_user", "").orEmpty()
-        val encrypted = prefs.getString("webdav_pass", null)
-        val iv = prefs.getString("webdav_iv", null)
+    private fun loadServer(prefix: String): ShareCredentials? {
+        val url = prefs.getString("${prefix}_url", null) ?: return null
+        val user = prefs.getString("${prefix}_user", "").orEmpty()
+        val encrypted = prefs.getString("${prefix}_pass", null)
+        val iv = prefs.getString("${prefix}_iv", null)
         val password = if (encrypted != null && iv != null) {
             runCatching {
                 val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -54,7 +60,7 @@ class SyncCredentialStore(context: Context) {
                 String(cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP)))
             }.getOrDefault("")
         } else ""
-        return WebDavCredentials(url, user, password)
+        return ShareCredentials(url, user, password)
     }
 
     fun clear() {
