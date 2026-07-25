@@ -11,8 +11,8 @@ TXT, FB2, CBZ. Local-first: all data lives on-device; network access exists only
 user-initiated OPDS catalogs, WebDAV, and cloud-folder progress sync (ADR-006).
 
 - **Min SDK:** 26 (Android 8.0)
-- **Compile SDK:** 36 / **Target SDK:** 36
-- **Language:** Kotlin 2.4.10
+- **Compile SDK:** 34 / **Target SDK:** 34
+- **Language:** Kotlin 2.0.0
 - **UI:** Jetpack Compose (no XML layouts)
 - **Architecture:** MVVM + Repository + Kotlin Flow
 
@@ -122,7 +122,7 @@ gradle/
   libs.versions.toml        # Version catalog — single source for all dependency versions
   wrapper/
     gradle-wrapper.jar      # Committed to repo (required for CI)
-    gradle-wrapper.properties  # gradle-8.14.3-bin
+    gradle-wrapper.properties  # gradle-8.7-bin
 
 scripts/
   build-apk-docker.sh       # Dockerised release APK build (recommended)
@@ -136,7 +136,7 @@ SECURITY.md    # Security policy
 README.md      # User/developer overview
 APK_BUILD.md   # Detailed APK build instructions
 RELEASES.md    # Release process and history
-Dockerfile     # eclipse-temurin:17 + Android SDK 36 build image
+Dockerfile     # eclipse-temurin:17 + Android SDK 34 build image
 setup.sh       # One-shot build+install. BUILD=auto|docker|local (auto-falls back to local Gradle)
 ```
 
@@ -203,10 +203,10 @@ install paths, and need JDK 17+. The APK is copied to `~/.ebooks-apk/`.
 
 ---
 
-Gradle 8.14.3 is pinned via the wrapper. **Do not upgrade** without updating
+Gradle 8.7 is pinned via the wrapper. **Do not upgrade** without updating
 `gradle-wrapper.properties` and verifying AGP compatibility.
 
-Docker builds use `eclipse-temurin:17` base image with Android SDK 36 pre-installed.
+Docker builds use `eclipse-temurin:17` base image with Android SDK 34 pre-installed.
 
 ---
 
@@ -214,18 +214,18 @@ Docker builds use `eclipse-temurin:17` base image with Android SDK 36 pre-instal
 
 | Library | Version | Purpose |
 |---------|---------|---------|
-| AGP | 8.13.2 | Android Gradle Plugin |
-| Kotlin | 2.4.10 | Language + compose compiler |
-| KSP | 2.3.10 | Annotation processor for Room |
-| Compose BOM | 2026.06.01 | Compose library versions |
-| Material Icons Extended | 1.7.8 | Extended icon set |
-| Room | 2.8.4 | Local SQLite database |
+| AGP | 8.4.2 | Android Gradle Plugin |
+| Kotlin | 2.0.0 | Language + compose compiler |
+| KSP | 2.0.0-1.0.22 | Annotation processor for Room |
+| Compose BOM | 2024.08.00 | Compose library versions |
+| Material Icons Extended | 1.6.8 | Extended icon set |
+| Room | 2.6.1 | Local SQLite database |
 | Coil | 2.7.0 | Compose-native image loading |
-| Glance | 1.1.1 | Home screen app widget (Compose-style RemoteViews) |
-| Navigation Compose | 2.9.8 | In-app navigation |
-| Coroutines Test | 1.11.0 | Unit test utilities |
-| Compose UI Test | 1.11.4 | Instrumented Compose UI tests |
-| AndroidX JUnit | 1.3.0 | Instrumented test runner |
+| Glance | 1.1.0 | Home screen app widget (Compose-style RemoteViews) |
+| Navigation Compose | 2.8.0 | In-app navigation |
+| Coroutines Test | 1.8.1 | Unit test utilities |
+| Compose UI Test | 1.6.8 | Instrumented Compose UI tests |
+| AndroidX JUnit | 1.2.1 | Instrumented test runner |
 
 **Dependency updates go in `gradle/libs.versions.toml` only.** Never hardcode versions
 in `build.gradle.kts`. Dependabot opens update PRs automatically.
@@ -527,3 +527,51 @@ Do not paper over genuine gaps with workarounds — implement or file them in `T
   Do not lean on `fallbackToDestructiveMigration` — it is only a crash safety net.
 - **Do not commit `*.jks` / `*.keystore` files.** The `.gitignore` prevents it, but verify.
 - **Do not bump a GitHub Action in isolation** — update every occurrence across all workflows at once.
+
+---
+
+## Shared conventions (BCIT-Formation)
+
+These rules apply to every BCIT-Formation repository. The canonical version lives in
+[claude-skills-bcit/CONVENTIONS.md](https://github.com/BCIT-Formation/claude-skills-bcit/blob/main/CONVENTIONS.md).
+Repo-specific sections in this file may add stricter rules, never weaker ones.
+
+### Git
+- Never commit directly to the default branch; one branch per task, delivered as a PR.
+- Branch naming: `claude/<short-topic>` for AI-agent work, `feat/<topic>` or `fix/<topic>` otherwise.
+- Conventional Commits: `type(scope): imperative lowercase subject` (72 chars max).
+  Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- Never force-push shared branches; never bypass hooks (`--no-verify`). Stage specific files rather than a blanket `git add -A`.
+- Squash-merge by default.
+
+### Security (non-negotiable)
+- Never commit secrets, tokens, API keys, or personal data. Secrets live in `.env` (gitignored); commit `.env.example` with placeholders only.
+- Validate and sanitize all external input. SQL only through parameterized queries, never string concatenation.
+- No sensitive data in logs; use placeholders like `[REDACTED]`.
+- Least privilege everywhere; HTTPS for all network calls.
+
+### Dependencies
+- Keep dependencies minimal; prefer the standard library and dependencies already present.
+- A new production dependency needs a clear justification recorded in `DECISIONS.md` (or `docs/ADR.md`).
+
+### Code quality
+- Match the surrounding code style; produce the smallest diff that solves the problem (KISS, DRY, YAGNI).
+- Comments explain WHY, not WHAT.
+- Never merge TODO/FIXME markers, temporary mocks, or incomplete implementations to the default branch.
+
+### Testing
+- Every bug fix gets a regression test; write the failing test first.
+- New or changed logic gets matching tests. Run this repo's documented lint/test commands before committing.
+
+### Documentation
+- CLAUDE.md contains durable instructions only: no status reports, changelogs, or task lists (those live in `TODO.md` / `CHANGELOG.md`), and no session-specific branch names or URLs.
+- Record architecture decisions in `DECISIONS.md` / `docs/ADR.md`; read it before changing fundamentals, and do not re-fix items already resolved there.
+- If documentation contradicts the code or itself, flag the inconsistency instead of silently picking a side.
+
+### Language
+- Team language is French: user-facing content and business documents are written in French.
+- Code identifiers are in English. For docs, comments, and commits, match the repo's existing language.
+
+### AI assistant behavior
+- Never invent APIs, endpoints, data models, metrics, or quotes. If required business information is missing, stop and ask one precise question.
+- Ask before: deleting files, major refactors, changing dependencies, or any force-push.
