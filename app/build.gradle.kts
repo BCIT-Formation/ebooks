@@ -76,6 +76,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // bcprov and bcpkix (sshj transitives, ADR-009) both ship this
+            // multi-release manifest, which trips the duplicate-resource check.
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
 }
@@ -106,6 +109,8 @@ dependencies {
     implementation(libs.junrar)
     // FTPS network shares (ADR-008)
     implementation(libs.commons.net)
+    // SFTP network shares (ADR-009)
+    implementation(libs.sshj)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

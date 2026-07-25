@@ -231,6 +231,11 @@
     <string name="sync_ftps_step2">2. Appuyez sur « Enregistrer et connecter » pour lister les livres du serveur.</string>
     <string name="sync_ftps_step3">3. Téléchargez un livre, ou utilisez Exporter / Importer pour synchroniser la progression.</string>
     <string name="sync_ftps_required">L\'URL du serveur doit commencer par ftps:// (le FTP non chiffré n\'est pas pris en charge)</string>
+    <string name="sync_sftp_title">Serveur SFTP (SSH)</string>
+    <string name="sync_sftp_step1">1. Saisissez l\'adresse du serveur (sftp://…), votre identifiant et votre mot de passe.</string>
+    <string name="sync_sftp_step2">2. Appuyez sur « Enregistrer et connecter » pour lister les livres du serveur. La clé du serveur est mémorisée à la première connexion.</string>
+    <string name="sync_sftp_step3">3. Téléchargez un livre, ou utilisez Exporter / Importer pour synchroniser la progression.</string>
+    <string name="sync_sftp_required">L\'URL du serveur doit commencer par sftp://</string>
     <string name="sync_failed">Échec de la synchronisation : %1$s</string>
 
     <!-- Backup &amp; restore -->

@@ -206,3 +206,48 @@ in TODO.md until the dependency weight is justified.
 - ✅ Zero transitive dependencies added
 - ⚠️ Plain `ftp://` URLs are rejected with a user-facing message, by design
 - ⚠️ SFTP / SMB remain open TODO items with separate library decisions
+  (SFTP has since shipped: see ADR-009)
+
+---
+
+## ADR-009: sshj for SFTP Network Shares
+
+**Status:** Accepted (supersedes ADR-008's SFTP deferral)
+**Date:** 2026-07-25
+
+### Context
+ADR-008 shipped FTPS and deferred SFTP because sshj's dependency weight looked
+disproportionate. The repository owner's backlog still lists SFTP as an
+approved item, and SFTP is the share protocol most home NAS / Linux boxes
+expose by default, so the trade-off is being revisited deliberately.
+
+Candidate libraries:
+- **sshj** (`com.hierynomus:sshj`): the actively maintained JVM SSH client,
+  ships an `AndroidConfig` for Android use. Transitives: BouncyCastle
+  (`bcprov`/`bcpkix`), `asn-one`, `slf4j-api` (already present via junrar).
+- JSch (original): effectively unmaintained; the `com.github.mwiede` fork is
+  maintained but has no Android-specific configuration story.
+- Apache MINA SSHD: server-oriented, heavier still.
+
+### Decision
+Use **sshj** with `AndroidConfig` (`data/sync/SftpClient.kt`), mirroring the
+`WebDavClient` / `FtpsClient` contract (list, download, snapshot up/download)
+behind the same Sync-screen card pattern. Scope decisions:
+
+1. **Password auth only for now.** Key-based auth needs private-key import and
+   management UI; tracked separately in TODO.md.
+2. **Trust-on-first-use host keys.** The first key a server presents is pinned
+   (fingerprint stored in `sync_prefs`); a changed key fails verification and
+   surfaces as a sync error. Blindly accepting host keys (sshj's
+   `PromiscuousVerifier`) would allow silent MITM and is not used.
+3. **APK cost is contained.** BouncyCastle adds a few MB of classes; R8 keep
+   rules cover sshj/BC (both resolve algorithms reflectively), and the
+   duplicate `META-INF/versions/9/OSGI-INF/MANIFEST.MF` resource from
+   bcprov+bcpkix is excluded in `packaging`.
+
+### Consequences
+- ✅ SFTP shares get the same browse / download / progress-sync features as WebDAV/FTPS
+- ✅ Encrypted transport (SSH) upholds ADR-006 rule 2; host keys are TOFU-pinned
+- ✅ Credentials reuse the Keystore-encrypted store (new `sftp_*` keys)
+- ⚠️ Noticeably larger release APK (BouncyCastle); acceptable per owner-approved backlog
+- ⚠️ SSH key auth and SMB remain open TODO items

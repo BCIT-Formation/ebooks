@@ -41,6 +41,7 @@ A clean, fast, and fully-featured Android ebook reader built with **Jetpack Comp
 | Progress sync via cloud folder (Google Drive / OneDrive) | ✅ |
 | WebDAV (browse books + progress sync) | ✅ |
 | FTPS (browse books + progress sync, explicit TLS) | ✅ |
+| SFTP (browse books + progress sync, SSH + TOFU host keys) | ✅ |
 | RSS reader tab (OPML import/export, offline articles) | ✅ |
 | Annotate & share RSS articles (same drawing tools) | ✅ |
 | Material You dynamic colors | ✅ |
@@ -266,4 +267,4 @@ See [TODO.md](TODO.md) for the full prioritized backlog, organized by:
 - 🔴 **Critical** — essential fixes and features (all done)
 - 🟠 **Important** — next-tier enhancements (all done)
 - 🟢 **Nice to Have** — polish and advanced features (all done)
-- 🌐 **Network follow-ups** — SFTP / SMB shares and native Drive/OneDrive API sync (see ADR-006/ADR-008)
+- 🌐 **Network follow-ups** — SMB shares, SFTP key auth, and native Drive/OneDrive API sync (see ADR-006/008/009)
