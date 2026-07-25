@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -133,6 +134,16 @@ fun ReaderSettingsSheet(
                 Switch(checked = settings.paragraphIndent, onCheckedChange = { onSettingsChanged(settings.copy(paragraphIndent = it)) })
             }
 
+            // Bionic reading
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.FormatBold, null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.bionic_reading))
+                }
+                Switch(checked = settings.bionicReading, onCheckedChange = { onSettingsChanged(settings.copy(bionicReading = it)) })
+            }
+
             // Keep screen on
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -185,6 +196,16 @@ fun ReaderSettingsSheet(
                     Text(stringResource(R.string.tilt_to_scroll))
                 }
                 Switch(checked = settings.tiltScrollEnabled, onCheckedChange = { onSettingsChanged(settings.copy(tiltScrollEnabled = it)) })
+            }
+
+            // Volume-key page turn (e-ink devices often lack usable touch gestures)
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.AutoMirrored.Filled.VolumeUp, null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.volume_key_page_turn))
+                }
+                Switch(checked = settings.volumeKeyPagination, onCheckedChange = { onSettingsChanged(settings.copy(volumeKeyPagination = it)) })
             }
 
             // Sleep timer

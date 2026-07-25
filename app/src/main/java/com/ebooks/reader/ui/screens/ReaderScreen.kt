@@ -3,6 +3,7 @@ package com.ebooks.reader.ui.screens
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -53,11 +54,14 @@ import com.ebooks.reader.ui.components.DrawingToolbar
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.ebooks.reader.data.db.entities.Bookmark
-import com.ebooks.reader.data.dict.DictionaryClient
+import com.ebooks.reader.data.dict.DictionaryLookup
+import com.ebooks.reader.data.dict.StarDictManager
 import com.ebooks.reader.data.dict.WordDefinition
 import com.ebooks.reader.ui.components.ReaderSettingsSheet
 import com.ebooks.reader.ui.components.TooltipIconButton
 import com.ebooks.reader.ui.components.rememberTtsSpeaker
+import com.ebooks.reader.ui.theme.DisplayMode
+import com.ebooks.reader.util.VolumeKeyPager
 import com.ebooks.reader.util.htmlToPlainText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -88,20 +92,40 @@ fun ReaderScreen(
     }
     var showGestureHint by remember { mutableStateOf(!readerPrefs.getBoolean("gesture_hint_shown", false)) }
 
-    // Dictionary / translate on the current text selection.
-    val dictClient = remember { DictionaryClient() }
+    // Dictionary / translate on the current text selection. Lookup is
+    // offline-first (user-imported StarDict dictionaries), then online.
+    val dictLookup = remember(context) { DictionaryLookup(context) }
+    val starDictManager = remember(context) { StarDictManager(context) }
     val dictScope = rememberCoroutineScope()
     var dictWord by remember { mutableStateOf<String?>(null) }
     var dictLoading by remember { mutableStateOf(false) }
     var dictResult by remember { mutableStateOf<WordDefinition?>(null) }
     var showDictSheet by remember { mutableStateOf(false) }
+    var offlineDictCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        offlineDictCount = withContext(Dispatchers.IO) { starDictManager.listDictionaries().size }
+    }
 
     LaunchedEffect(dictWord) {
         val w = dictWord ?: return@LaunchedEffect
         dictLoading = true
         dictResult = null
-        dictResult = withContext(Dispatchers.IO) { dictClient.lookup(w) }
+        dictResult = withContext(Dispatchers.IO) { dictLookup.lookup(w) }
         dictLoading = false
+    }
+
+    // Import a StarDict dictionary: the user multi-selects the .ifo/.idx/.dict files.
+    val dictImport = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris: List<Uri> ->
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        dictScope.launch {
+            val imported = withContext(Dispatchers.IO) { starDictManager.importDictionary(uris) }
+            offlineDictCount = withContext(Dispatchers.IO) { starDictManager.listDictionaries().size }
+            snackbarHostState.showSnackbar(
+                if (imported != null) context.getString(R.string.dict_import_success, imported)
+                else context.getString(R.string.dict_import_failed)
+            )
+        }
     }
 
     val defineSelection: () -> Unit = defineSelection@{
@@ -249,12 +273,35 @@ fun ReaderScreen(
         onDispose { sensorManager.unregisterListener(listener) }
     }
 
+    // E-ink extra: volume keys page up/down while the setting is on.
+    DisposableEffect(uiState.settings.volumeKeyPagination) {
+        if (!uiState.settings.volumeKeyPagination) return@DisposableEffect onDispose {}
+        VolumeKeyPager.handler = handler@{ forward ->
+            val webView = webViewRef.value ?: return@handler false
+            val js = if (forward) "window.scrollBy(0, Math.round(window.innerHeight * 0.9))"
+                     else "window.scrollBy(0, -Math.round(window.innerHeight * 0.9))"
+            webView.evaluateJavascript(js, null)
+            true
+        }
+        onDispose { VolumeKeyPager.handler = null }
+    }
+
     // Show chapter-load failures as a dismissable snackbar (non-fatal)
     LaunchedEffect(uiState.chapterError) {
         val msg = uiState.chapterError ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(message = msg, duration = SnackbarDuration.Long)
         viewModel.dismissChapterError()
     }
+
+    // E-ink extra: slide/fade animations ghost badly on e-ink panels, so the
+    // reader's control transitions are disabled in the EINK display profile.
+    val isEInk = remember(context) { DisplayMode.load(context) == DisplayMode.EINK }
+    val slideDownEnter = remember(isEInk) { if (isEInk) EnterTransition.None else slideInVertically(initialOffsetY = { -it }) + fadeIn() }
+    val slideDownExit = remember(isEInk) { if (isEInk) ExitTransition.None else slideOutVertically(targetOffsetY = { -it }) + fadeOut() }
+    val slideUpEnter = remember(isEInk) { if (isEInk) EnterTransition.None else slideInVertically(initialOffsetY = { it }) + fadeIn() }
+    val slideUpExit = remember(isEInk) { if (isEInk) ExitTransition.None else slideOutVertically(targetOffsetY = { it }) + fadeOut() }
+    val slideInEnter = remember(isEInk) { if (isEInk) EnterTransition.None else slideInHorizontally(initialOffsetX = { -it }) + fadeIn() }
+    val slideInExit = remember(isEInk) { if (isEInk) ExitTransition.None else slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() }
 
     val bgColor = remember(uiState.settings.themeOption) {
         when (uiState.settings.themeOption) {
@@ -323,8 +370,8 @@ fun ReaderScreen(
 
                     AnimatedVisibility(
                         visible = uiState.showControls,
-                        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                        enter = slideDownEnter,
+                        exit = slideDownExit,
                         modifier = Modifier.align(Alignment.TopStart)
                     ) {
                         if (uiState.isSearchVisible) {
@@ -356,8 +403,8 @@ fun ReaderScreen(
 
                     AnimatedVisibility(
                         visible = uiState.showControls && !uiState.isDrawingMode,
-                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        enter = slideUpEnter,
+                        exit = slideUpExit,
                         modifier = Modifier.align(Alignment.BottomStart)
                     ) {
                         ReaderBottomBar(
@@ -381,8 +428,8 @@ fun ReaderScreen(
 
                     AnimatedVisibility(
                         visible = uiState.showControls && uiState.isDrawingMode,
-                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        enter = slideUpEnter,
+                        exit = slideUpExit,
                         modifier = Modifier.align(Alignment.BottomStart)
                     ) {
                         DrawingToolbar(
@@ -396,8 +443,8 @@ fun ReaderScreen(
 
                     AnimatedVisibility(
                         visible = uiState.showChapterPanel,
-                        enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
-                        exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut(),
+                        enter = slideInEnter,
+                        exit = slideInExit,
                         modifier = Modifier.align(Alignment.TopStart)
                     ) {
                         ChapterPanel(
@@ -433,8 +480,14 @@ fun ReaderScreen(
                         word = dictWord!!,
                         loading = dictLoading,
                         result = dictResult,
+                        offlineDictCount = offlineDictCount,
                         onTranslate = { translateWord(context, dictWord!!) },
                         onSearch = { webSearch(context, dictWord!!) },
+                        onImportDictionary = {
+                            // Document providers rarely report StarDict MIME types — open with */*;
+                            // the import path validates the extensions.
+                            dictImport.launch(arrayOf("*/*"))
+                        },
                         onDismiss = { showDictSheet = false }
                     )
                 }
@@ -571,8 +624,10 @@ private fun DictionarySheet(
     word: String,
     loading: Boolean,
     result: WordDefinition?,
+    offlineDictCount: Int,
     onTranslate: () -> Unit,
     onSearch: () -> Unit,
+    onImportDictionary: () -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -610,6 +665,20 @@ private fun DictionarySheet(
                 OutlinedButton(onClick = onSearch, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Search, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.dict_search))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            // Offline StarDict dictionaries — imported here, used before the online lookup.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.dict_offline_count, offlineDictCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onImportDictionary) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.dict_add_offline))
                 }
             }
         }
