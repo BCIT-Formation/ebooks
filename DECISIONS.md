@@ -234,8 +234,8 @@ Use **sshj** with `AndroidConfig` (`data/sync/SftpClient.kt`), mirroring the
 `WebDavClient` / `FtpsClient` contract (list, download, snapshot up/download)
 behind the same Sync-screen card pattern. Scope decisions:
 
-1. **Password auth only for now.** Key-based auth needs private-key import and
-   management UI; tracked separately in TODO.md.
+1. **Password *and* key-based auth.** Password auth shipped first; key-based
+   auth was added later (see the amendment below).
 2. **Trust-on-first-use host keys.** The first key a server presents is pinned
    (fingerprint stored in `sync_prefs`); a changed key fails verification and
    surfaces as a sync error. Blindly accepting host keys (sshj's
@@ -250,8 +250,27 @@ behind the same Sync-screen card pattern. Scope decisions:
 - ✅ Encrypted transport (SSH) upholds ADR-006 rule 2; host keys are TOFU-pinned
 - ✅ Credentials reuse the Keystore-encrypted store (new `sftp_*` keys)
 - ⚠️ Noticeably larger release APK (BouncyCastle); acceptable per owner-approved backlog
-- ⚠️ SSH key auth and SMB remain open TODO items
-  (SMB resolved by ADR-010)
+- ✅ SMB resolved by ADR-010; SSH key auth resolved by the amendment below
+
+### Amendment (2026-07-26): key-based auth
+
+The deferred key-based auth item is now implemented. A user imports an SSH
+private key via SAF (any document, since keys carry no standard MIME type);
+`isLikelySshPrivateKey` rejects obvious non-keys (public keys, certificates,
+junk) at import, and sshj does the real parse at connect time. Scope:
+
+- **PEM parsed from memory, never written to disk.** `SftpClient` calls
+  `SSHClient.loadKeys(pem, null, passwordFinder)` and `authPublickey`; the key
+  bytes stay in memory for the duration of the short-lived connection.
+- **Formats:** whatever sshj's `AndroidConfig` file-key providers accept, i.e.
+  OpenSSH v1 (`openssh-key-v1`, the modern `ssh-keygen` default), PKCS#1/PKCS#8
+  PEM, and PuTTY PPK.
+- **Encrypted at rest.** Both the PEM and its (optional) passphrase are stored
+  through the same Keystore AES-GCM path as passwords (`SyncCredentialStore`,
+  `sftp_key_*` keys), never in plaintext.
+- **Auth selection:** a client uses key auth when a key is installed, otherwise
+  password auth. The two are mutually exclusive in the UI (the password field
+  is disabled while a key is installed). Host-key TOFU pinning is unchanged.
 
 ---
 

@@ -7,6 +7,7 @@ import android.provider.DocumentsContract
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ebooks.reader.R
+import com.ebooks.reader.data.net.readTextLimited
 import com.ebooks.reader.data.repository.BookRepository
 import com.ebooks.reader.data.sync.FtpsClient
 import com.ebooks.reader.data.sync.FtpsFile
@@ -14,12 +15,14 @@ import com.ebooks.reader.data.sync.PROGRESS_SNAPSHOT_FILE_NAME
 import com.ebooks.reader.data.sync.SftpClient
 import com.ebooks.reader.data.sync.SftpFile
 import com.ebooks.reader.data.sync.SftpHostKeyStore
+import com.ebooks.reader.data.sync.SftpPrivateKey
 import com.ebooks.reader.data.sync.ShareCredentials
 import com.ebooks.reader.data.sync.SmbClient
 import com.ebooks.reader.data.sync.SmbEntry
 import com.ebooks.reader.data.sync.SyncCredentialStore
 import com.ebooks.reader.data.sync.WebDavClient
 import com.ebooks.reader.data.sync.WebDavFile
+import com.ebooks.reader.data.sync.isLikelySshPrivateKey
 import com.ebooks.reader.data.sync.parseFtpsUrl
 import com.ebooks.reader.data.sync.parseProgressSnapshot
 import com.ebooks.reader.data.sync.parseSftpUrl
@@ -37,6 +40,9 @@ import java.io.IOException
 
 /** File extensions the WebDAV / FTPS / SFTP browsers offer to download. */
 private val BOOK_EXTENSIONS = setOf("epub", "pdf", "txt", "fb2", "cbz", "cbr")
+
+/** SSH private keys are tiny; cap the import so a hostile pick can't fill memory. */
+private const val MAX_SFTP_KEY_BYTES = 128L * 1024
 
 data class SyncUiState(
     // Cloud folder (Google Drive / OneDrive via SAF)
@@ -57,6 +63,8 @@ data class SyncUiState(
     val sftpUrl: String = "",
     val sftpUser: String = "",
     val sftpPassword: String = "",
+    val sftpKeyInstalled: Boolean = false,
+    val sftpKeyPassphrase: String = "",
     val sftpFiles: List<SftpFile> = emptyList(),
     val isSftpConnected: Boolean = false,
     // SMB (ADR-010)
@@ -86,6 +94,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         val saved = credentialStore.load()
         val savedFtps = credentialStore.loadFtps()
         val savedSftp = credentialStore.loadSftp()
+        val savedSftpKey = credentialStore.loadSftpKey()
         val savedSmb = credentialStore.loadSmb()
         _uiState.update {
             it.copy(
@@ -99,6 +108,8 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 sftpUrl = savedSftp?.url.orEmpty(),
                 sftpUser = savedSftp?.username.orEmpty(),
                 sftpPassword = savedSftp?.password.orEmpty(),
+                sftpKeyInstalled = savedSftpKey != null,
+                sftpKeyPassphrase = savedSftpKey?.passphrase.orEmpty(),
                 smbUrl = savedSmb?.url.orEmpty(),
                 smbUser = savedSmb?.username.orEmpty(),
                 smbPassword = savedSmb?.password.orEmpty()
@@ -115,6 +126,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     fun setSftpUrl(value: String) = _uiState.update { it.copy(sftpUrl = value) }
     fun setSftpUser(value: String) = _uiState.update { it.copy(sftpUser = value) }
     fun setSftpPassword(value: String) = _uiState.update { it.copy(sftpPassword = value) }
+    fun setSftpKeyPassphrase(value: String) = _uiState.update { it.copy(sftpKeyPassphrase = value) }
     fun setSmbUrl(value: String) = _uiState.update { it.copy(smbUrl = value) }
     fun setSmbUser(value: String) = _uiState.update { it.copy(smbUser = value) }
     fun setSmbPassword(value: String) = _uiState.update { it.copy(smbPassword = value) }
@@ -298,6 +310,26 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── SFTP (ADR-009) ────────────────────────────────────────────────────────
 
+    /** Imports a PEM private key picked via SAF; stored encrypted at rest. */
+    fun importSftpKey(uri: Uri) = runBusy {
+        val pem = runCatching {
+            context().contentResolver.openInputStream(uri)?.use { input ->
+                input.readTextLimited(MAX_SFTP_KEY_BYTES)
+            }
+        }.getOrNull()
+        if (pem.isNullOrBlank()) return@runBusy message(R.string.sync_key_read_failed)
+        if (!isLikelySshPrivateKey(pem)) return@runBusy message(R.string.sync_key_invalid)
+        credentialStore.saveSftpKey(SftpPrivateKey(pem, _uiState.value.sftpKeyPassphrase))
+        _uiState.update { it.copy(sftpKeyInstalled = true) }
+        message(R.string.sync_key_imported)
+    }
+
+    fun removeSftpKey() {
+        credentialStore.clearSftpKey()
+        _uiState.update { it.copy(sftpKeyInstalled = false, sftpKeyPassphrase = "") }
+        message(R.string.sync_key_removed)
+    }
+
     fun connectSftp() = runBusy {
         val client = sftpClient() ?: return@runBusy
         credentialStore.saveSftp(
@@ -307,6 +339,12 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 password = _uiState.value.sftpPassword
             )
         )
+        // Persist any passphrase edit so later reconnects unlock the same key.
+        if (credentialStore.hasSftpKey()) {
+            credentialStore.loadSftpKey()?.let {
+                credentialStore.saveSftpKey(it.copy(passphrase = _uiState.value.sftpKeyPassphrase))
+            }
+        }
         val files = client.listFiles()
             .filter { !it.isDirectory && it.name.substringAfterLast(".").lowercase() in BOOK_EXTENSIONS }
         _uiState.update { it.copy(sftpFiles = files, isSftpConnected = true) }
@@ -449,7 +487,10 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
             message(R.string.sync_sftp_required)
             return null
         }
-        return SftpClient(url, state.sftpUser.trim(), state.sftpPassword, sftpHostKeyStore)
+        // Key auth takes precedence when a key is installed; the passphrase comes
+        // from the current form field, the PEM from the encrypted store.
+        val privateKey = credentialStore.loadSftpKey()?.copy(passphrase = state.sftpKeyPassphrase)
+        return SftpClient(url, state.sftpUser.trim(), state.sftpPassword, sftpHostKeyStore, privateKey)
     }
 
     /** Builds an SMB client from the current form fields; posts an error message when invalid. */

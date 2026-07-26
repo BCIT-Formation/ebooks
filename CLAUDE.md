@@ -75,7 +75,7 @@ app/src/main/java/com/ebooks/reader/
       ProgressSnapshotJson.kt # org.json (de)serialization of the snapshot
       WebDavClient.kt       # HTTPS WebDAV: PROPFIND list, GET download, PUT upload
       FtpsClient.kt         # Explicit-TLS FTPS (commons-net, ADR-008): list, download, upload
-      SftpClient.kt         # SFTP over SSH (sshj, ADR-009): list, download, upload; TOFU host keys
+      SftpClient.kt         # SFTP over SSH (sshj, ADR-009): list, download, upload; TOFU host keys; password or imported-key auth
       SmbClient.kt          # SMB2/3 network shares (jcifs-ng, ADR-010): list, download, upload
       SyncCredentialStore.kt # Keystore-encrypted WebDAV/FTPS/SFTP/SMB credentials + cloud folder pref
   ui/
@@ -315,7 +315,7 @@ Do not add a navigation graph file. Keep navigation simple and co-located in `Ma
 | ADR-005 | Coil 2 for cover image loading. |
 | ADR-007 | junrar for CBR (RAR) comic archives; CBZ keeps the pure-Kotlin ZIP path. RAR5 unsupported. |
 | ADR-008 | Apache commons-net for FTPS shares (explicit TLS + PROT P). |
-| ADR-009 | sshj for SFTP shares (password auth, TOFU host-key pinning). |
+| ADR-009 | sshj for SFTP shares (password or imported-key auth, TOFU host-key pinning). |
 | ADR-010 | jcifs-ng for SMB shares (SMB2/3 only — SMB1 is never negotiated). |
 | — | **No Material You dynamic colour.** Wallpaper-derived palettes produced low-contrast, hard-to-read buttons. The app ships fixed high-contrast schemes selected by `DisplayMode` (LCD / AMOLED / E-ink); do not re-enable `dynamicColor`. |
 
@@ -530,8 +530,10 @@ Remaining open items (see `TODO.md` for the full prioritised list):
 
 | Priority | Item |
 |----------|------|
-| 🟢 | SFTP key-based auth (FTPS/SFTP/SMB shipped via ADR-008/009/010) |
 | 🟢 | Native Google Drive / OneDrive API sync (needs owner-registered OAuth client IDs) |
+
+FTPS/SFTP/SMB shipped via ADR-008/009/010; SFTP now supports both password and
+key-based auth (ADR-009 amendment).
 
 Do not paper over genuine gaps with workarounds — implement or file them in `TODO.md`.
 
