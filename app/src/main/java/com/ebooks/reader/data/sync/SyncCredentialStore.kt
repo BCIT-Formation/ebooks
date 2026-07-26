@@ -35,6 +35,29 @@ class SyncCredentialStore(context: Context) {
     fun saveSftp(credentials: ShareCredentials) = saveServer("sftp", credentials)
     fun loadSftp(): ShareCredentials? = loadServer("sftp")
 
+    // ── SFTP key-based auth (ADR-009 amendment) ───────────────────────────────
+
+    /** Stores the PEM key and its passphrase encrypted at rest (never plaintext). */
+    fun saveSftpKey(key: SftpPrivateKey) {
+        putEncrypted("sftp_key_pem", key.pem)
+        putEncrypted("sftp_key_pass", key.passphrase)
+    }
+
+    /** The installed SFTP private key, or null when only password auth is set up. */
+    fun loadSftpKey(): SftpPrivateKey? {
+        val pem = getEncrypted("sftp_key_pem")?.takeIf { it.isNotBlank() } ?: return null
+        return SftpPrivateKey(pem, getEncrypted("sftp_key_pass").orEmpty())
+    }
+
+    fun hasSftpKey(): Boolean = prefs.contains("sftp_key_pem_data")
+
+    fun clearSftpKey() {
+        prefs.edit()
+            .remove("sftp_key_pem_data").remove("sftp_key_pem_iv")
+            .remove("sftp_key_pass_data").remove("sftp_key_pass_iv")
+            .apply()
+    }
+
     // ── SFTP host-key pinning (TOFU, ADR-009) ─────────────────────────────────
 
     fun knownHostFingerprint(host: String, port: Int): String? =
@@ -65,18 +88,38 @@ class SyncCredentialStore(context: Context) {
         val encrypted = prefs.getString("${prefix}_pass", null)
         val iv = prefs.getString("${prefix}_iv", null)
         val password = if (encrypted != null && iv != null) {
-            runCatching {
-                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-                cipher.init(
-                    Cipher.DECRYPT_MODE,
-                    obtainKey(),
-                    GCMParameterSpec(GCM_TAG_BITS, Base64.decode(iv, Base64.NO_WRAP))
-                )
-                String(cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP)))
-            }.getOrDefault("")
+            decrypt(encrypted, iv)
         } else ""
         return ShareCredentials(url, user, password)
     }
+
+    /** Encrypts [value] under the Keystore key and stores it as `${key}_data` + `${key}_iv`. */
+    private fun putEncrypted(key: String, value: String) {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, obtainKey())
+        val encrypted = cipher.doFinal(value.toByteArray())
+        prefs.edit()
+            .putString("${key}_data", Base64.encodeToString(encrypted, Base64.NO_WRAP))
+            .putString("${key}_iv", Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+            .apply()
+    }
+
+    private fun getEncrypted(key: String): String? {
+        val encrypted = prefs.getString("${key}_data", null) ?: return null
+        val iv = prefs.getString("${key}_iv", null) ?: return null
+        return decrypt(encrypted, iv)
+    }
+
+    private fun decrypt(encryptedBase64: String, ivBase64: String): String =
+        runCatching {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                obtainKey(),
+                GCMParameterSpec(GCM_TAG_BITS, Base64.decode(ivBase64, Base64.NO_WRAP))
+            )
+            String(cipher.doFinal(Base64.decode(encryptedBase64, Base64.NO_WRAP)))
+        }.getOrDefault("")
 
     fun clear() {
         prefs.edit().clear().apply()

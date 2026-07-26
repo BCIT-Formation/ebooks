@@ -67,8 +67,10 @@ Approved by the repository owner; each needs a library or credential decision fi
 - [x] SFTP support: `sshj` with `AndroidConfig` (ADR-009, supersedes the ADR-008
       deferral); password auth with trust-on-first-use host-key pinning, same
       browse/download/progress-sync card as WebDAV/FTPS
-- [ ] SFTP key-based auth: needs private-key import + management UI (ADR-009
-      ships password auth only)
+- [x] SFTP key-based auth: import a PEM private key via SAF (OpenSSH v1 /
+      PKCS#1 / PKCS#8 / PuTTY PPK), optional passphrase, stored Keystore-encrypted;
+      key auth is used when a key is installed, password auth otherwise
+      (ADR-009 amendment)
 - [x] SMB/Windows network shares: `jcifs-ng`, SMB2/3 only (ADR-010); browse/download
       books and sync progress from the Sync screen. AFP has no maintained Java client —
       macOS shares are reachable over SMB

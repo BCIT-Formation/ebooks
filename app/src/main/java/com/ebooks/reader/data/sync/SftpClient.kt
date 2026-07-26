@@ -13,6 +13,7 @@ import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPClient
 import net.schmizz.sshj.sftp.SFTPException
 import net.schmizz.sshj.transport.verification.HostKeyVerifier
+import net.schmizz.sshj.userauth.password.PasswordUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -54,6 +55,24 @@ fun parseSftpUrl(url: String): SftpEndpoint? {
     return SftpEndpoint(host, port, path.trimEnd('/').ifEmpty { "/" })
 }
 
+/** Private-key material for SFTP key-based auth (ADR-009 amendment). */
+data class SftpPrivateKey(val pem: String, val passphrase: String = "")
+
+/**
+ * Cheap sanity check that [text] looks like an SSH private key file, used at
+ * import time so an accidentally picked public key or random file is rejected
+ * before it is stored. Accepts the PEM-armoured formats sshj can load
+ * (OpenSSH v1, PKCS#1/PKCS#8, PuTTY PPK); real parsing still happens in sshj
+ * at connect time.
+ */
+fun isLikelySshPrivateKey(text: String): Boolean {
+    val head = text.trimStart()
+    if (head.startsWith("PuTTY-User-Key-File-", ignoreCase = true)) return true
+    if (!head.startsWith("-----BEGIN ")) return false
+    val marker = head.lineSequence().firstOrNull().orEmpty()
+    return marker.contains("PRIVATE KEY-----")
+}
+
 /** Persists one host-key fingerprint per host:port for TOFU pinning. */
 interface SftpHostKeyStore {
     fun knownFingerprint(host: String, port: Int): String?
@@ -83,8 +102,9 @@ class TofuHostKeyVerifier(private val store: SftpHostKeyStore) : HostKeyVerifier
 }
 
 /**
- * Minimal SFTP client (ADR-006 / ADR-009, sshj). Password auth with
- * trust-on-first-use host-key pinning. Mirrors [WebDavClient] / [FtpsClient]:
+ * Minimal SFTP client (ADR-006 / ADR-009, sshj). Password or private-key auth
+ * with trust-on-first-use host-key pinning: when [privateKey] is set it is
+ * used, otherwise password auth. Mirrors [WebDavClient] / [FtpsClient]:
  * directory listing, book download, and progress-snapshot text up/download.
  * Each operation uses a fresh, short-lived connection, user-initiated only.
  */
@@ -92,7 +112,8 @@ class SftpClient(
     url: String,
     private val username: String,
     private val password: String,
-    private val hostKeyStore: SftpHostKeyStore
+    private val hostKeyStore: SftpHostKeyStore,
+    private val privateKey: SftpPrivateKey? = null
 ) {
     private val endpoint = requireNotNull(parseSftpUrl(url)) {
         "Only sftp:// URLs are allowed (ADR-006)"
@@ -150,7 +171,7 @@ class SftpClient(
         ssh.timeout = READ_TIMEOUT_MS
         try {
             ssh.connect(endpoint.host, endpoint.port)
-            ssh.authPassword(username, password)
+            authenticate(ssh)
             ssh.newSFTPClient().use { sftp ->
                 return block(sftp)
             }
@@ -159,6 +180,25 @@ class SftpClient(
             throw IOException(e.message ?: "SFTP failure", e)
         } finally {
             runCatching { ssh.disconnect() }
+        }
+    }
+
+    /**
+     * Authenticates with the loaded private key when one is configured,
+     * otherwise falls back to password auth. sshj parses the PEM key material
+     * directly from memory so the key never touches disk.
+     */
+    private fun authenticate(ssh: SSHClient) {
+        val key = privateKey
+        if (key != null && key.pem.isNotBlank()) {
+            val keyProvider = if (key.passphrase.isEmpty()) {
+                ssh.loadKeys(key.pem, null, null)
+            } else {
+                ssh.loadKeys(key.pem, null, PasswordUtils.createOneOff(key.passphrase.toCharArray()))
+            }
+            ssh.authPublickey(username, keyProvider)
+        } else {
+            ssh.authPassword(username, password)
         }
     }
 
