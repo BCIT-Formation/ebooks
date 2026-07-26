@@ -85,6 +85,41 @@ class ComicArchiveTest {
     }
 
     @Test
+    fun `unpadded page numbers are ordered naturally not lexicographically`() {
+        val zip = buildZip(
+            "page10.jpg" to byteArrayOf(10),
+            "page2.jpg" to byteArrayOf(2),
+            "page1.jpg" to byteArrayOf(1)
+        )
+        val pages = ComicArchive.extractCbzPages(zip, tempFolder.newFolder())
+        assertEquals(3, pages.size)
+        // Natural order is 1, 2, 10 — plain string sort would give 1, 10, 2.
+        assertEquals(1, pages[0].readBytes().single().toInt())
+        assertEquals(2, pages[1].readBytes().single().toInt())
+        assertEquals(10, pages[2].readBytes().single().toInt())
+    }
+
+    @Test
+    fun `macos appledouble sidecars and dotfiles are not treated as pages`() {
+        assertFalse(ComicArchive.isComicPage("__MACOSX/._page01.jpg"))
+        assertFalse(ComicArchive.isComicPage("comic/__MACOSX/._page01.jpg"))
+        assertFalse(ComicArchive.isComicPage("._page01.jpg"))
+        assertFalse(ComicArchive.isComicPage(".hidden.png"))
+    }
+
+    @Test
+    fun `macos junk entries are skipped during extraction`() {
+        val zip = buildZip(
+            "__MACOSX/._001.jpg" to byteArrayOf(9),
+            "._001.jpg" to byteArrayOf(8),
+            "001.jpg" to byteArrayOf(1)
+        )
+        val pages = ComicArchive.extractCbzPages(zip, tempFolder.newFolder())
+        assertEquals(1, pages.size)
+        assertEquals(1, pages[0].readBytes().single().toInt())
+    }
+
+    @Test
     fun `entry names with traversal segments cannot escape the destination`() {
         val dir = tempFolder.newFolder()
         val zip = buildZip("../../evil.jpg" to byteArrayOf(9))
