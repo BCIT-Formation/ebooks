@@ -143,8 +143,10 @@ class RssRepository(context: Context) {
                 publishedAt = a.publishedAt
             )
         }
-        rssDao.insertArticles(rows) // IGNORE keeps existing (read state preserved)
-        return rows.size
+        // IGNORE keeps existing rows (read state preserved) and returns -1 for
+        // each skipped duplicate, so count only the genuinely new articles —
+        // otherwise every refresh reports the whole feed as "new".
+        return rssDao.insertArticles(rows).count { it != -1L }
     }
 
     // ── OPML ────────────────────────────────────────────────────────────────────

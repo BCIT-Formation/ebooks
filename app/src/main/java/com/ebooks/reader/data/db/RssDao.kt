@@ -46,9 +46,13 @@ interface RssDao {
     @Query("SELECT * FROM rss_articles WHERE id = :id")
     suspend fun getArticle(id: String): RssArticle?
 
-    /** Insert new articles without clobbering an already-stored one (keeps read state). */
+    /**
+     * Insert new articles without clobbering an already-stored one (keeps read
+     * state). Returns the inserted row ids; a duplicate skipped by IGNORE yields
+     * `-1`, letting callers count only the genuinely new articles.
+     */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertArticles(articles: List<RssArticle>)
+    suspend fun insertArticles(articles: List<RssArticle>): List<Long>
 
     @Query("UPDATE rss_articles SET isRead = 1 WHERE id = :id")
     suspend fun markArticleRead(id: String)
