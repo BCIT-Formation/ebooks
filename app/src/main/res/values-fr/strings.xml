@@ -308,6 +308,20 @@
     <string name="rss_marked_favorite">Ajouté aux favoris</string>
     <string name="rss_marked_read">Marqué comme lu</string>
 
+    <!-- Sélection des flux au premier lancement -->
+    <string name="feed_picker_title">Flux suggérés</string>
+    <string name="feed_picker_subtitle">Cochez les flux que vous souhaitez suivre. Leurs articles sont téléchargés pour la lecture hors ligne ; vous pourrez en ajouter ou en retirer à tout moment.</string>
+    <string name="feed_picker_other_feeds">Favoris directs</string>
+    <string name="feed_picker_select_all">Tout cocher</string>
+    <string name="feed_picker_deselect_all">Tout décocher</string>
+    <plurals name="feed_picker_add">
+        <item quantity="one">Ajouter %1$d flux</item>
+        <item quantity="other">Ajouter %1$d flux</item>
+    </plurals>
+    <string name="feed_picker_skip">Ignorer</string>
+    <string name="feed_picker_importing">Ajout du flux %1$d sur %2$d…</string>
+    <string name="feed_picker_already_subscribed">Déjà abonné</string>
+
     <!-- App Theme Mode (light/dark/system) -->
     <string name="theme_system">Système</string>
     <string name="theme_setting">Thème de l\'application</string>

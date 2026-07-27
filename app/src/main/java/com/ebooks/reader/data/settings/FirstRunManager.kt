@@ -12,8 +12,20 @@ class FirstRunManager(context: Context) {
         prefs.edit().putBoolean(KEY_FIRST_RUN_COMPLETED, true).apply()
     }
 
+    /**
+     * Whether the bundled feed checklist still has to be offered. Tracked apart
+     * from [isFirstRun] because the user picks their feeds interactively, so it
+     * is only settled once they confirm or skip the picker.
+     */
+    fun isFeedSetupPending(): Boolean = !prefs.getBoolean(KEY_FEED_SETUP_DONE, false)
+
+    fun markFeedSetupComplete() {
+        prefs.edit().putBoolean(KEY_FEED_SETUP_DONE, true).apply()
+    }
+
     companion object {
         private const val KEY_FIRST_RUN_COMPLETED = "first_run_completed"
+        private const val KEY_FEED_SETUP_DONE = "feed_setup_done"
 
         @Volatile
         private var instance: FirstRunManager? = null

@@ -40,6 +40,7 @@ import com.ebooks.reader.viewmodel.RssViewModel
 @Composable
 fun RssFeedsScreen(
     onOpenFeed: (String) -> Unit,
+    onOpenFeedPicker: () -> Unit = {},
     viewModel: RssViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -107,6 +108,10 @@ fun RssFeedsScreen(
                             )
                             Divider()
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.feed_picker_title)) },
+                                onClick = { showMenu = false; onOpenFeedPicker() }
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.rss_import_opml)) },
                                 onClick = { showMenu = false; opmlImport.launch(arrayOf("*/*")) }
                             )
@@ -139,7 +144,10 @@ fun RssFeedsScreen(
             }
 
             when {
-                sortedFeeds.isEmpty() -> EmptyRss(onAdd = { showAddDialog = true })
+                sortedFeeds.isEmpty() -> EmptyRss(
+                    onAdd = { showAddDialog = true },
+                    onOpenFeedPicker = onOpenFeedPicker
+                )
                 else -> when (viewMode) {
                     ArticleViewMode.LIST -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(sortedFeeds, key = { it.id }) { feed ->
@@ -364,7 +372,7 @@ private fun AddFeedDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun EmptyRss(onAdd: () -> Unit) {
+private fun EmptyRss(onAdd: () -> Unit, onOpenFeedPicker: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Icon(Icons.Default.RssFeed, null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
         Spacer(Modifier.height(16.dp))
@@ -380,5 +388,6 @@ private fun EmptyRss(onAdd: () -> Unit) {
         Button(onClick = onAdd) {
             Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.rss_add_feed))
         }
+        TextButton(onClick = onOpenFeedPicker) { Text(stringResource(R.string.feed_picker_title)) }
     }
 }

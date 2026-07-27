@@ -8,10 +8,16 @@ import com.ebooks.reader.data.db.entities.Annotation
 import com.ebooks.reader.data.db.entities.RssArticle
 import com.ebooks.reader.data.db.entities.RssFeed
 import com.ebooks.reader.data.rss.Opml
+import com.ebooks.reader.data.rss.OpmlEntry
 import com.ebooks.reader.data.rss.RssClient
 import com.ebooks.reader.util.AnnotationMarkdownBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
@@ -19,6 +25,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Single source of truth for RSS feeds and articles: wraps the RSS DAO,
@@ -36,6 +43,9 @@ class RssRepository(context: Context) {
     private val client = RssClient()
 
     companion object {
+        /** Concurrent feed fetches during a bulk OPML subscribe — polite, but not one-by-one. */
+        private const val MAX_PARALLEL_FEED_FETCHES = 4
+
         private val REGEX_H_OPEN = Regex("<h[1-6][^>]*>")
         private val REGEX_H_CLOSE = Regex("</h[1-6]>")
         private val REGEX_P_OPEN = Regex("<p[^>]*>")
@@ -151,19 +161,70 @@ class RssRepository(context: Context) {
 
     /** Imports feeds from an OPML document; returns how many new feeds were added. */
     suspend fun importOpml(input: InputStream): Int = withContext(Dispatchers.IO) {
-        val entries = Opml.parse(input)
-        var added = 0
-        for (entry in entries) {
-            if (rssDao.getFeedByUrl(entry.xmlUrl.trim()) != null) continue
-            if (addFeed(entry.xmlUrl) is AddResult.Success) added++
-        }
-        added
+        subscribeFromOpml(Opml.parse(input))
     }
 
-    /** Imports the bundled default feeds from res/raw/default_feeds.opml on first app install. */
-    suspend fun importDefaultFeeds(context: Context): Int = withContext(Dispatchers.IO) {
-        val input = context.resources.openRawResource(R.raw.default_feeds)
-        importOpml(input)
+    /**
+     * The feed catalogue bundled with the app (`res/raw/default_feeds.opml`),
+     * offered as a checklist on first launch. Parsing is local — no network.
+     */
+    fun readDefaultFeeds(context: Context): List<OpmlEntry> =
+        context.resources.openRawResource(R.raw.default_feeds).use { Opml.parse(it) }
+
+    /**
+     * Subscribes to [entries], skipping URLs already subscribed, and reports
+     * progress as each one is handled. The subscription row is written from the
+     * OPML metadata before the fetch, so a feed the user picked survives a
+     * failing request (a later refresh fills in its articles). Returns the
+     * number of feeds newly added.
+     *
+     * A curated OPML holds dozens of feeds, so the fetches run a few at a time;
+     * [onProgress] is therefore called off-order from several threads.
+     */
+    suspend fun subscribeFromOpml(
+        entries: List<OpmlEntry>,
+        onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }
+    ): Int = withContext(Dispatchers.IO) {
+        // A URL listed twice would otherwise be fetched twice and counted twice,
+        // since the "already subscribed?" checks run concurrently.
+        val unique = entries.distinctBy { it.xmlUrl.trim() }
+        val added = AtomicInteger()
+        val done = AtomicInteger()
+        val gate = Semaphore(MAX_PARALLEL_FEED_FETCHES)
+        coroutineScope {
+            unique.map { entry ->
+                async {
+                    gate.withPermit {
+                        if (subscribe(entry)) added.incrementAndGet()
+                    }
+                    onProgress(done.incrementAndGet(), unique.size)
+                }
+            }.awaitAll()
+        }
+        added.get()
+    }
+
+    /** Adds one OPML entry as a subscription. Returns false if it was already there. */
+    private suspend fun subscribe(entry: OpmlEntry): Boolean {
+        val url = entry.xmlUrl.trim()
+        if (url.isBlank() || rssDao.getFeedByUrl(url) != null) return false
+        val feedId = deterministicId(url)
+        // The OPML titles are curated (two feeds can share one site title),
+        // so they win over whatever the feed document calls itself.
+        rssDao.upsertFeed(
+            RssFeed(
+                id = feedId,
+                title = entry.title.ifBlank { url },
+                url = url,
+                siteUrl = entry.siteUrl
+            )
+        )
+        runCatching {
+            val parsed = client.fetch(url)
+            storeArticles(feedId, parsed.articles)
+            rssDao.markFeedFetched(feedId, System.currentTimeMillis())
+        }
+        return true
     }
 
     suspend fun exportOpml(): String = withContext(Dispatchers.IO) {

@@ -1,27 +1,107 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <opml version="2.0">
   <head>
-    <title>EbookReader Default Feeds</title>
-    <dateCreated>2026-07-18</dateCreated>
+    <title>BCIT Formation - Veille Réglementaire, Cyber &amp; Tech (FR)</title>
   </head>
   <body>
-    <outline text="Books &amp; Publishing" title="Books &amp; Publishing">
-      <outline type="rss" text="Project Gutenberg - Recently Added" title="Project Gutenberg - Recently Added" xmlUrl="https://www.gutenberg.org/ebooks/search/?query=&amp;sort_order=-release_date&amp;start_index=1&amp;rss" />
-      <outline type="rss" text="Standard Ebooks Releases" title="Standard Ebooks Releases" xmlUrl="https://standardebooks.org/rss/all-ebooks.xml" />
-      <outline type="rss" text="LibriVox - New Audiobooks" title="LibriVox - New Audiobooks" xmlUrl="https://feeds.librivox.org/rss_catalog.php?format=rss" />
-      <outline type="rss" text="Open Library Blog" title="Open Library Blog" xmlUrl="https://blog.openlibrary.org/feed/" />
-      <outline type="rss" text="Internet Archive News" title="Internet Archive News" xmlUrl="https://blog.archive.org/feed/" />
-      <outline type="rss" text="Tor.com - Science Fiction &amp; Fantasy" title="Tor.com - Science Fiction &amp; Fantasy" xmlUrl="https://www.tor.com/feed/" />
-      <outline type="rss" text="The Conversation - Books &amp; Culture" title="The Conversation - Books &amp; Culture" xmlUrl="https://feeds.theconversation.com/books-culture-39.xml" />
+    <!-- Favoris directs -->
+    <outline type="rss" text="Korben - flux complet" title="Korben - flux complet" xmlUrl="https://korben.info/feedfull/" htmlUrl="https://korben.info"/>
+
+    <!-- Dossier Presse Tech &amp; Actu Numérique (FR) -->
+    <outline text="Presse Tech &amp; Actu Numérique (FR)" title="Presse Tech &amp; Actu Numérique (FR)">
+      <outline type="rss" text="Developpez.com" title="Developpez.com" xmlUrl="https://www.developpez.com/index/rss" htmlUrl="https://www.developpez.com"/>
+      <outline type="rss" text="Presse-Citron" title="Presse-Citron" xmlUrl="https://www.presse-citron.net/feed/" htmlUrl="https://www.presse-citron.net"/>
+      <outline type="rss" text="01net" title="01net" xmlUrl="https://www.01net.com/actualites/feed/" htmlUrl="https://www.01net.com"/>
+      <outline type="rss" text="Les Numériques" title="Les Numériques" xmlUrl="https://www.lesnumeriques.com/rss.xml" htmlUrl="https://www.lesnumeriques.com"/>
+      <outline type="rss" text="Numerama" title="Numerama" xmlUrl="https://www.numerama.com/feed/" htmlUrl="https://www.numerama.com"/>
+      <outline type="rss" text="Journal du Geek" title="Journal du Geek" xmlUrl="https://www.journaldugeek.com/feed/" htmlUrl="https://www.journaldugeek.com"/>
+      <outline type="rss" text="Clubic" title="Clubic" xmlUrl="https://www.clubic.com/feed/news.rss" htmlUrl="https://www.clubic.com"/>
+      <outline type="rss" text="Frandroid" title="Frandroid" xmlUrl="https://www.frandroid.com/feed" htmlUrl="https://www.frandroid.com"/>
+      <outline type="rss" text="PhonAndroid" title="PhonAndroid" xmlUrl="https://www.phonandroid.com/feed" htmlUrl="https://www.phonandroid.com"/>
     </outline>
-    <outline text="Publishing Industry" title="Publishing Industry">
-      <outline type="rss" text="Publishers Weekly" title="Publishers Weekly" xmlUrl="https://www.publishersweekly.com/rss.xml" />
-      <outline type="rss" text="The Bookseller News" title="The Bookseller News" xmlUrl="https://www.thebookseller.com/rss/news.xml" />
-      <outline type="rss" text="The Author's Guild Blog" title="The Author's Guild Blog" xmlUrl="https://www.authorsguild.org/news-and-views/feed/" />
+
+    <!-- Dossier Hardware &amp; Mini-PC (FR) -->
+    <outline text="Hardware &amp; Mini-PC (FR)" title="Hardware &amp; Mini-PC (FR)">
+      <outline type="rss" text="MiniMachines" title="MiniMachines" xmlUrl="https://www.minimachines.net/feed" htmlUrl="https://www.minimachines.net"/>
+      <outline type="rss" text="Le Comptoir du Hardware" title="Le Comptoir du Hardware" xmlUrl="https://www.comptoir-hardware.com/feed/" htmlUrl="https://www.comptoir-hardware.com"/>
+      <outline type="rss" text="Cowcotland" title="Cowcotland" xmlUrl="https://www.cowcotland.com/feed/" htmlUrl="https://www.cowcotland.com"/>
     </outline>
-    <outline text="Technology &amp; Writing" title="Technology &amp; Writing">
-      <outline type="rss" text="Hacker News" title="Hacker News" xmlUrl="https://news.ycombinator.com/rss" />
-      <outline type="rss" text="Medium - Writing" title="Medium - Writing" xmlUrl="https://medium.com/feed/tag/writing" />
+
+    <!-- Dossier Blogs Tech &amp; Culture Hack (FR) -->
+    <outline text="Blogs Tech &amp; Culture Hack (FR)" title="Blogs Tech &amp; Culture Hack (FR)">
+      <outline type="rss" text="Journal du Hacker" title="Journal du Hacker" xmlUrl="https://www.journalduhacker.net/rss" htmlUrl="https://www.journalduhacker.net"/>
+      <outline type="rss" text="Cachem (Tech, NAS &amp; Docker)" title="Cachem (Tech, NAS &amp; Docker)" xmlUrl="https://www.cachem.fr/feed/" htmlUrl="https://www.cachem.fr"/>
+      <outline type="rss" text="La Ferme du Web" title="La Ferme du Web" xmlUrl="https://www.lafermeduweb.net/rss/flux.xml" htmlUrl="https://www.lafermeduweb.net"/>
+      <outline type="rss" text="Sebsauvage - Liens" title="Sebsauvage - Liens" xmlUrl="https://sebsauvage.net/links/?do=rss" htmlUrl="https://sebsauvage.net"/>
+      <outline type="rss" text="Fredzone" title="Fredzone" xmlUrl="https://www.fredzone.org/feed" htmlUrl="https://www.fredzone.org"/>
+      <outline type="rss" text="Geeek (Blog Tech de Nicolas)" title="Geeek (Blog Tech de Nicolas)" xmlUrl="https://www.geeek.org/tag/rss.xml" htmlUrl="https://www.geeek.org"/>
+    </outline>
+
+    <!-- Dossier Sécurité &amp; Compliance (FR) -->
+    <outline text="Sécurité &amp; Compliance (FR)" title="Sécurité &amp; Compliance (FR)">
+      <outline type="rss" text="ANSSI - Actualités" title="ANSSI - Actualités" xmlUrl="https://ssi.gouv.fr/feed/" htmlUrl="https://www.ssi.gouv.fr"/>
+      <outline type="rss" text="CERT-FR (Avis globaux)" title="CERT-FR (Avis globaux)" xmlUrl="https://www.cert.ssi.gouv.fr/feed/" htmlUrl="https://www.cert.ssi.gouv.fr/"/>
+      <outline type="rss" text="CERT-FR (Alertes)" title="CERT-FR (Alertes)" xmlUrl="https://www.cert.ssi.gouv.fr/alerte/feed/" htmlUrl="https://www.cert.ssi.gouv.fr/"/>
+      <outline type="rss" text="CNIL (Actualités &amp; RGPD)" title="CNIL (Actualités &amp; RGPD)" xmlUrl="https://www.cnil.fr/fr/rss.xml" htmlUrl="https://www.cnil.fr"/>
+      <outline type="rss" text="Cybermalveillance.gouv.fr" title="Cybermalveillance.gouv.fr" xmlUrl="https://www.cybermalveillance.gouv.fr/feed/" htmlUrl="https://www.cybermalveillance.gouv.fr"/>
+      <outline type="rss" text="Le Monde Informatique (Sécurité)" title="Le Monde Informatique (Sécurité)" xmlUrl="https://www.lemondeinformatique.fr/flux-rss/thematique/securite/rss.xml" htmlUrl="https://www.lemondeinformatique.fr"/>
+      <outline type="rss" text="ZATAZ" title="ZATAZ" xmlUrl="https://www.zataz.com/feed/" htmlUrl="https://www.zataz.com"/>
+      <outline type="rss" text="Solutions Numériques &amp; Cyber" title="Solutions Numériques &amp; Cyber" xmlUrl="https://www.solutions-numeriques.com/categorie/securite/feed/" htmlUrl="https://www.solutions-numeriques.com"/>
+      <outline type="rss" text="Silicon (Cybersécurité)" title="Silicon (Cybersécurité)" xmlUrl="https://www.silicon.fr/cybersecurite/feed" htmlUrl="https://www.silicon.fr"/>
+      <outline type="rss" text="Next INpact (Sécurité &amp; Libertés)" title="Next INpact (Sécurité &amp; Libertés)" xmlUrl="https://www.nextinpact.com/rss.xml" htmlUrl="https://www.nextinpact.com"/>
+    </outline>
+
+    <!-- Dossier Qualiopi &amp; Formation Pro (FR) -->
+    <outline text="Qualiopi &amp; Formation Pro (FR)" title="Qualiopi &amp; Formation Pro (FR)">
+      <outline type="rss" text="Centre Inffo (Droit de la formation)" title="Centre Inffo (Droit de la formation)" xmlUrl="https://www.centre-inffo.fr/site-droit-formation/feed/" htmlUrl="https://www.centre-inffo.fr/site-droit-formation/"/>
+      <outline type="rss" text="Centre Inffo (Actualités)" title="Centre Inffo (Actualités)" xmlUrl="https://www.centre-inffo.fr/site-actualite-formation/feed/" htmlUrl="https://www.centre-inffo.fr/site-actualite-formation/"/>
+      <outline type="rss" text="Le Quotidien de la Formation" title="Le Quotidien de la Formation" xmlUrl="https://www.lequotidiendelaformation.fr/feed/" htmlUrl="https://www.lequotidiendelaformation.fr"/>
+      <outline type="rss" text="Légifrance (JO - Textes Généraux)" title="Légifrance (JO - Textes Généraux)" xmlUrl="https://www.legifrance.gouv.fr/rss/jo.xml" htmlUrl="https://www.legifrance.gouv.fr"/>
+      <outline type="rss" text="France Compétences (Actualités &amp; Certifications)" title="France Compétences (Actualités &amp; Certifications)" xmlUrl="https://www.francecompetences.fr/feed/" htmlUrl="https://www.francecompetences.fr"/>
+      <outline type="rss" text="Cap Métiers Nouvelle-Aquitaine" title="Cap Métiers Nouvelle-Aquitaine" xmlUrl="https://www.cap-metiers.pro/rss.xml" htmlUrl="https://www.cap-metiers.pro"/>
+      <outline type="rss" text="CPFormation (Analyses CPF &amp; Qualiopi)" title="CPFormation (Analyses CPF &amp; Qualiopi)" xmlUrl="https://cpformation.com/feed/" htmlUrl="https://cpformation.com"/>
+      <outline type="rss" text="Ofelia (Veille Réglementaire Qualiopi)" title="Ofelia (Veille Réglementaire Qualiopi)" xmlUrl="https://www.ofelia.fr/feed/" htmlUrl="https://www.ofelia.fr"/>
+      <outline type="rss" text="ICPF (Actualités Certification)" title="ICPF (Actualités Certification)" xmlUrl="https://certif-icpf.org/blog/feed" htmlUrl="https://certif-icpf.org"/>
+      <outline type="rss" text="Digiforma (Mag de la Formation)" title="Digiforma (Mag de la Formation)" xmlUrl="https://www.digiforma.com/blog/feed/" htmlUrl="https://www.digiforma.com/blog/"/>
+      <outline type="rss" text="DGEFP (Ministère du Travail)" title="DGEFP (Ministère du Travail)" xmlUrl="https://travail-emploi.gouv.fr/spip.php?page=backend" htmlUrl="https://travail-emploi.gouv.fr"/>
+      <outline type="rss" text="AFNOR (Normalisation, ISO &amp; Qualité)" title="AFNOR (Normalisation, ISO &amp; Qualité)" xmlUrl="https://www.afnor.org/feed/" htmlUrl="https://www.afnor.org"/>
+    </outline>
+
+    <!-- Dossier Économie &amp; Marchés (Nouvelle-Aquitaine / Charente) -->
+    <outline text="Économie &amp; Marchés (Nouvelle-Aquitaine / Charente)" title="Économie &amp; Marchés (Nouvelle-Aquitaine / Charente)">
+      <outline type="rss" text="Charente Libre (Économie &amp; Territoire)" title="Charente Libre (Économie &amp; Territoire)" xmlUrl="https://www.charentelibre.fr/economie/rss.xml" htmlUrl="https://www.charentelibre.fr"/>
+      <outline type="rss" text="La Tribune Bordeaux / Nouvelle-Aquitaine" title="La Tribune Bordeaux / Nouvelle-Aquitaine" xmlUrl="https://bordeaux.latribune.fr/flux-rss.xml" htmlUrl="https://bordeaux.latribune.fr"/>
+      <outline type="rss" text="Placéco Charente" title="Placéco Charente" xmlUrl="https://www.placeco.fr/feed/" htmlUrl="https://www.placeco.fr"/>
+      <outline type="rss" text="CCI Charente" title="CCI Charente" xmlUrl="https://www.charente.cci.fr/flux-rss.xml" htmlUrl="https://www.charente.cci.fr"/>
+      <outline type="rss" text="Région Nouvelle-Aquitaine" title="Région Nouvelle-Aquitaine" xmlUrl="https://www.nouvelle-aquitaine.fr/rss.xml" htmlUrl="https://www.nouvelle-aquitaine.fr"/>
+      <outline type="rss" text="SPN (Réseau des Professionnels du Numérique)" title="SPN (Réseau des Professionnels du Numérique)" xmlUrl="https://www.spn.asso.fr/feed/" htmlUrl="https://www.spn.asso.fr"/>
+      <outline type="rss" text="ALIPTIC (Cyber &amp; Innovation)" title="ALIPTIC (Cyber &amp; Innovation)" xmlUrl="https://www.aliptic.net/feed/" htmlUrl="https://www.aliptic.net"/>
+    </outline>
+
+    <!-- Dossier Cyber &amp; Threat Intel (Global) -->
+    <outline text="Cyber &amp; Threat Intel (Global)" title="Cyber &amp; Threat Intel (Global)">
+      <outline type="rss" text="The Hacker News" title="The Hacker News" xmlUrl="https://thehackernews.com/feeds/posts/default" htmlUrl="https://thehackernews.com"/>
+      <outline type="rss" text="BleepingComputer" title="BleepingComputer" xmlUrl="https://www.bleepingcomputer.com/feed/" htmlUrl="https://www.bleepingcomputer.com"/>
+      <outline type="rss" text="Dark Reading" title="Dark Reading" xmlUrl="https://www.darkreading.com/rss.xml" htmlUrl="https://www.darkreading.com"/>
+      <outline type="rss" text="SecurityWeek" title="SecurityWeek" xmlUrl="https://www.securityweek.com/rss" htmlUrl="https://www.securityweek.com"/>
+      <outline type="rss" text="Krebs on Security" title="Krebs on Security" xmlUrl="https://krebsonsecurity.com/feed/" htmlUrl="https://krebsonsecurity.com"/>
+      <outline type="rss" text="SANS Internet Storm Center" title="SANS Internet Storm Center" xmlUrl="https://isc.sans.edu/rssfeed_full.xml" htmlUrl="https://isc.sans.edu"/>
+    </outline>
+
+    <!-- Dossier Intelligence Artificielle &amp; SEO/GEO -->
+    <outline text="Intelligence Artificielle &amp; SEO/GEO" title="Intelligence Artificielle &amp; SEO/GEO">
+      <outline type="rss" text="L'Actu IA (FR)" title="L'Actu IA (FR)" xmlUrl="https://www.actuia.com/feed/" htmlUrl="https://www.actuia.com"/>
+      <outline type="rss" text="Abondance (SEO &amp; Moteurs de Recherche IA)" title="Abondance (SEO &amp; Moteurs de Recherche IA)" xmlUrl="https://www.abondance.com/feed" htmlUrl="https://www.abondance.com"/>
+      <outline type="rss" text="WebRankInfo (Actualité Référencement &amp; IA)" title="WebRankInfo (Actualité Référencement &amp; IA)" xmlUrl="https://www.webrankinfo.com/feed" htmlUrl="https://www.webrankinfo.com"/>
+      <outline type="rss" text="OpenAI Blog (Annonces Globales)" title="OpenAI Blog (Annonces Globales)" xmlUrl="https://openai.com/blog/rss.xml" htmlUrl="https://openai.com/blog"/>
+      <outline type="rss" text="Hugging Face Blog" title="Hugging Face Blog" xmlUrl="https://huggingface.co/blog/feed.xml" htmlUrl="https://huggingface.co/blog"/>
+    </outline>
+
+    <!-- Dossier Développement, DevOps &amp; Linux -->
+    <outline text="Développement, DevOps &amp; Linux" title="Développement, DevOps &amp; Linux">
+      <outline type="rss" text="Programmez!" title="Programmez!" xmlUrl="https://www.programmez.com/rss.xml" htmlUrl="https://www.programmez.com"/>
+      <outline type="rss" text="Docker Blog" title="Docker Blog" xmlUrl="https://www.docker.com/blog/feed/" htmlUrl="https://www.docker.com/blog/"/>
+      <outline type="rss" text="It's FOSS (Sysadmin &amp; Tutos Linux)" title="It's FOSS (Sysadmin &amp; Tutos Linux)" xmlUrl="https://itsfoss.com/feed/" htmlUrl="https://itsfoss.com"/>
     </outline>
   </body>
 </opml>
