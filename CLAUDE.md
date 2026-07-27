@@ -52,7 +52,7 @@ app/src/main/java/com/ebooks/reader/
     rss/
       RssParser.kt          # Pure-Kotlin RSS 2.0 + Atom feed parser
       RssClient.kt          # HTTPS feed fetch (http:// auto-upgraded), size-capped
-      Opml.kt               # OPML import (parse) + export (serialize) for feed lists
+      Opml.kt               # OPML import (parse, incl. folder categories) + export for feed lists
     dict/
       DictionaryClient.kt   # HTTPS word lookup via dictionaryapi.dev (ADR-006, keyless)
       StarDict.kt           # Pure-Kotlin StarDict (.ifo/.idx/.dict) parser + lookup
@@ -90,6 +90,7 @@ app/src/main/java/com/ebooks/reader/
       LibraryScreen.kt
       OpdsScreen.kt          # OPDS catalog browser (browse feeds, download books)
       SyncScreen.kt          # Sync & backup (cloud folder via SAF + WebDAV)
+      FeedPickerScreen.kt    # First-launch checklist of the bundled feeds (res/raw/default_feeds.opml)
       RssFeedsScreen.kt      # RSS tab: feed list, add feed, OPML import/export
       RssFeedArticlesScreen.kt # Article timeline for one feed
       RssReaderScreen.kt     # Offline RSS article reader (WebView) + drawing tools + share
@@ -113,6 +114,7 @@ app/src/main/java/com/ebooks/reader/
     OpdsViewModel.kt        # catalog navigation stack + download/import
     SyncViewModel.kt        # cloud folder + WebDAV sync state
     RssViewModel.kt         # feeds + article timeline, add/refresh/delete, OPML import/export
+    FeedPickerViewModel.kt  # bundled-feed catalogue, tick state, bulk subscribe with progress
   widget/
     CurrentBookWidget.kt    # Glance home-screen widget (most recently read book)
 
@@ -127,6 +129,7 @@ app/src/test/java/com/ebooks/reader/        # JVM unit tests (no emulator)
 app/src/androidTest/java/com/ebooks/reader/ # Instrumented tests (emulator/device)
   data/db/AppDatabaseTest.kt          # Room + MIGRATION_1_2
   data/parser/EpubParserTest.kt       # parser against real/malformed EPUBs
+  data/rss/OpmlTest.kt                # OPML feeds + folder categories (XmlPullParser needs a device)
   ui/screens/LibraryScreenTest.kt     # Compose UI
   ui/screens/ReaderScreenTest.kt      # Compose UI
 
@@ -296,9 +299,15 @@ Routes are plain strings in `MainActivity.kt`:
 - `"rss_feeds"` — `RssFeedsScreen` (second bottom-nav tab)
 - `"rss_articles/{feedId}"` — `RssFeedArticlesScreen`
 - `"rss_reader/{articleId}"` — `RssReaderScreen`
+- `"feed_picker"` — `FeedPickerScreen` (start destination while `FirstRunManager.isFeedSetupPending()`,
+  also reachable from the RSS tab menu)
 
 `MainActivity` hosts a two-tab `NavigationBar` (Library / RSS) shown only on the `library`
 and `rss_feeds` routes; all reader/opds/sync/rss article routes are full-screen.
+
+The feeds bundled in `res/raw/default_feeds.opml` are **never subscribed automatically** —
+the first launch opens `FeedPickerScreen` so the user ticks the ones they want. Keep that
+consent step if you touch the first-run path.
 
 Do not add a navigation graph file. Keep navigation simple and co-located in `MainActivity`.
 
@@ -391,6 +400,9 @@ See `DECISIONS.md` for full context and trade-offs. FB2 follows ADR-001's pure-K
 - The unit test source still references `android.*` through the main source tree;
   the Android SDK stubs (`android.jar`) are resolved by Gradle from `$ANDROID_HOME`.
   **All CI jobs that run Gradle include `setup-android`** to ensure the SDK is present.
+- `XmlPullParser` comes from the stubbed `android.jar`, so anything parsing XML (OPML, OPDS,
+  EPUB, FB2, RSS) silently returns its empty/`null` fallback under `./gradlew test`. Those
+  tests belong in `androidTest`.
 - Do not add `@Ignore`-d tests to pass CI. Fix or delete flaky tests.
 
 ---

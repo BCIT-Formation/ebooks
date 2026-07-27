@@ -308,6 +308,20 @@
     <string name="rss_marked_favorite">Marked as favorite</string>
     <string name="rss_marked_read">Marked as read</string>
 
+    <!-- First-launch feed checklist -->
+    <string name="feed_picker_title">Suggested feeds</string>
+    <string name="feed_picker_subtitle">Pick the feeds you want to follow. Their articles are downloaded for offline reading; you can add or remove feeds at any time.</string>
+    <string name="feed_picker_other_feeds">Featured</string>
+    <string name="feed_picker_select_all">Select all</string>
+    <string name="feed_picker_deselect_all">Deselect all</string>
+    <plurals name="feed_picker_add">
+        <item quantity="one">Add %1$d feed</item>
+        <item quantity="other">Add %1$d feeds</item>
+    </plurals>
+    <string name="feed_picker_skip">Skip</string>
+    <string name="feed_picker_importing">Adding feed %1$d of %2$d…</string>
+    <string name="feed_picker_already_subscribed">Already subscribed</string>
+
     <!-- App Theme Mode (light/dark/system) -->
     <string name="theme_system">System</string>
     <string name="theme_setting">App theme</string>

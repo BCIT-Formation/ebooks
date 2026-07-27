@@ -39,6 +39,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ebooks.reader.ui.screens.CbzReaderScreen
+import com.ebooks.reader.ui.screens.FeedPickerScreen
 import com.ebooks.reader.ui.screens.LibraryScreen
 import com.ebooks.reader.ui.screens.OpdsScreen
 import com.ebooks.reader.ui.screens.PdfReaderScreen
@@ -56,7 +57,6 @@ import com.ebooks.reader.data.settings.ThemeSettings
 import com.ebooks.reader.data.settings.AppTheme
 import com.ebooks.reader.data.settings.FirstRunManager
 import com.ebooks.reader.data.repository.BookRepository
-import com.ebooks.reader.data.repository.RssRepository
 import com.ebooks.reader.util.VolumeKeyPager
 
 /**
@@ -102,17 +102,16 @@ class MainActivity : ComponentActivity() {
             intent?.data
         } else null
 
-        // Auto-import default RSS feeds and download popular Gutenberg books on first install
+        // The bundled RSS feeds are not auto-subscribed: the first launch opens the
+        // feed picker (below) so the user ticks the ones they want.
+        val showFeedPicker = FirstRunManager.getInstance(this).isFeedSetupPending()
+
+        // Download popular Gutenberg books on first install
         lifecycleScope.launch {
             val firstRunManager = FirstRunManager.getInstance(this@MainActivity)
             if (firstRunManager.isFirstRun()) {
                 try {
-                    val rssRepo = RssRepository(this@MainActivity)
                     val bookRepo = BookRepository(this@MainActivity)
-
-                    Log.d("FirstRun", "Importing default RSS feeds...")
-                    val feedsAdded = rssRepo.importDefaultFeeds(this@MainActivity)
-                    Log.d("FirstRun", "Added $feedsAdded default RSS feeds")
 
                     Log.d("FirstRun", "Downloading popular Gutenberg books...")
                     val booksAdded = bookRepo.downloadGutenbergPopularBooks(20)
@@ -139,6 +138,7 @@ class MainActivity : ComponentActivity() {
                     val backStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = backStackEntry?.destination?.route
                     val showTabs = currentRoute == "library" || currentRoute == "rss_feeds"
+                    val startDestination = if (showFeedPicker) "feed_picker" else "library"
 
                     var pendingViewUri by remember { mutableStateOf(viewIntentUri) }
                     LaunchedEffect(pendingViewUri) {
@@ -194,9 +194,27 @@ class MainActivity : ComponentActivity() {
                     ) { scaffoldPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "library",
+                        startDestination = startDestination,
                         modifier = Modifier.padding(bottom = scaffoldPadding.calculateBottomPadding())
                     ) {
+                        composable("feed_picker") {
+                            FeedPickerScreen(
+                                onFinished = { addedFeeds ->
+                                    // Land on the feeds the user just picked; on a skip
+                                    // go back where they came from — at first launch
+                                    // that is nowhere, so fall back to the library.
+                                    if (addedFeeds == 0 && navController.previousBackStackEntry != null) {
+                                        navController.popBackStack()
+                                    } else {
+                                        navController.navigate(if (addedFeeds > 0) "rss_feeds" else "library") {
+                                            popUpTo("feed_picker") { inclusive = true }
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                }
+                            )
+                        }
+
                         composable("library") {
                             LibraryScreen(
                                 displayMode = displayMode,
@@ -228,7 +246,8 @@ class MainActivity : ComponentActivity() {
 
                         composable("rss_feeds") {
                             RssFeedsScreen(
-                                onOpenFeed = { feedId -> navController.navigate("rss_articles/$feedId") }
+                                onOpenFeed = { feedId -> navController.navigate("rss_articles/$feedId") },
+                                onOpenFeedPicker = { navController.navigate("feed_picker") }
                             )
                         }
 
